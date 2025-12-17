@@ -1,12 +1,12 @@
 # Fdb version 4
-["biber main"] 0 "main.bcf" "main.bbl" "main" 0 0
+["biber main"] 0 "main.bcf" "main.bbl" "main" 1765943147.43888 0
   "main.bcf" 0 -1 0 "pdflatex"
   "newrefs.bib" 0 -1 0 ""
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1765904689.45565 "d:/Bach Khoa/Capstone Project/P2P-chat-app/report/main.tex" "main.pdf" "main" 1765904699.31577 0
+["pdflatex"] 1765943138.45521 "d:/Bach Khoa/Capstone Project/P2P-chat-app/report/main.tex" "main.pdf" "main" 1765943147.44163 0
   "C:/Users/AD/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1765904670 89969 e95579120a3aa0ebc21d2737ca2ba701 ""
   "C:/Users/AD/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/tcrm1200.pk" 1765903073 14064 b995bebebee60c3773df76f01ef123a6 ""
   "C:/Users/AD/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1765902671 24223631 16c205b7b226904c176055e9ff9e0e55 ""
@@ -310,15 +310,24 @@
   "Images/Deployment Diagram/Deployment Diagram.drawio.png" 1765904408 134577 7d1cd6a563b7c09f2a3dfc59107393b4 ""
   "Images/SystemArchitecture.png" 1765904408 24934 dc21a26416bf5db0894c51f239a67d47 ""
   "Images/hcmut.png" 1765904408 100724 34813e7945d25073d2021fd11a318249 ""
-  "d:/Bach Khoa/Capstone Project/P2P-chat-app/report/main.tex" 1765904408 40717 a8a146f12dcae028d314844e6d61da70 ""
-  "main.aux" 1765904697 7184 aeaaa721f46f8d79523814dccf1a50ac "pdflatex"
+  "d:/Bach Khoa/Capstone Project/P2P-chat-app/report/main.tex" 1765943118 13784 326dd390129bf5c0207a88ea54e8f7a0 ""
+  "main.aux" 1765943145 7061 d8fd8978fbd6f41281b67e7af3eb0963 "pdflatex"
   "main.bbl" 0 -1 0 "biber main"
-  "main.lof" 1765904697 1494 3546da0c3b6e3d385c4f687cd03b1b03 "pdflatex"
-  "main.lot" 1765904697 31 284aed60a42c4792f7d7455bcdbfa41d "pdflatex"
-  "main.out" 1765904697 5496 cc9db7093c2b6c423e8f3d847485f974 "pdflatex"
-  "main.run.xml" 1765904697 2428 49fa91741490ab34f73c8f95ac123037 "pdflatex"
-  "main.tex" 1765904408 40717 a8a146f12dcae028d314844e6d61da70 ""
-  "main.toc" 1765904697 3157 4b7167650b6b0b7b62402ac0a691a811 "pdflatex"
+  "main.lof" 1765943145 1494 3546da0c3b6e3d385c4f687cd03b1b03 "pdflatex"
+  "main.lot" 1765943145 31 284aed60a42c4792f7d7455bcdbfa41d "pdflatex"
+  "main.out" 1765943145 5357 2f4436927f923c0779715e5d5f138fe0 "pdflatex"
+  "main.run.xml" 1765943145 2428 49fa91741490ab34f73c8f95ac123037 "pdflatex"
+  "main.tex" 1765943118 13784 326dd390129bf5c0207a88ea54e8f7a0 ""
+  "main.toc" 1765943145 3075 2a610c571de6c60f9adda4f094424b09 "pdflatex"
+  "section/background_knowledge.tex" 1765942653 30 b6ec788996a49c868f914935a20e1cc1 ""
+  "section/conclusion.tex" 1765943081 110 423a482a9d61970295a3f37ad14a40ef ""
+  "section/introduction.tex" 1765942505 3171 59219c156eac48fee2a008eb07ba3a0c ""
+  "section/related_work.tex" 1765942770 23 c34695755fa223c22049a05e5986e4e4 ""
+  "section/requirements_elicitation.tex" 1765942822 5409 058825dfeb52ce5bad08be101e939d36 ""
+  "section/system_analysis.tex" 1765942928 21998 593365926a4726b170bb7c1aed32ee8c ""
+  "section/system_evaluation.tex" 1765943028 0 d41d8cd98f00b204e9800998ecf8427e ""
+  "section/system_implementation.tex" 1765942971 31 c61cfbce3de0a67e823381d1623798b9 ""
+  "section/technology_stack.tex" 1765942718 26 c3994da6b23f90151d63763d18b9e316 ""
   (generated)
   "main.aux"
   "main.bcf"
