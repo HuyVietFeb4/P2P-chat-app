@@ -72,6 +72,8 @@ Appropriate for extensible modules, but introduces unnecessary complexity for co
 \end{table}
 
 Based on the comparison, the layered architecture emerges as the most suitable choice for this project. In the context of Meshenger, each layer is designed as a collection of loosely coupled yet highly cohesive modules, ensuring a clear separation of responsibilities. This approach enhances maintainability and scalability while simplifying testing, as individual modules can be validated independently without affecting other layers of the system.
+\subsubsection{Data Flow Diagram}
+
 \subsubsection{\mbox{Mesh Topology in the System}}
 
 \indent \indent For this project, two types of mesh topology are considered: fully decentralized and hybrid decentralized--centralized. The initial focus is on developing the application to support a fully decentralized topology. In this model, every device in the network functions both as a client and as a router. When a packet is received, the device processes it according to the routing algorithm, deciding whether to accept the packet if it is the intended recipient, drop it if it is invalid or redundant, or relay it to another device if forwarding is required. This approach ensures that all devices contribute equally to routing, resulting in a resilient and infrastructure-independent communication network.
@@ -101,11 +103,11 @@ The chat application database is structured around several interconnected entiti
 \subsubsection{\mbox{Onboarding Screens}}
 After the user completes the installation of the Android application, the system displays four onboarding screens only once to introduce the chat application's services and features.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \begin{minipage}{0.23\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{Images/User Interface/onboard1.png}
+        \includegraphics[width=\linewidth]{Images/User Interface/onboarding1.png}
     \end{minipage}
     \hfill
     \begin{minipage}{0.23\textwidth}
@@ -155,70 +157,97 @@ After exiting the user profile section, the chat interface is rendered with the 
     \item \textbf{Bottom Navigation Bar:} contains an \textit{Import} button to import saved chat history, an \textit{Export} button to export the current chat history to a file (e.g., for device transfer), a \textit{Profile} button to view and edit the user profile, and an \textit{Instruction} button that provides a brief guide for new users.
 \end{itemize}
 
-% \begin{figure}[H]
-%     \centering
-%     \includegraphics[width=0.2\textwidth]{Images/User Interface/chatInterface.png}
-%     \caption{Chat App's Home Interface}
-% \end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{Images/User Interface/chatInterface.png}
+    \caption{Chat App's Home Interface}
+\end{figure}
 
 For new users or users who have just downloaded the application, the user manual shall be displayed immediately to guide them on how to use the app. The user manual consists of four guides corresponding to the four main features of the application: adding users, importing messages, exporting messages, and viewing and editing the user profile.
-% \begin{figure}[h]
-%     \centering
-%     \begin{minipage}{0.23\textwidth}
-%         \centering
-%         \includegraphics[width=\linewidth]{Images/User Interface/addUserManual.png}
-%     \end{minipage}
-%     \hfill
-%     \begin{minipage}{0.23\textwidth}
-%         \centering
-%         \includegraphics[width=\linewidth]{Images/User Interface/importManual.png}
-%     \end{minipage}
-%     \hfill
-%     \begin{minipage}{0.23\textwidth}
-%         \centering
-%         \includegraphics[width=\linewidth]{Images/User Interface/exportManual.png}
-%     \end{minipage}
-%     \hfill
-%     \begin{minipage}{0.23\textwidth}
-%         \centering
-%         \includegraphics[width=\linewidth]{Images/User Interface/profileManual.png}
-%     \end{minipage}
-%     \caption{Bluetooth Chat App User Manual}
-% \end{figure}
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.23\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/addUserManual.png}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.23\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/importManual.png}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.23\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/exportManual.png}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.23\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/profileManual.png}
+    \end{minipage}
+    \caption{Bluetooth Chat App User Manual}
+\end{figure}
 
 If the user is unsure how to operate the application, they may select the “Instruction” button to display the user manual again.
 
-\subsubsection{\mbox{Add a user}}
+\subsubsection{\mbox{Add a User}}
 To add a new user to the network, the user shall select the “Add User” button located at the top-right corner of the home screen. The system supports two methods for adding users: network scanning and QR code scanning.
 
-% \begin{figure}[h]
-%     \centering
-%     \begin{subfigure}{0.3\textwidth}
-%         \centering
-%         \includegraphics[width=\linewidth]{image1.png}
-%         \caption{Add User Screen}
-%         \label{fig:add-user}
-%     \end{subfigure}
-%     \hfill
-%     \begin{subfigure}{0.3\textwidth}
-%         \centering
-%         \includegraphics[width=\linewidth]{image2.png}
-%         \caption{Device Scanning}
-%         \label{fig:device-scan}
-%     \end{subfigure}
-%     \hfill
-%     \begin{subfigure}{0.3\textwidth}
-%         \centering
-%         \includegraphics[width=\linewidth]{image3.png}
-%         \caption{QR Code Scanning}
-%         \label{fig:qr-scan}
-%     \end{subfigure}
-%     \caption{User adding methods in the chat application}
-%     \label{fig:add-user-methods}
-% \end{figure}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.4\textwidth}  % Tăng kích thước lên 40% của dòng
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/displayPeers.png}
+        \caption{Display nearby users modal}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.4\textwidth}  % Tăng kích thước lên 40% của dòng
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/successRequest.png}
+        \caption{Send add user request successfully}
+        \label{fig:device-scan}
+    \end{subfigure}
+    \caption{Add a user by network scanning process}
+\end{figure}
+For the Device Scanning method, a modal dialog shall be displayed, showing a list of nearby Bluetooth users in the network. After the user selects a user from the list, the system shall send a connection request to the selected user, who can accept or decline the request. If the request is sent successfully, the system shall display a success message to notify the user. \\
+If the recipient of the friend request accepts it, the system shall display both users' accounts and usernames on their respective home screens, and establish a communication channel between them.
 
+\subsubsection{Send Messages}
+Similar to other messaging applications, users shall be able to communicate by sending messages and receive notifications when they get a reply.
 
-For the Device Scanning method, a modal dialog shall be displayed, showing a list of nearby Bluetooth users in the network. After the user selects a user from the list, the system shall send a connection request to the selected user, who can accept or decline the request. If the request is sent successfully, the system shall display a success message to notify the user.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.4\textwidth}  % Tăng kích thước lên 40% của dòng
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/chat.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.4\textwidth}  % Tăng kích thước lên 40% của dòng
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/chatNotification.png}
+    \end{subfigure}
+    \caption{Messaging Interface}
+\end{figure}
+
+\subsubsection{Import and Export messages}
+Since the system operates locally and does not provide online storage, all messaging activities shall be tracked and saved in a local database. Users can then export the messaging history to import it into other devices.
+
+To export messaging history, the user shall select the “Export” icon in the bottom navigation bar. After doing so, the system shall prompt the user to choose a location to save the exported messages.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Images/User Interface/saveExport.png}
+    \caption{Save location modal (iOS example for Android)}
+\end{figure}
+
+To import messaging history for device data transfer, the user shall select the “Import” icon in the bottom navigation bar. After doing so, the system shall prompt the user to select the location of the saved data to import the messages to the device.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Images/User Interface/importProcess.png}
+    \caption{Saved data file location modal for import (iOS example for Android)}
+\end{figure}
+
+After importing, the system shall read all information from the saved messages, including accounts and messages, and display the account list and messages on the home screen. If there are existing messages on the device, the system shall merge them with the imported data.
+
 \subsection{\mbox{Feature Specification}}
 
 \subsubsection{\mbox{Secure Channel Establishment}}\label{sec:secure-channel-establishment}

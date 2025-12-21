@@ -1,82 +1,88 @@
 \babel@toc {american}{}\relax 
-\contentsline {section}{\numberline {1}Introduction}{9}{section.1}%
-\contentsline {subsection}{\numberline {1.1}Motivation}{9}{subsection.1.1}%
-\contentsline {subsection}{\numberline {1.2}Objectives}{9}{subsection.1.2}%
-\contentsline {subsection}{\numberline {1.3}Scope}{10}{subsection.1.3}%
-\contentsline {subsection}{\numberline {1.4}Significance of the Project}{11}{subsection.1.4}%
-\contentsline {subsubsection}{\numberline {1.4.1}Significance from the Practical Perspectives}{11}{subsubsection.1.4.1}%
-\contentsline {subsubsection}{\numberline {1.4.2}Significance from the Scientific Perspectives}{11}{subsubsection.1.4.2}%
-\contentsline {subsection}{\numberline {1.5}Report structure}{12}{subsection.1.5}%
-\contentsline {section}{\numberline {2}Background Knowledge}{13}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Decentralized Communication Systems}{13}{subsection.2.1}%
-\contentsline {subsubsection}{\numberline {2.1.1}Peer-to-Peer Networks}{13}{subsubsection.2.1.1}%
-\contentsline {subsubsection}{\numberline {2.1.2}Comparison with Centralized Client--Server Architecture}{13}{subsubsection.2.1.2}%
-\contentsline {subsection}{\numberline {2.2}Bluetooth Low Energy}{15}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}Mesh Topology}{15}{subsection.2.3}%
-\contentsline {subsubsection}{\numberline {2.3.1}Ring Topology}{15}{subsubsection.2.3.1}%
-\contentsline {subsubsection}{\numberline {2.3.2}Hierarchical Topology}{16}{subsubsection.2.3.2}%
-\contentsline {subsubsection}{\numberline {2.3.3}Decentralized Topology}{16}{subsubsection.2.3.3}%
-\contentsline {subsubsection}{\numberline {2.3.4}Hybrid Centralized--Decentralized Topology}{16}{subsubsection.2.3.4}%
-\contentsline {subsection}{\numberline {2.4}Cryptography and Security}{17}{subsection.2.4}%
-\contentsline {subsubsection}{\numberline {2.4.1}End-to-End Encryption}{17}{subsubsection.2.4.1}%
-\contentsline {subsubsection}{\numberline {2.4.2}Hash Functions}{18}{subsubsection.2.4.2}%
-\contentsline {subsubsection}{\numberline {2.4.3}Symmetric-Key Cryptography}{18}{subsubsection.2.4.3}%
-\contentsline {subsubsection}{\numberline {2.4.4}Asymmetric-Key Cryptography}{18}{subsubsection.2.4.4}%
-\contentsline {subsubsection}{\numberline {2.4.5}Key Exchange Mechanisms}{18}{subsubsection.2.4.5}%
-\contentsline {section}{\numberline {3}Related Work}{19}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Bitchat}{19}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}Briar}{20}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Peer-to-Peer Networks for Content Sharing}{21}{subsection.3.3}%
-\contentsline {subsubsection}{\numberline {3.3.1}Gnutella v0.4: Early Development}{21}{subsubsection.3.3.1}%
-\contentsline {subsubsection}{\numberline {3.3.2}Gnutella v0.6: Later Development}{22}{subsubsection.3.3.2}%
-\contentsline {subsection}{\numberline {3.4}Research Summary}{22}{subsection.3.4}%
-\contentsline {subsubsection}{\numberline {3.4.1}Overall Insights}{22}{subsubsection.3.4.1}%
-\contentsline {subsubsection}{\numberline {3.4.2}Opportunities and Challenges}{22}{subsubsection.3.4.2}%
-\contentsline {section}{\numberline {4}Requirements Elicitation}{24}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Functional requirements}{24}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}Non-Functional Requirements}{25}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}Data requirements}{26}{subsection.4.3}%
-\contentsline {section}{\numberline {5}System Analysis}{27}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Use Case Diagrams}{27}{subsection.5.1}%
-\contentsline {subsubsection}{\numberline {5.1.1}Whole system}{27}{subsubsection.5.1.1}%
-\contentsline {subsubsection}{\numberline {5.1.2}Bootstrapping}{28}{subsubsection.5.1.2}%
-\contentsline {subsubsection}{\numberline {5.1.3}Open single communication channel}{29}{subsubsection.5.1.3}%
-\contentsline {subsubsection}{\numberline {5.1.4}Process message}{30}{subsubsection.5.1.4}%
-\contentsline {subsubsection}{\numberline {5.1.5}Send message}{32}{subsubsection.5.1.5}%
-\contentsline {subsubsection}{\numberline {5.1.6}Fragmentation}{33}{subsubsection.5.1.6}%
-\contentsline {subsubsection}{\numberline {5.1.7}Form packet}{34}{subsubsection.5.1.7}%
-\contentsline {subsection}{\numberline {5.2}Activity Diagrams}{35}{subsection.5.2}%
-\contentsline {subsection}{\numberline {5.3}\mbox {Sequence Diagram}}{41}{subsection.5.3}%
-\contentsline {subsection}{\numberline {5.4}\mbox {Deployment Diagram}}{46}{subsection.5.4}%
-\contentsline {subsection}{\numberline {5.5}Class Diagram}{46}{subsection.5.5}%
-\contentsline {section}{\numberline {6}System Design}{47}{section.6}%
-\contentsline {subsection}{\numberline {6.1}\mbox {System Architecture}}{47}{subsection.6.1}%
-\contentsline {subsubsection}{\numberline {6.1.1}Comparison of Architecture Styles and Architecture Decision}{47}{subsubsection.6.1.1}%
-\contentsline {subsubsection}{\numberline {6.1.2}\mbox {Mesh Topology in the System}}{49}{subsubsection.6.1.2}%
-\contentsline {subsection}{\numberline {6.2}\mbox {Database Design}}{50}{subsection.6.2}%
-\contentsline {subsection}{\numberline {6.3}\mbox {User Interface Design}}{52}{subsection.6.3}%
-\contentsline {subsubsection}{\numberline {6.3.1}\mbox {Onboarding Screens}}{52}{subsubsection.6.3.1}%
-\contentsline {subsubsection}{\numberline {6.3.2}\mbox {User Profile}}{52}{subsubsection.6.3.2}%
-\contentsline {subsubsection}{\numberline {6.3.3}\mbox {User Manual}}{53}{subsubsection.6.3.3}%
-\contentsline {subsubsection}{\numberline {6.3.4}\mbox {Add a user}}{54}{subsubsection.6.3.4}%
-\contentsline {subsection}{\numberline {6.4}\mbox {Feature Specification}}{54}{subsection.6.4}%
-\contentsline {subsubsection}{\numberline {6.4.1}\mbox {Secure Channel Establishment}}{54}{subsubsection.6.4.1}%
-\contentsline {subsubsection}{\numberline {6.4.2}\mbox {Identity Management}}{58}{subsubsection.6.4.2}%
-\contentsline {subsubsection}{\numberline {6.4.3}\mbox {Routing Algorithm}}{62}{subsubsection.6.4.3}%
-\contentsline {subsubsection}{\numberline {6.4.4}\mbox {Payload Structure and Protocol}}{64}{subsubsection.6.4.4}%
-\contentsline {subsubsection}{\numberline {6.4.5}\mbox {Peer Online Detection}}{68}{subsubsection.6.4.5}%
-\contentsline {section}{\numberline {7}System Implementation}{70}{section.7}%
-\contentsline {subsection}{\numberline {7.1}Technology Stack}{70}{subsection.7.1}%
-\contentsline {subsubsection}{\numberline {7.1.1}Programming Language: Kotlin}{70}{subsubsection.7.1.1}%
-\contentsline {subsubsection}{\numberline {7.1.2}IDE: Android Studio}{70}{subsubsection.7.1.2}%
-\contentsline {subsubsection}{\numberline {7.1.3}UI/UX Design: Figma and Kotlin}{70}{subsubsection.7.1.3}%
-\contentsline {subsubsection}{\numberline {7.1.4}Testing and Simulation: Android Studio Emulator}{71}{subsubsection.7.1.4}%
-\contentsline {subsubsection}{\numberline {7.1.5}Data Persistence: SQLite}{71}{subsubsection.7.1.5}%
-\contentsline {subsubsection}{\numberline {7.1.6}Connectivity: Android BLE}{71}{subsubsection.7.1.6}%
-\contentsline {subsection}{\numberline {7.2}Plan for Next Phase}{71}{subsection.7.2}%
-\contentsline {section}{\numberline {8}System Evaluation}{74}{section.8}%
-\contentsline {section}{\numberline {9}Conclusion}{75}{section.9}%
-\contentsline {subsection}{\numberline {9.1}Achievements}{75}{subsection.9.1}%
-\contentsline {subsection}{\numberline {9.2}Limitations}{75}{subsection.9.2}%
-\contentsline {subsection}{\numberline {9.3}Further improvements}{75}{subsection.9.3}%
-\contentsline {section}{References}{76}{subsection.9.3}%
+\contentsline {section}{\numberline {1}Introduction}{11}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Motivation}{11}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Objectives}{11}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Scope}{12}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Significance of the Project}{13}{subsection.1.4}%
+\contentsline {subsubsection}{\numberline {1.4.1}Significance from the Practical Perspectives}{13}{subsubsection.1.4.1}%
+\contentsline {subsubsection}{\numberline {1.4.2}Significance from the Scientific Perspectives}{13}{subsubsection.1.4.2}%
+\contentsline {subsection}{\numberline {1.5}Report structure}{14}{subsection.1.5}%
+\contentsline {section}{\numberline {2}Background Knowledge}{15}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Decentralized Communication Systems}{15}{subsection.2.1}%
+\contentsline {subsubsection}{\numberline {2.1.1}Peer-to-Peer Networks}{15}{subsubsection.2.1.1}%
+\contentsline {subsubsection}{\numberline {2.1.2}Comparison with Centralized Client--Server Architecture}{15}{subsubsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.2}Bluetooth Low Energy}{17}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Mesh Topology}{17}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Ring Topology}{17}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}Hierarchical Topology}{18}{subsubsection.2.3.2}%
+\contentsline {subsubsection}{\numberline {2.3.3}Decentralized Topology}{18}{subsubsection.2.3.3}%
+\contentsline {subsubsection}{\numberline {2.3.4}Hybrid Centralized--Decentralized Topology}{18}{subsubsection.2.3.4}%
+\contentsline {subsection}{\numberline {2.4}Cryptography and Security}{19}{subsection.2.4}%
+\contentsline {subsubsection}{\numberline {2.4.1}End-to-End Encryption}{19}{subsubsection.2.4.1}%
+\contentsline {subsubsection}{\numberline {2.4.2}Hash Functions}{20}{subsubsection.2.4.2}%
+\contentsline {subsubsection}{\numberline {2.4.3}Symmetric-Key Cryptography}{20}{subsubsection.2.4.3}%
+\contentsline {subsubsection}{\numberline {2.4.4}Asymmetric-Key Cryptography}{20}{subsubsection.2.4.4}%
+\contentsline {subsubsection}{\numberline {2.4.5}Key Exchange Mechanisms}{20}{subsubsection.2.4.5}%
+\contentsline {section}{\numberline {3}Related Work}{21}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Bitchat}{21}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Briar}{22}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Peer-to-Peer Networks for Content Sharing}{23}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}Gnutella v0.4: Early Development}{23}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}Gnutella v0.6: Later Development}{24}{subsubsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.4}Research Summary}{24}{subsection.3.4}%
+\contentsline {subsubsection}{\numberline {3.4.1}Overall Insights}{24}{subsubsection.3.4.1}%
+\contentsline {subsubsection}{\numberline {3.4.2}Opportunities and Challenges}{24}{subsubsection.3.4.2}%
+\contentsline {section}{\numberline {4}Requirements Elicitation}{26}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Functional requirements}{26}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Non-Functional Requirements}{27}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Data requirements}{28}{subsection.4.3}%
+\contentsline {section}{\numberline {5}System Analysis}{29}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Use Case Diagrams}{29}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}Whole system}{29}{subsubsection.5.1.1}%
+\contentsline {subsubsection}{\numberline {5.1.2}Bootstrapping}{30}{subsubsection.5.1.2}%
+\contentsline {subsubsection}{\numberline {5.1.3}Open single communication channel}{31}{subsubsection.5.1.3}%
+\contentsline {subsubsection}{\numberline {5.1.4}Process message}{32}{subsubsection.5.1.4}%
+\contentsline {subsubsection}{\numberline {5.1.5}Send message}{34}{subsubsection.5.1.5}%
+\contentsline {subsubsection}{\numberline {5.1.6}Fragmentation}{35}{subsubsection.5.1.6}%
+\contentsline {subsubsection}{\numberline {5.1.7}Form packet}{36}{subsubsection.5.1.7}%
+\contentsline {subsection}{\numberline {5.2}Use Case Description}{37}{subsection.5.2}%
+\contentsline {subsubsection}{\numberline {5.2.1}Use Case 1: Boostrapping}{37}{subsubsection.5.2.1}%
+\contentsline {subsubsection}{\numberline {5.2.2}Use Case 2: Open single communication channel}{39}{subsubsection.5.2.2}%
+\contentsline {subsubsection}{\numberline {5.2.3}Use Case 3: Process Message}{41}{subsubsection.5.2.3}%
+\contentsline {subsubsection}{\numberline {5.2.4}Use Case 4: Send Message}{43}{subsubsection.5.2.4}%
+\contentsline {subsubsection}{\numberline {5.2.5}Use Case 5: Fragmentation}{44}{subsubsection.5.2.5}%
+\contentsline {subsubsection}{\numberline {5.2.6}Use Case 6: Form Packet}{45}{subsubsection.5.2.6}%
+\contentsline {subsection}{\numberline {5.3}Activity Diagrams}{46}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}\mbox {Sequence Diagram}}{52}{subsection.5.4}%
+\contentsline {subsection}{\numberline {5.5}\mbox {Deployment Diagram}}{57}{subsection.5.5}%
+\contentsline {subsection}{\numberline {5.6}Class Diagram}{57}{subsection.5.6}%
+\contentsline {section}{\numberline {6}System Design}{58}{section.6}%
+\contentsline {subsection}{\numberline {6.1}\mbox {System Architecture}}{58}{subsection.6.1}%
+\contentsline {subsubsection}{\numberline {6.1.1}Comparison of Architecture Styles and Architecture Decision}{58}{subsubsection.6.1.1}%
+\contentsline {subsubsection}{\numberline {6.1.2}Data Flow Diagram}{60}{subsubsection.6.1.2}%
+\contentsline {subsubsection}{\numberline {6.1.3}\mbox {Mesh Topology in the System}}{60}{subsubsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.2}\mbox {Database Design}}{61}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}\mbox {User Interface Design}}{63}{subsection.6.3}%
+\contentsline {subsubsection}{\numberline {6.3.1}\mbox {Onboarding Screens}}{63}{subsubsection.6.3.1}%
+\contentsline {subsubsection}{\numberline {6.3.2}\mbox {User Profile}}{63}{subsubsection.6.3.2}%
+\contentsline {subsubsection}{\numberline {6.3.3}\mbox {User Manual}}{64}{subsubsection.6.3.3}%
+\contentsline {subsubsection}{\numberline {6.3.4}\mbox {Add a User}}{66}{subsubsection.6.3.4}%
+\contentsline {subsubsection}{\numberline {6.3.5}Send Messages}{67}{subsubsection.6.3.5}%
+\contentsline {subsubsection}{\numberline {6.3.6}Import and Export messages}{68}{subsubsection.6.3.6}%
+\contentsline {subsection}{\numberline {6.4}\mbox {Feature Specification}}{71}{subsection.6.4}%
+\contentsline {subsubsection}{\numberline {6.4.1}\mbox {Secure Channel Establishment}}{71}{subsubsection.6.4.1}%
+\contentsline {subsubsection}{\numberline {6.4.2}\mbox {Identity Management}}{75}{subsubsection.6.4.2}%
+\contentsline {subsubsection}{\numberline {6.4.3}\mbox {Routing Algorithm}}{78}{subsubsection.6.4.3}%
+\contentsline {subsubsection}{\numberline {6.4.4}\mbox {Payload Structure and Protocol}}{81}{subsubsection.6.4.4}%
+\contentsline {subsubsection}{\numberline {6.4.5}\mbox {Peer Online Detection}}{84}{subsubsection.6.4.5}%
+\contentsline {section}{\numberline {7}System Implementation}{87}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Technology Stack}{87}{subsection.7.1}%
+\contentsline {subsubsection}{\numberline {7.1.1}Programming Language: Kotlin}{87}{subsubsection.7.1.1}%
+\contentsline {subsubsection}{\numberline {7.1.2}IDE: Android Studio}{87}{subsubsection.7.1.2}%
+\contentsline {subsubsection}{\numberline {7.1.3}UI/UX Design: Figma and Kotlin}{87}{subsubsection.7.1.3}%
+\contentsline {subsubsection}{\numberline {7.1.4}Testing and Simulation: Android Studio Emulator}{88}{subsubsection.7.1.4}%
+\contentsline {subsubsection}{\numberline {7.1.5}Data Persistence: SQLite}{88}{subsubsection.7.1.5}%
+\contentsline {subsubsection}{\numberline {7.1.6}Connectivity: Android BLE}{88}{subsubsection.7.1.6}%
+\contentsline {subsection}{\numberline {7.2}Plan for Next Phase}{88}{subsection.7.2}%
+\contentsline {section}{\numberline {8}Conclusion}{91}{section.8}%
+\contentsline {section}{References}{93}{section.8}%

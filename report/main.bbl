@@ -1,5 +1,5 @@
 % $ biblatex auxiliary file $
-% $ biblatex bbl format version 3.3 $
+% $ biblatex bbl format version 3.2 $
 % Do not modify the above lines!
 %
 % This is an auxiliary file used by the 'biblatex' package.
@@ -18,8 +18,8 @@
 
 
 \refsection{0}
-  \datalist[entry]{none/apasortcite//global/global/global}
-    \entry{computerworld-2024}{online}{}{}
+  \datalist[entry]{none/apasortcite//global/global}
+    \entry{computerworld-2024}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=9a1e8192c627cfdc3d3acf60fad772bc}{%
            family={{Computerworld}},
@@ -27,12 +27,10 @@
       }
       \strng{namehash}{9a1e8192c627cfdc3d3acf60fad772bc}
       \strng{fullhash}{9a1e8192c627cfdc3d3acf60fad772bc}
-      \strng{fullhashraw}{9a1e8192c627cfdc3d3acf60fad772bc}
       \strng{bibnamehash}{9a1e8192c627cfdc3d3acf60fad772bc}
       \strng{authorbibnamehash}{9a1e8192c627cfdc3d3acf60fad772bc}
       \strng{authornamehash}{9a1e8192c627cfdc3d3acf60fad772bc}
       \strng{authorfullhash}{9a1e8192c627cfdc3d3acf60fad772bc}
-      \strng{authorfullhashraw}{9a1e8192c627cfdc3d3acf60fad772bc}
       \field{sortinit}{1}
       \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{extradatescope}{labelyear}
@@ -52,7 +50,7 @@
       \verb https://www.computerworld.com/article/1355655/whats-a-peer-to-peer-p2p-network.html
       \endverb
     \endentry
-    \entry{BluetoothRAD2023}{report}{}{}
+    \entry{BluetoothRAD2023}{report}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=4bb1b66bc92951a5255d52dc330fea92}{%
            family={{Bluetooth SIG Regulatory Expert Group}},
@@ -63,12 +61,10 @@
       }
       \strng{namehash}{4bb1b66bc92951a5255d52dc330fea92}
       \strng{fullhash}{4bb1b66bc92951a5255d52dc330fea92}
-      \strng{fullhashraw}{4bb1b66bc92951a5255d52dc330fea92}
       \strng{bibnamehash}{4bb1b66bc92951a5255d52dc330fea92}
       \strng{authorbibnamehash}{4bb1b66bc92951a5255d52dc330fea92}
       \strng{authornamehash}{4bb1b66bc92951a5255d52dc330fea92}
       \strng{authorfullhash}{4bb1b66bc92951a5255d52dc330fea92}
-      \strng{authorfullhashraw}{4bb1b66bc92951a5255d52dc330fea92}
       \field{sortinit}{2}
       \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
       \field{extradatescope}{labelyear}
@@ -93,7 +89,7 @@
       \verb https://www.bluetooth.com/
       \endverb
     \endentry
-    \entry{AndroidBLEOverview}{online}{}{}
+    \entry{AndroidBLEOverview}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=7ace771b22ac28958ff5694e260839cc}{%
            family={{Android Developers}},
@@ -101,12 +97,10 @@
       }
       \strng{namehash}{7ace771b22ac28958ff5694e260839cc}
       \strng{fullhash}{7ace771b22ac28958ff5694e260839cc}
-      \strng{fullhashraw}{7ace771b22ac28958ff5694e260839cc}
       \strng{bibnamehash}{7ace771b22ac28958ff5694e260839cc}
       \strng{authorbibnamehash}{7ace771b22ac28958ff5694e260839cc}
       \strng{authornamehash}{7ace771b22ac28958ff5694e260839cc}
       \strng{authorfullhash}{7ace771b22ac28958ff5694e260839cc}
-      \strng{authorfullhashraw}{7ace771b22ac28958ff5694e260839cc}
       \field{sortinit}{3}
       \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
       \field{extradatescope}{labelyear}
@@ -128,7 +122,7 @@
       \verb https://developer.android.com/develop/connectivity/bluetooth/ble/ble-overview
       \endverb
     \endentry
-    \entry{ding-2011}{book}{}{}
+    \entry{ding-2011}{book}{}
       \name{author}{3}{}{%
         {{un=0,uniquepart=base,hash=51b5796f1ad3e20548986bdbf4c83d74}{%
            family={Ding},
@@ -151,12 +145,10 @@
       }
       \strng{namehash}{674ca0637647203553ec85ff97f6e8ad}
       \strng{fullhash}{04e1e9f922dd13eff9d75ed71b4ff8e1}
-      \strng{fullhashraw}{04e1e9f922dd13eff9d75ed71b4ff8e1}
       \strng{bibnamehash}{04e1e9f922dd13eff9d75ed71b4ff8e1}
       \strng{authorbibnamehash}{04e1e9f922dd13eff9d75ed71b4ff8e1}
       \strng{authornamehash}{674ca0637647203553ec85ff97f6e8ad}
       \strng{authorfullhash}{04e1e9f922dd13eff9d75ed71b4ff8e1}
-      \strng{authorfullhashraw}{04e1e9f922dd13eff9d75ed71b4ff8e1}
       \field{sortinit}{4}
       \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
       \field{extradatescope}{labelyear}
@@ -182,7 +174,7 @@
       \verb https://doi.org/10.4018/978-1-59140-429-3.ch002
       \endverb
     \endentry
-    \entry{ibm-2025}{online}{}{}
+    \entry{ibm-2025}{online}{}
       \name{author}{1}{}{%
         {{un=1,uniquepart=given,hash=2dccacb26bd19bf713f7d065a306229e}{%
            given={Ibm},
@@ -191,12 +183,10 @@
       }
       \strng{namehash}{2dccacb26bd19bf713f7d065a306229e}
       \strng{fullhash}{2dccacb26bd19bf713f7d065a306229e}
-      \strng{fullhashraw}{2dccacb26bd19bf713f7d065a306229e}
       \strng{bibnamehash}{2dccacb26bd19bf713f7d065a306229e}
       \strng{authorbibnamehash}{2dccacb26bd19bf713f7d065a306229e}
       \strng{authornamehash}{2dccacb26bd19bf713f7d065a306229e}
       \strng{authorfullhash}{2dccacb26bd19bf713f7d065a306229e}
-      \strng{authorfullhashraw}{2dccacb26bd19bf713f7d065a306229e}
       \field{sortinit}{5}
       \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
       \field{extradatescope}{labelyear}
@@ -215,7 +205,7 @@
       \verb https://www.ibm.com/think/topics/end-to-end-encryption
       \endverb
     \endentry
-    \entry{bitchat}{online}{}{}
+    \entry{bitchat}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=ce0014b60876e3662053a3abea508cec}{%
            family={Dorsey},
@@ -226,12 +216,10 @@
       }
       \strng{namehash}{ce0014b60876e3662053a3abea508cec}
       \strng{fullhash}{ce0014b60876e3662053a3abea508cec}
-      \strng{fullhashraw}{ce0014b60876e3662053a3abea508cec}
       \strng{bibnamehash}{ce0014b60876e3662053a3abea508cec}
       \strng{authorbibnamehash}{ce0014b60876e3662053a3abea508cec}
       \strng{authornamehash}{ce0014b60876e3662053a3abea508cec}
       \strng{authorfullhash}{ce0014b60876e3662053a3abea508cec}
-      \strng{authorfullhashraw}{ce0014b60876e3662053a3abea508cec}
       \field{sortinit}{6}
       \field{sortinithash}{b33bc299efb3c36abec520a4c896a66d}
       \field{extradatescope}{labelyear}
@@ -252,7 +240,7 @@
       \verb https://github.com/permissionlesstech/bitchat
       \endverb
     \endentry
-    \entry{briarproject}{online}{}{}
+    \entry{briarproject}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=1fbfd9a5344683cd1cf0c40181cf1b1f}{%
            family={{Briar Project}},
@@ -260,12 +248,10 @@
       }
       \strng{namehash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \strng{fullhash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
-      \strng{fullhashraw}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \strng{bibnamehash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \strng{authorbibnamehash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \strng{authornamehash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \strng{authorfullhash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
-      \strng{authorfullhashraw}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \field{sortinit}{7}
       \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
       \field{extradatescope}{labelyear}
@@ -286,7 +272,7 @@
       \verb https://briarproject.org/
       \endverb
     \endentry
-    \entry{gnutellaSpecV0.4}{online}{}{}
+    \entry{gnutellaSpecV0.4}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=c7e63b499b96e656d82175b706283357}{%
            family={{Gnutella Developer Forum}},
@@ -294,12 +280,10 @@
       }
       \strng{namehash}{c7e63b499b96e656d82175b706283357}
       \strng{fullhash}{c7e63b499b96e656d82175b706283357}
-      \strng{fullhashraw}{c7e63b499b96e656d82175b706283357}
       \strng{bibnamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authorbibnamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authornamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authorfullhash}{c7e63b499b96e656d82175b706283357}
-      \strng{authorfullhashraw}{c7e63b499b96e656d82175b706283357}
       \field{extraname}{1}
       \field{sortinit}{8}
       \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
@@ -322,7 +306,7 @@
       \verb https://rfc-gnutella.sourceforge.net/developer/stable/
       \endverb
     \endentry
-    \entry{gnutella06draft}{online}{}{}
+    \entry{gnutella06draft}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=c7e63b499b96e656d82175b706283357}{%
            family={{Gnutella Developer Forum}},
@@ -330,12 +314,10 @@
       }
       \strng{namehash}{c7e63b499b96e656d82175b706283357}
       \strng{fullhash}{c7e63b499b96e656d82175b706283357}
-      \strng{fullhashraw}{c7e63b499b96e656d82175b706283357}
       \strng{bibnamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authorbibnamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authornamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authorfullhash}{c7e63b499b96e656d82175b706283357}
-      \strng{authorfullhashraw}{c7e63b499b96e656d82175b706283357}
       \field{extraname}{2}
       \field{sortinit}{9}
       \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
@@ -358,7 +340,7 @@
       \verb https://rfc-gnutella.sourceforge.net/src/rfc-0_6-draft.html
       \endverb
     \endentry
-    \entry{noiseprotocol}{report}{}{}
+    \entry{noiseprotocol}{report}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=94b0a8eff15435fc3fdb7b8e67526800}{%
            family={Perrin},
@@ -372,12 +354,10 @@
       }
       \strng{namehash}{94b0a8eff15435fc3fdb7b8e67526800}
       \strng{fullhash}{94b0a8eff15435fc3fdb7b8e67526800}
-      \strng{fullhashraw}{94b0a8eff15435fc3fdb7b8e67526800}
       \strng{bibnamehash}{94b0a8eff15435fc3fdb7b8e67526800}
       \strng{authorbibnamehash}{94b0a8eff15435fc3fdb7b8e67526800}
       \strng{authornamehash}{94b0a8eff15435fc3fdb7b8e67526800}
       \strng{authorfullhash}{94b0a8eff15435fc3fdb7b8e67526800}
-      \strng{authorfullhashraw}{94b0a8eff15435fc3fdb7b8e67526800}
       \field{sortinit}{1}
       \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{extradatescope}{labelyear}
@@ -401,7 +381,7 @@
       \verb https://noiseprotocol.org/noise.html
       \endverb
     \endentry
-    \entry{RFC5869}{report}{}{}
+    \entry{RFC5869}{report}{}
       \name{author}{2}{}{%
         {{un=0,uniquepart=base,hash=088445b3855bedf4bcc9d25651eb98b2}{%
            family={Krawczyk},
@@ -421,12 +401,10 @@
       }
       \strng{namehash}{7aa18e167d610292530e7275ce23cbbc}
       \strng{fullhash}{7aa18e167d610292530e7275ce23cbbc}
-      \strng{fullhashraw}{7aa18e167d610292530e7275ce23cbbc}
       \strng{bibnamehash}{7aa18e167d610292530e7275ce23cbbc}
       \strng{authorbibnamehash}{7aa18e167d610292530e7275ce23cbbc}
       \strng{authornamehash}{7aa18e167d610292530e7275ce23cbbc}
       \strng{authorfullhash}{7aa18e167d610292530e7275ce23cbbc}
-      \strng{authorfullhashraw}{7aa18e167d610292530e7275ce23cbbc}
       \field{sortinit}{1}
       \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{extradatescope}{labelyear}
@@ -453,8 +431,8 @@
       \endverb
     \endentry
   \enddatalist
-  \datalist[entry]{none/global//global/global/global}
-    \entry{computerworld-2024}{online}{}{}
+  \datalist[entry]{none/global//global/global}
+    \entry{computerworld-2024}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=9a1e8192c627cfdc3d3acf60fad772bc}{%
            family={{Computerworld}},
@@ -462,12 +440,10 @@
       }
       \strng{namehash}{9a1e8192c627cfdc3d3acf60fad772bc}
       \strng{fullhash}{9a1e8192c627cfdc3d3acf60fad772bc}
-      \strng{fullhashraw}{9a1e8192c627cfdc3d3acf60fad772bc}
       \strng{bibnamehash}{9a1e8192c627cfdc3d3acf60fad772bc}
       \strng{authorbibnamehash}{9a1e8192c627cfdc3d3acf60fad772bc}
       \strng{authornamehash}{9a1e8192c627cfdc3d3acf60fad772bc}
       \strng{authorfullhash}{9a1e8192c627cfdc3d3acf60fad772bc}
-      \strng{authorfullhashraw}{9a1e8192c627cfdc3d3acf60fad772bc}
       \field{sortinit}{1}
       \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{extradatescope}{labelyear}
@@ -487,7 +463,7 @@
       \verb https://www.computerworld.com/article/1355655/whats-a-peer-to-peer-p2p-network.html
       \endverb
     \endentry
-    \entry{BluetoothRAD2023}{report}{}{}
+    \entry{BluetoothRAD2023}{report}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=4bb1b66bc92951a5255d52dc330fea92}{%
            family={{Bluetooth SIG Regulatory Expert Group}},
@@ -498,12 +474,10 @@
       }
       \strng{namehash}{4bb1b66bc92951a5255d52dc330fea92}
       \strng{fullhash}{4bb1b66bc92951a5255d52dc330fea92}
-      \strng{fullhashraw}{4bb1b66bc92951a5255d52dc330fea92}
       \strng{bibnamehash}{4bb1b66bc92951a5255d52dc330fea92}
       \strng{authorbibnamehash}{4bb1b66bc92951a5255d52dc330fea92}
       \strng{authornamehash}{4bb1b66bc92951a5255d52dc330fea92}
       \strng{authorfullhash}{4bb1b66bc92951a5255d52dc330fea92}
-      \strng{authorfullhashraw}{4bb1b66bc92951a5255d52dc330fea92}
       \field{sortinit}{2}
       \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
       \field{extradatescope}{labelyear}
@@ -528,7 +502,7 @@
       \verb https://www.bluetooth.com/
       \endverb
     \endentry
-    \entry{AndroidBLEOverview}{online}{}{}
+    \entry{AndroidBLEOverview}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=7ace771b22ac28958ff5694e260839cc}{%
            family={{Android Developers}},
@@ -536,12 +510,10 @@
       }
       \strng{namehash}{7ace771b22ac28958ff5694e260839cc}
       \strng{fullhash}{7ace771b22ac28958ff5694e260839cc}
-      \strng{fullhashraw}{7ace771b22ac28958ff5694e260839cc}
       \strng{bibnamehash}{7ace771b22ac28958ff5694e260839cc}
       \strng{authorbibnamehash}{7ace771b22ac28958ff5694e260839cc}
       \strng{authornamehash}{7ace771b22ac28958ff5694e260839cc}
       \strng{authorfullhash}{7ace771b22ac28958ff5694e260839cc}
-      \strng{authorfullhashraw}{7ace771b22ac28958ff5694e260839cc}
       \field{sortinit}{3}
       \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
       \field{extradatescope}{labelyear}
@@ -563,7 +535,7 @@
       \verb https://developer.android.com/develop/connectivity/bluetooth/ble/ble-overview
       \endverb
     \endentry
-    \entry{ding-2011}{book}{}{}
+    \entry{ding-2011}{book}{}
       \name{author}{3}{}{%
         {{un=0,uniquepart=base,hash=51b5796f1ad3e20548986bdbf4c83d74}{%
            family={Ding},
@@ -586,12 +558,10 @@
       }
       \strng{namehash}{674ca0637647203553ec85ff97f6e8ad}
       \strng{fullhash}{04e1e9f922dd13eff9d75ed71b4ff8e1}
-      \strng{fullhashraw}{04e1e9f922dd13eff9d75ed71b4ff8e1}
       \strng{bibnamehash}{04e1e9f922dd13eff9d75ed71b4ff8e1}
       \strng{authorbibnamehash}{04e1e9f922dd13eff9d75ed71b4ff8e1}
       \strng{authornamehash}{674ca0637647203553ec85ff97f6e8ad}
       \strng{authorfullhash}{04e1e9f922dd13eff9d75ed71b4ff8e1}
-      \strng{authorfullhashraw}{04e1e9f922dd13eff9d75ed71b4ff8e1}
       \field{sortinit}{4}
       \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
       \field{extradatescope}{labelyear}
@@ -617,7 +587,7 @@
       \verb https://doi.org/10.4018/978-1-59140-429-3.ch002
       \endverb
     \endentry
-    \entry{ibm-2025}{online}{}{}
+    \entry{ibm-2025}{online}{}
       \name{author}{1}{}{%
         {{un=1,uniquepart=given,hash=2dccacb26bd19bf713f7d065a306229e}{%
            given={Ibm},
@@ -626,12 +596,10 @@
       }
       \strng{namehash}{2dccacb26bd19bf713f7d065a306229e}
       \strng{fullhash}{2dccacb26bd19bf713f7d065a306229e}
-      \strng{fullhashraw}{2dccacb26bd19bf713f7d065a306229e}
       \strng{bibnamehash}{2dccacb26bd19bf713f7d065a306229e}
       \strng{authorbibnamehash}{2dccacb26bd19bf713f7d065a306229e}
       \strng{authornamehash}{2dccacb26bd19bf713f7d065a306229e}
       \strng{authorfullhash}{2dccacb26bd19bf713f7d065a306229e}
-      \strng{authorfullhashraw}{2dccacb26bd19bf713f7d065a306229e}
       \field{sortinit}{5}
       \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
       \field{extradatescope}{labelyear}
@@ -650,7 +618,7 @@
       \verb https://www.ibm.com/think/topics/end-to-end-encryption
       \endverb
     \endentry
-    \entry{bitchat}{online}{}{}
+    \entry{bitchat}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=ce0014b60876e3662053a3abea508cec}{%
            family={Dorsey},
@@ -661,12 +629,10 @@
       }
       \strng{namehash}{ce0014b60876e3662053a3abea508cec}
       \strng{fullhash}{ce0014b60876e3662053a3abea508cec}
-      \strng{fullhashraw}{ce0014b60876e3662053a3abea508cec}
       \strng{bibnamehash}{ce0014b60876e3662053a3abea508cec}
       \strng{authorbibnamehash}{ce0014b60876e3662053a3abea508cec}
       \strng{authornamehash}{ce0014b60876e3662053a3abea508cec}
       \strng{authorfullhash}{ce0014b60876e3662053a3abea508cec}
-      \strng{authorfullhashraw}{ce0014b60876e3662053a3abea508cec}
       \field{sortinit}{6}
       \field{sortinithash}{b33bc299efb3c36abec520a4c896a66d}
       \field{extradatescope}{labelyear}
@@ -687,7 +653,7 @@
       \verb https://github.com/permissionlesstech/bitchat
       \endverb
     \endentry
-    \entry{briarproject}{online}{}{}
+    \entry{briarproject}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=1fbfd9a5344683cd1cf0c40181cf1b1f}{%
            family={{Briar Project}},
@@ -695,12 +661,10 @@
       }
       \strng{namehash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \strng{fullhash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
-      \strng{fullhashraw}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \strng{bibnamehash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \strng{authorbibnamehash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \strng{authornamehash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \strng{authorfullhash}{1fbfd9a5344683cd1cf0c40181cf1b1f}
-      \strng{authorfullhashraw}{1fbfd9a5344683cd1cf0c40181cf1b1f}
       \field{sortinit}{7}
       \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
       \field{extradatescope}{labelyear}
@@ -721,7 +685,7 @@
       \verb https://briarproject.org/
       \endverb
     \endentry
-    \entry{gnutellaSpecV0.4}{online}{}{}
+    \entry{gnutellaSpecV0.4}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=c7e63b499b96e656d82175b706283357}{%
            family={{Gnutella Developer Forum}},
@@ -729,12 +693,10 @@
       }
       \strng{namehash}{c7e63b499b96e656d82175b706283357}
       \strng{fullhash}{c7e63b499b96e656d82175b706283357}
-      \strng{fullhashraw}{c7e63b499b96e656d82175b706283357}
       \strng{bibnamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authorbibnamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authornamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authorfullhash}{c7e63b499b96e656d82175b706283357}
-      \strng{authorfullhashraw}{c7e63b499b96e656d82175b706283357}
       \field{extraname}{1}
       \field{sortinit}{8}
       \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
@@ -757,7 +719,7 @@
       \verb https://rfc-gnutella.sourceforge.net/developer/stable/
       \endverb
     \endentry
-    \entry{gnutella06draft}{online}{}{}
+    \entry{gnutella06draft}{online}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=c7e63b499b96e656d82175b706283357}{%
            family={{Gnutella Developer Forum}},
@@ -765,12 +727,10 @@
       }
       \strng{namehash}{c7e63b499b96e656d82175b706283357}
       \strng{fullhash}{c7e63b499b96e656d82175b706283357}
-      \strng{fullhashraw}{c7e63b499b96e656d82175b706283357}
       \strng{bibnamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authorbibnamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authornamehash}{c7e63b499b96e656d82175b706283357}
       \strng{authorfullhash}{c7e63b499b96e656d82175b706283357}
-      \strng{authorfullhashraw}{c7e63b499b96e656d82175b706283357}
       \field{extraname}{2}
       \field{sortinit}{9}
       \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
@@ -793,7 +753,7 @@
       \verb https://rfc-gnutella.sourceforge.net/src/rfc-0_6-draft.html
       \endverb
     \endentry
-    \entry{noiseprotocol}{report}{}{}
+    \entry{noiseprotocol}{report}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=94b0a8eff15435fc3fdb7b8e67526800}{%
            family={Perrin},
@@ -807,12 +767,10 @@
       }
       \strng{namehash}{94b0a8eff15435fc3fdb7b8e67526800}
       \strng{fullhash}{94b0a8eff15435fc3fdb7b8e67526800}
-      \strng{fullhashraw}{94b0a8eff15435fc3fdb7b8e67526800}
       \strng{bibnamehash}{94b0a8eff15435fc3fdb7b8e67526800}
       \strng{authorbibnamehash}{94b0a8eff15435fc3fdb7b8e67526800}
       \strng{authornamehash}{94b0a8eff15435fc3fdb7b8e67526800}
       \strng{authorfullhash}{94b0a8eff15435fc3fdb7b8e67526800}
-      \strng{authorfullhashraw}{94b0a8eff15435fc3fdb7b8e67526800}
       \field{sortinit}{1}
       \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{extradatescope}{labelyear}
@@ -836,7 +794,7 @@
       \verb https://noiseprotocol.org/noise.html
       \endverb
     \endentry
-    \entry{RFC5869}{report}{}{}
+    \entry{RFC5869}{report}{}
       \name{author}{2}{}{%
         {{un=0,uniquepart=base,hash=088445b3855bedf4bcc9d25651eb98b2}{%
            family={Krawczyk},
@@ -856,12 +814,10 @@
       }
       \strng{namehash}{7aa18e167d610292530e7275ce23cbbc}
       \strng{fullhash}{7aa18e167d610292530e7275ce23cbbc}
-      \strng{fullhashraw}{7aa18e167d610292530e7275ce23cbbc}
       \strng{bibnamehash}{7aa18e167d610292530e7275ce23cbbc}
       \strng{authorbibnamehash}{7aa18e167d610292530e7275ce23cbbc}
       \strng{authornamehash}{7aa18e167d610292530e7275ce23cbbc}
       \strng{authorfullhash}{7aa18e167d610292530e7275ce23cbbc}
-      \strng{authorfullhashraw}{7aa18e167d610292530e7275ce23cbbc}
       \field{sortinit}{1}
       \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{extradatescope}{labelyear}
