@@ -1,0 +1,93 @@
+\section{System Implementation}
+\subsection{Technology Stack}
+This section outlines the key technologies, programming languages, frameworks, and tools utilized in the development of the P2P chat application, each component is selected to meet the project's requirements.
+
+\subsubsection{Programming Language: Kotlin}
+The application is developed entirely in Kotlin, the modern, statically typed programming language recommended by many for Android development.
+\begin{itemize}
+    \item \textbf{Reason for selection:} Kotlin was chosen for its interoperability with Java and its modern syntax. Crucially for this project, Kotlin provides robust APIs for accessing BLE features and managing background services, which are critical for maintaining the mesh network while preserving battery life.
+    \item \textbf{Role:} Used for all backend logic (Mesh Manager, Fragmentation, Security) and frontend UI implementation.
+\end{itemize}
+
+\subsubsection{IDE: Android Studio}
+\textbf{Android Studio} serves as the primary development platform, providing a unified environment for coding, debugging, and building the application.
+\begin{itemize}
+    \item \textbf{Build System:} Gradle (used for dependency management and build automation).
+    \item \textbf{Role:} Facilitates the integration of Android SDK tools and manages the complex lifecycle of Android components (Activities, Services) required for the mesh architecture.
+\end{itemize}
+
+\subsubsection{UI/UX Design: Figma and Kotlin}
+The user interface design followed a two-step process to ensure a user-friendly experience for non-technical users in offline scenarios.
+\begin{itemize}
+    \item \textbf{Prototyping (Figma):} Figma was used to design high-fidelity wireframes and user flows before implementation.
+    \item \textbf{Implementation (Kotlin):} The Figma designs were translated into code using Kotlin (leveraging Android's UI toolkit). This ensures the interface is responsive and follows requirement guidelines for accessibility and dark mode support.
+\end{itemize}
+
+\subsubsection{Testing and Simulation: Android Studio Emulator}
+Testing a P2P mesh network requires validating connectivity between multiple nodes.
+\begin{itemize}
+    \item \textbf{Android Virtual Device:} The Android Studio Simulator is used to emulate different device configurations and screen sizes.
+    \item \textbf{Mesh Simulation:} While hardware testing is required for actual Bluetooth RF signals, the logic for packet routing, message fragmentation, and database storage is validated using the emulator's debugging tools to simulate application states and data flows.
+\end{itemize}
+
+\subsubsection{Data Persistence: SQLite}
+\begin{itemize}
+    \item \textbf{Technology:} SQLite (via the \"Room Persistence\" library).
+    \item \textbf{Role:} As indicated in the system design, the app requires local storage for the Peer Database (caching known routes and peer identities) and Chat Storage (saving message history offline). Room provides an abstraction layer over SQLite to allow robust database access while using Kotlin Coroutines for asynchronous queries.
+\end{itemize}
+
+\subsubsection{Connectivity: Android BLE}
+\begin{itemize}
+    \item \textbf{Technology:} BLE stack.
+    \item \textbf{Role:} The core transport layer relies on the native Android Bluetooth adapter to handle Advertising (broadcasting presence) and Scanning (discovering peers), enabling the infrastructure-independent communication required by the project scope.
+\end{itemize}
+
+\subsection{Plan for Next Phase}
+The development plan shown in table \ref{tab:plan} and the Gantt Chart of figure \ref{fig:phase_123}, \ref{fig:phase_456} and \ref{fig:phase_78}  is organized into eight sprints spanning from January to May 2026. Each sprint focuses on a specific phase of building a decentralized Bluetooth-based messaging app. The early sprints (1-4) concentrate on design finalization and foundational features such as account management, connectivity, and basic messaging. Mid-phase sprints (5-6) introduce security mechanisms, advanced routing, and complete group chat functionality. The final sprints (7-8) are dedicated to testing, optimization, feature refinement, and preparing the app for release and presentation.
+\begin{table}[H]
+\centering
+\caption{Project Development Plan by Sprint}
+\label{tab:plan}
+\begin{tabular}{|p{3cm}|p{6cm}|p{3cm}|p{3cm}|}
+\hline
+\textbf{Sprint} & \textbf{Task} & \textbf{Start Date} & \textbf{End Date} \\
+\hline
+Sprint 1 & Finalize design, class diagram, system architecture, UI/UX & 05/01/26 & 22/01/26 \\
+\hline
+Sprint 2 & Implement account features, data/packet processing, BLE connectivity & 23/01/26 & 11/02/26 \\
+\hline
+Sprint 3 & Routing, peer identity, messaging, continuous testing & 12/02/26 & 03/03/26 \\
+\hline
+Sprint 4 & Chat history, customization, peer management, group chat prototype & 04/03/26 & 23/03/26 \\
+\hline
+Sprint 5 & Packet scheduling, advanced routing, secure channels & 24/03/26 & 10/04/26 \\
+\hline
+Sprint 6 & Message queuing, TCP-like messaging, full group chat & 11/04/26 & 29/04/26 \\
+\hline
+Sprint 7 & Regression testing, beta testing & 30/04/26 & 08/05/26 \\
+\hline
+Sprint 8 & UI polishing, new features, release prep, deployment, report & 09/05/26 & 27/05/26 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Images/Gnatt Chart/Phase 1 2 3.png}
+    \caption{Gantt Chart of phase 1, 2 and 3}
+    \label{fig:phase_123}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Images/Gnatt Chart/Phase 4 5 6.png}
+    \caption{Gantt Chart of phase 4, 5 and 6}
+    \label{fig:phase_456}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Images/Gnatt Chart/Phase 7 8.png}
+    \caption{Gantt Chart of phase 7 and 8}
+    \label{fig:phase_78}
+\end{figure}

@@ -1,0 +1,131 @@
+\section{Related Work}
+
+This section reviews existing research and applications that address similar use cases to the proposed system. The surveyed works include applications that utilize peer-to-peer communication, Bluetooth Low Energy (BLE), and security mechanisms in distributed environments.
+
+\subsection{Bitchat}
+
+Bitchat \cite{bitchat}, developed by Jack Dorsey, is a decentralized P2P messaging application that employs a dual transport architecture. It supports local Bluetooth mesh networks for offline communication and the Internet-based Nostr protocol for global reach. This design enables operation in both connected environments and scenarios where internet access is unavailable, such as disasters or remote areas.
+
+Notable features of Bitchat include:
+\begin{itemize}
+    \item \textbf{End-to-End Encryption:} Uses the Noise Protocol Framework for authentication, key exchange, and forward secrecy within the Bluetooth mesh.
+    \item \textbf{Local Communication:} Direct P2P messaging within Bluetooth range.
+    \item \textbf{Multi-hop Relay:} Supports message forwarding across nearby devices, up to seven hops.
+    \item \textbf{Offline Capability:} Functions without internet connectivity.
+    \item \textbf{Binary Protocol:} Employs a compact packet format optimized for BLE constraints.
+    \item \textbf{Automatic Discovery:} Built-in peer discovery and connection management.
+    \item \textbf{Adaptive Power Management:} Battery-optimized duty cycling to reduce energy consumption.
+\end{itemize}
+
+\paragraph*{Advantages}
+\begin{itemize}
+    \item \textit{Dual communication modes:} Supports both offline Bluetooth mesh and online communication.
+    \item \textit{Strong security:} End-to-end encryption prevents unauthorized packet inspection.
+    \item \textit{Energy efficiency:} Designed for low power consumption on mobile devices.
+\end{itemize}
+
+\paragraph*{Disadvantages}
+\begin{itemize}
+    \item \textit{No peer presence detection:} Lacks mechanisms to determine peer availability beyond discovery.
+    \item \textit{Flooding vulnerability:} Susceptible to packet injection and denial-of-service attacks.
+    \item \textit{Limited identity management:} No robust peer verification in local communication.
+    \item \textit{No file sharing support:} Restricted to text-based messaging.
+\end{itemize}
+
+\subsection{Briar}
+
+Briar \cite{briarproject} is an open-source, P2P messaging application designed for secure and resilient communication. Unlike conventional messaging platforms, Briar does not rely on centralized servers. Instead, messages are synchronized directly between users' devices via Bluetooth, Wi-Fi, Tor over the internet, or removable storage such as USB drives.
+
+Key features of Briar include:
+\begin{itemize}
+    \item \textbf{End-to-End Encryption:} All communications are encrypted by default.
+    \item \textbf{Offline Communication:} Supports Bluetooth and Wi-Fi messaging without internet access.
+    \item \textbf{Tor Integration:} Routes traffic through the Tor network to provide anonymity.
+    \item \textbf{Decentralized Synchronization:} Data is stored in encrypted form on participating devices.
+    \item \textbf{Resilient Transport Options:} Supports data exchange via removable media.
+    \item \textbf{Open Source:} Released under the GPL-3.0 license.
+\end{itemize}
+
+\paragraph*{Advantages}
+\begin{itemize}
+    \item \textit{Strong privacy protections:} Encryption and Tor mitigate surveillance and censorship.
+    \item \textit{Offline capability:} Operates effectively in disaster or restricted environments.
+    \item \textit{Decentralized design:} Eliminates single points of failure.
+    \item \textit{Cross-platform support:} Available on Android with desktop versions for major operating systems.
+    \item \textit{Activist-oriented design:} Tailored for journalists and high-risk users.
+\end{itemize}
+
+\paragraph*{Disadvantages}
+\begin{itemize}
+    \item \textit{Limited discoverability:} Communication is restricted to pre-established contacts.
+    \item \textit{No peer online detection:} Lacks explicit presence indicators.
+    \item \textit{Feature limitations:} No support for voice or video communication.
+    \item \textit{Platform restriction:} Full functionality primarily available on Android.
+    \item \textit{Performance constraints:} Synchronization may be slower than centralized systems.
+\end{itemize}
+
+\subsection{Peer-to-Peer Networks for Content Sharing}
+
+P2P content sharing systems provide foundational insights into decentralized network behavior. One of the earliest and most influential examples is Gnutella, which pioneered large-scale decentralized file sharing.
+
+\subsubsection{Gnutella v0.4: Early Development}
+
+In its early versions, Gnutella v0.4 implemented a fully decentralized mesh network \cite{gnutellaSpecV0.4}. Key characteristics included:
+\begin{itemize}
+    \item \textbf{Bootstrapping:} New nodes joined the network by connecting to known peers.
+    \item \textbf{Ping and Pong messages:} Used as heartbeat packets to track peer liveness.
+    \item \textbf{Flooding and adaptive routing:} Queries were broadcast across the network to locate content.
+\end{itemize}
+
+\paragraph*{Advantages}
+\begin{itemize}
+    \item \textit{Guaranteed content discovery:} Flooding ensured that available content could eventually be found.
+\end{itemize}
+
+\paragraph*{Disadvantages}
+\begin{itemize}
+    \item \textit{Bottlenecks:} Weak peers could act as cut vertices, fragmenting the network.
+    \item \textit{Network overload:} Excessive control traffic reduced scalability and throughput.
+\end{itemize}
+
+\subsubsection{Gnutella v0.6: Later Development}
+
+To address scalability limitations, Gnutella v0.6 \cite{gnutella06draft} introduced a hybrid decentralized--centralized topology:
+\begin{itemize}
+    \item \textbf{Ultra nodes:} High-capacity peers responsible for most query processing.
+    \item \textbf{Normal peers:} Connected only to ultra nodes for data exchange.
+    \item \textbf{Peer-to-peer among ultra nodes:} Reduced flooding and improved routing efficiency.
+\end{itemize}
+
+This hybrid approach preserved decentralization while significantly improving scalability, reducing network overhead, and mitigating bottleneck risks.
+
+\subsection{Research Summary}
+
+\subsubsection{Overall Insights}
+
+Based on the analysis of existing applications and systems, several key insights emerge:
+\begin{itemize}
+    \item Few applications provide reliable messaging over Bluetooth-based P2P networks.
+    \item P2P innovation has shifted from early file-sharing systems toward blockchain, decentralized finance, decentralized social platforms, and secure messaging.
+\end{itemize}
+
+\subsubsection{Opportunities and Challenges}
+
+\paragraph*{Opportunities}
+\begin{itemize}
+    \item \textit{Dual communication modes:} Combining offline Bluetooth mesh and online communication fills a notable gap.
+    \item \textit{Shift in P2P innovation:} Advances in encryption and identity management can be leveraged.
+    \item \textit{Resilience in restricted environments:} Suitable for disaster recovery and censorship-heavy regions.
+    \item \textit{Privacy and security demand:} Increasing user concern over surveillance creates strong demand.
+    \item \textit{Niche market potential:} Activists, journalists, and low-connectivity communities form a viable user base.
+\end{itemize}
+
+\paragraph*{Challenges}
+\begin{itemize}
+    \item \textit{Unreliable connectivity:} Bluetooth suffers from limited range, bandwidth, and interference.
+    \item \textit{Limited adoption:} User trust and acceptance may be difficult to achieve.
+    \item \textit{Scalability issues:} Flooding and routing overhead remain significant challenges.
+    \item \textit{Security and trust management:} Identity verification and attack mitigation are non-trivial.
+    \item \textit{Feature limitations:} Rich media, file sharing, and presence detection are harder to implement.
+    \item \textit{Innovation gap:} Fewer active research communities focus on Bluetooth-based messaging systems.
+\end{itemize}

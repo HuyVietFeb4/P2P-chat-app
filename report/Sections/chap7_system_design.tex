@@ -1,0 +1,651 @@
+\section{System Design}
+\subsection{\mbox{System Architecture}}
+
+\subsubsection{Comparison of Architecture Styles and Architecture Decision}
+
+\indent \indent Since this project focuses on developing a mobile messaging application over a Bluetooth mesh network, only monolithic architectural styles are considered. This choice is motivated by the constraints of mobile environments, including limited resources, offline operation, and the need for tight integration between networking, security, and application logic.
+
+Table~\ref{tab:architecture-comparison} presents a comparison of three commonly used monolithic architecture styles and evaluates their suitability for the Meshenger system.
+
+\begin{table}[!htbp]
+\centering
+\caption{Comparison of Monolithic Architecture Styles}
+\label{tab:architecture-comparison}
+\renewcommand{\arraystretch}{1.25}
+
+\begin{tabularx}{\textwidth}{
+>{\raggedright\arraybackslash}p{2.2cm}
+>{\raggedright\arraybackslash}X
+>{\raggedright\arraybackslash}X
+>{\raggedright\arraybackslash}X
+}
+\toprule
+\textbf{Pattern} & \textbf{Pros} & \textbf{Cons} & \textbf{Meshenger Suitability} \\
+\midrule
+
+Layered &
+Clear separation of concerns (UI, business logic, data).
+Easy collaboration for teams with different specializations.
+Widely adopted and well understood.
+Supports modularity and maintainability.
+&
+Rigid dependencies between layers.
+Performance overhead if layering is overly strict.
+Changes may ripple across multiple layers.
+&
+\textbf{Highly suitable (Recommended).}
+Matches the team's diverse skills.
+Core services such as Networking, Security, Backend, and Frontend can be structured into layers, improving clarity, maintainability, and testability.
+\\
+
+\midrule
+
+Pipeline &
+Effective for data processing and transformations.
+Independent and reusable stages.
+Supports parallel execution.
+&
+Complex error handling.
+Management overhead for non-streaming tasks.
+&
+\textbf{Partially suitable.}
+Useful for packet transformation pipelines, but less effective for interactive and stateful components such as peer tables and message queues.
+\\
+
+\midrule
+
+Microkernel &
+Lightweight and stable core.
+Flexible through plug-ins and extensions.
+Suitable for frequent feature updates.
+&
+High complexity in plug-in contracts.
+Performance overhead due to indirection.
+Difficult to apply to tightly coupled services.
+&
+\textbf{Moderately suitable.}
+Appropriate for extensible modules, but introduces unnecessary complexity for core services where simplicity and stability are prioritized.
+\\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Based on the comparison, the layered architecture emerges as the most suitable choice for this project. In the context of Meshenger, each layer is designed as a collection of loosely coupled yet highly cohesive modules, ensuring a clear separation of responsibilities. This approach enhances maintainability and scalability while simplifying testing, as individual modules can be validated independently without affecting other layers of the system.
+\subsubsection{\mbox{Mesh Topology in the System}}
+
+\indent \indent For this project, two types of mesh topology are considered: fully decentralized and hybrid decentralized--centralized. The initial focus is on developing the application to support a fully decentralized topology. In this model, every device in the network functions both as a client and as a router. When a packet is received, the device processes it according to the routing algorithm, deciding whether to accept the packet if it is the intended recipient, drop it if it is invalid or redundant, or relay it to another device if forwarding is required. This approach ensures that all devices contribute equally to routing, resulting in a resilient and infrastructure-independent communication network.
+
+If sufficient time and resources are available, the application will be extended to support a hybrid decentralized--centralized topology. In this model, only devices with higher processing and networking capabilities act as routers, while weaker devices function solely as clients. Requests originating from client devices are routed through their assigned routers, which then forward packets to other routers according to the routing algorithm. This design reduces the computational and networking burden on weaker devices, mitigates bottlenecks, and helps prevent network fragmentation and excessive overhead caused by resource-constrained peers.
+
+To evaluate the effectiveness of these two topologies in a Bluetooth environment, a series of experiments will be conducted to measure key performance metrics, including bandwidth utilization, throughput, round-trip time (RTT), and packet dropping rate. By comparing these results, insights into the trade-offs between resilience and efficiency can be obtained, ultimately guiding the selection of the most practical topology for real-world deployment.
+\subsection{\mbox{Database Design}}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Images/Database/ERD.png}
+    \caption{Enhanced Entity-Relationship Diagram}
+\end{figure}
+
+The messaging application is modeled using an Enhanced Entity-Relationship (EER) diagram that captures the core components and their interactions. The system includes entities such as \texttt{chat}, \texttt{user}, and \texttt{message}, with specialized message types: \texttt{textMessage} and \texttt{fileMessage}. Users participate in chats via the \texttt{participate} relationship, which records roles and timestamps. Messages are linked to chats through the \texttt{has} relationship, and users interact with messages through \texttt{Send}, \texttt{Receive}, and \texttt{seenAndReact}, the latter capturing reactions and view times.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{Images/Database/Relation Entity.png}
+    \caption{Relational Entity Diagram}
+\end{figure}
+The chat application database is structured around several interconnected entities that support messaging functionality. The \texttt{User} entity stores user credentials and trust indicators, while \texttt{Chat} defines conversation spaces with metadata such as type and timestamps. User participation is tracked via the \texttt{UserParticipation} entity, which records roles, join times, and departure status. Messages are managed through the \texttt{Message} entity, linked to both sender and chat, and further extended by \texttt{TextMessage} and \texttt{FileMessage} for content specialization. Delivery is handled by the \texttt{MessageDelivery} entity, mapping messages to recipients. User interactions such as viewing and reacting are captured in the \texttt{SeenAndReact} entity, enabling feedback and engagement tracking. This schema ensures modularity, scalability, and clarity in managing peer-to-peer communication.
+
+\subsection{\mbox{User Interface Design}}
+
+\subsubsection{\mbox{Onboarding Screens}}
+After the user completes the installation of the Android application, the system displays four onboarding screens only once to introduce the chat application's services and features.
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}{0.23\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/onboard1.png}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.23\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/onboarding2.png}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.23\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/onboarding3.png}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.23\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Images/User Interface/onboarding4.png}
+    \end{minipage}
+    \caption{Four onboarding screens of the chat app}
+\end{figure}
+
+After the fourth onboarding screen, the “Get Started” button appears at the bottom-right corner, and the user is required to click it to navigate to the user profile editing section.
+
+\subsubsection{\mbox{User Profile}}
+Before navigating to the user profile section, the system shall check whether Bluetooth is enabled on the mobile device. If Bluetooth is not enabled, the system shall display a Bluetooth requirement notification prompting the user to enable Bluetooth first.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{Images/User Interface/bluetoothRequire.png}
+    \caption{Bluetooth Required Notification}
+\end{figure}
+
+If Bluetooth is enabled, the system shall render the user profile section, which includes a profile image and a username input field for profile initialization. Profile initialization is optional. If the user leaves the fields unchanged and selects the “Go to Chat” button, the system shall save the default profile image and the device name as the username in the local database. Otherwise, the system shall save the customized profile information.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{Images/User Interface/userProfile.png}
+    \caption{User Profile Section}
+\end{figure}
+
+\subsubsection{\mbox{User Manual}}
+After exiting the user profile section, the chat interface is rendered with the following layout:
+
+\begin{itemize}
+    \item \textbf{Header:} contains a \textit{Settings} button, a \textit{Chat} title, and an \textit{Add User} button.
+    
+    \item \textbf{Body:} contains a search bar for searching users and messaging accounts. By default, a \textit{Global Channel} is displayed for emergency purposes and cannot be deleted or blocked.
+    
+    \item \textbf{Bottom Navigation Bar:} contains an \textit{Import} button to import saved chat history, an \textit{Export} button to export the current chat history to a file (e.g., for device transfer), a \textit{Profile} button to view and edit the user profile, and an \textit{Instruction} button that provides a brief guide for new users.
+\end{itemize}
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.2\textwidth]{Images/User Interface/chatInterface.png}
+%     \caption{Chat App's Home Interface}
+% \end{figure}
+
+For new users or users who have just downloaded the application, the user manual shall be displayed immediately to guide them on how to use the app. The user manual consists of four guides corresponding to the four main features of the application: adding users, importing messages, exporting messages, and viewing and editing the user profile.
+% \begin{figure}[h]
+%     \centering
+%     \begin{minipage}{0.23\textwidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{Images/User Interface/addUserManual.png}
+%     \end{minipage}
+%     \hfill
+%     \begin{minipage}{0.23\textwidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{Images/User Interface/importManual.png}
+%     \end{minipage}
+%     \hfill
+%     \begin{minipage}{0.23\textwidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{Images/User Interface/exportManual.png}
+%     \end{minipage}
+%     \hfill
+%     \begin{minipage}{0.23\textwidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{Images/User Interface/profileManual.png}
+%     \end{minipage}
+%     \caption{Bluetooth Chat App User Manual}
+% \end{figure}
+
+If the user is unsure how to operate the application, they may select the “Instruction” button to display the user manual again.
+
+\subsubsection{\mbox{Add a user}}
+To add a new user to the network, the user shall select the “Add User” button located at the top-right corner of the home screen. The system supports two methods for adding users: network scanning and QR code scanning.
+
+% \begin{figure}[h]
+%     \centering
+%     \begin{subfigure}{0.3\textwidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{image1.png}
+%         \caption{Add User Screen}
+%         \label{fig:add-user}
+%     \end{subfigure}
+%     \hfill
+%     \begin{subfigure}{0.3\textwidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{image2.png}
+%         \caption{Device Scanning}
+%         \label{fig:device-scan}
+%     \end{subfigure}
+%     \hfill
+%     \begin{subfigure}{0.3\textwidth}
+%         \centering
+%         \includegraphics[width=\linewidth]{image3.png}
+%         \caption{QR Code Scanning}
+%         \label{fig:qr-scan}
+%     \end{subfigure}
+%     \caption{User adding methods in the chat application}
+%     \label{fig:add-user-methods}
+% \end{figure}
+
+
+For the Device Scanning method, a modal dialog shall be displayed, showing a list of nearby Bluetooth users in the network. After the user selects a user from the list, the system shall send a connection request to the selected user, who can accept or decline the request. If the request is sent successfully, the system shall display a success message to notify the user.
+\subsection{\mbox{Feature Specification}}
+
+\subsubsection{\mbox{Secure Channel Establishment}}\label{sec:secure-channel-establishment}
+
+\paragraph*{Introduction}
+The primary objective of the application is to guarantee secure communication between peers. All messages exchanged between users or within channels are protected by end-to-end encryption, ensuring that only the intended participants can access the content. To accommodate different usage scenarios and security requirements, the application supports three distinct types of communication channels with increasing levels of assurance.
+
+\paragraph*{Channel Types and Security Levels}
+
+\textbf{Global channel (Low-level security):}
+The global channel is designed for open communication among all devices connected to the network. Messages in this channel are protected using a basic symmetric encryption scheme managed by the application. To reduce the impact of potential key exposure, the symmetric key is periodically rotated whenever predefined update conditions are met. While this channel ensures confidentiality during transmission, it provides weaker security guarantees and should not be used for sensitive communication.
+
+\textbf{Secure channel without out-of-band verification (Medium-level security):}
+This channel provides stronger protection for one-to-one and group communication. Messages are encrypted end-to-end, and peers are authenticated at the device level within the network. However, the application cannot guarantee that the real-world identity of the user behind a device matches their claimed identity. Although cryptographic authenticity of devices is ensured, social impersonation remains possible. This channel balances usability and strong technical security.
+
+\textbf{Secure channel with out-of-band verification (High-level security):}
+This channel offers the highest level of security. In addition to end-to-end encryption and peer authentication, users verify each other’s identities through an external process such as QR code scanning to exchange public keys. By combining cryptographic guarantees with real-world verification, this channel provides strong protection against impersonation and malicious actors.
+
+\paragraph*{Noise Protocol Framework}
+
+The application adopts the Noise Protocol Framework \cite{noiseprotocol} as the foundation for secure channel establishment. Noise is a flexible cryptographic framework based on Diffie--Hellman key agreement, enabling two peers to establish a shared secret over an insecure channel. It defines structured handshake patterns that provide confidentiality, integrity, and authentication. Technical details of the framework are available in the official specification.
+
+A Noise handshake allows peers to agree on shared secrets, which are then expanded into session keys using key derivation functions and cryptographic hashing. These session keys are used to encrypt and authenticate all subsequent communication.
+
+\paragraph*{Handshake Pattern Fundamentals}
+
+A Noise handshake pattern consists of:
+\begin{itemize}
+    \item A pre-message pattern for the initiator, describing public keys known in advance by the responder.
+    \item A pre-message pattern for the responder, describing public keys known in advance by the initiator.
+    \item A sequence of message patterns exchanged during the handshake.
+\end{itemize}
+
+In Noise notation, the symbols $e$ and $s$ denote ephemeral and static public keys, respectively. The tokens $ee$, $es$, $se$, and $ss$ represent Diffie--Hellman operations, where the first letter corresponds to the initiator’s private key and the second letter to the responder’s public key.
+
+\paragraph*{Handshake Patterns Used in the Application}
+
+Based on the application requirements and QR-code-based key sharing, the following handshake patterns are employed:
+
+\textbf{XX pattern}
+\begin{verbatim}
+-> e
+<- e, ee, s, es
+-> s, se
+\end{verbatim}
+The XX pattern is the default mechanism for establishing a secure channel between two peers. It ensures end-to-end encryption and mutual authentication of static keys, but does not guarantee the physical authenticity of the device holding the key.
+
+\textbf{KK pattern}
+\begin{verbatim}
+-> s
+<- s
+...
+-> e, es, ss
+<- e, ee, se
+\end{verbatim}
+The KK pattern is used to reestablish secure channels between peers that have previously exchanged static keys. Its security depends on whether those keys were verified out-of-band.
+
+\textbf{XK pattern}
+\begin{verbatim}
+<- s
+...
+-> e, es
+<- e, ee
+-> s, se
+\end{verbatim}
+The XK pattern is applied during QR-code-based key sharing. If used immediately after key exchange, it establishes a high-security channel. If reused after a timeout, it provides asymmetric trust guarantees while preserving encryption.
+
+\paragraph*{Cryptographic Primitives}
+
+The cryptographic primitives selected for secure channel establishment are:
+\begin{itemize}
+    \item \textbf{Diffie--Hellman:} Curve25519
+    \item \textbf{Cipher:} ChaCha20-Poly1305
+    \item \textbf{Hash function:} SHA-256
+\end{itemize}
+
+\paragraph*{Rationale for the Design}
+
+The choice to apply three different handshake patterns instead of relying on a single one is driven by the need to support additional features, maintain performance, and ensure fault tolerance. In a mesh network, each device must be uniquely identifiable to its peers. Using a static key is the most effective solution, since cryptographic functions are widely supported across devices. Static keys not only provide a natural means of authentication between peers but also eliminate the need to design a new identifier system, similar to how MAC addresses uniquely identify devices in traditional networks.
+If only one handshake pattern were chosen, the XX pattern would be the best candidate. It offers end-to-end encryption and mutual authentication, covering nearly all requirements. However, XX requires three message exchanges. As the network grows, this increases the cost of establishing secure channels, since devices must process and relay more packets. For mobile devices where performance is critical, this overhead becomes a problem. To address this, the KK pattern are introduced. It require only two messages, which reduces computational and networking load while still supporting strong security features.
+To achieve higher security, the application incorporates out-of-band verification via QR code scanning, which leverages known static keys. In this scenario, XX is not ideal, since it does not take advantage of pre-shared keys. The KK pattern is better suited, as it reuses previously exchanged static keys and integrates out-of-band verification to strengthen authentication. Finally, there are cases where only one side successfully retrieves the other's static key, for example, if Alice obtains Bob's key but Bob fails to obtain Alice's. In such situations, the XK pattern ensures fault tolerance by establishing a secure channel that authenticates Bob's device to Alice, even though Bob cannot verify Alice's device.
+
+For selecting the Diffie-Hellman and cipher functions, the rationale is straightforward: since the target platform is Android mobile devices, the cryptographic primitives must be supported by the operating system’s libraries and deliver strong performance. Curve25519 for Diffie–Hellman and ChaCha20-Poly1305 for authenticated encryption are chosen because they provide modern, sufficient security while being highly efficient on mobile hardware. Compared to their counterparts, Curve448 and AES-GCM, they are faster, lighter on CPU, and better suited for devices with limited resources. Curve25519 uses smaller key sizes and simpler arithmetic, which reduces computational overhead, while ChaCha20-Poly1305 is designed to perform well even without dedicated hardware acceleration, making it ideal for mobile processors.
+For hash functions, SHA-256 is selected over SHA-512 primarily for performance reasons. Mobile devices often need to process large volumes of incoming and outgoing packets, and SHA-256’s smaller state size and lower computational cost make it more efficient in practice. While BLAKE2s and BLAKE2b can perform better SHA in certain benchmarks, compatibility across all Android devices is not guaranteed. SHA-256, on the other hand, is universally supported and optimized in Android’s cryptographic libraries.
+
+\subsubsection{\mbox{Identity Management}}
+
+The application employs a three-tier identity management framework designed to balance usability, routing functionality, and cryptographic assurance. Each tier provides a distinct level of trust and serves a specific role within the overall security architecture.
+
+\paragraph*{Three-Tier Identity Model}
+
+\textbf{Tier 1: Username:}
+The first tier consists of user-defined usernames. These identifiers are mutable and may be changed over time. As the least trusted tier, usernames are not cryptographically bound to either the device or the individual. Their primary function is usability, enabling users to recognize peers and initiate communication without providing any security guarantees.
+
+\textbf{Tier 2: Routing ID:}
+The second tier is the routing identifier, which functions as the operational address for packet delivery between peers. Routing IDs are dynamically refreshed either periodically or upon application restart. This dynamic behavior enables peer differentiation while concealing the long-term identity of devices. By rotating regularly, routing IDs mitigate tracking and correlation attacks, thereby contributing to privacy and forward secrecy. This tier provides a medium level of trust and is sufficient for routing purposes.
+
+\textbf{Tier 3: Static Public Key:}
+The third and most trusted tier is the static public key. This identifier uniquely binds a device within the network and serves as its definitive cryptographic identity. The static public key is used to derive routing IDs, establish secure communication channels, and anchor authentication mechanisms, providing strong cryptographic guarantees.
+
+\paragraph*{Username}
+
+Usernames are user-defined identifiers displayed in chat interfaces and peer discovery views. To ensure consistency and usability, usernames are restricted to a maximum length of 100 characters. While users are permitted to modify their usernames, a mandatory cooldown period of 48 hours is enforced between changes. This constraint prevents excessive modifications and supports stable peer recognition across the network.
+
+\paragraph*{Routing Identifier}
+
+Using a static public key directly as a routing identifier is undesirable, as prolonged observation of network traffic could allow adversaries to correlate packets and track specific devices. To mitigate this risk, the application employs a dynamic routing identifier referred to as the \textit{Mesh Protocol Address (MP Address)}. This approach conceals long-term identities while preserving routing functionality, conceptually similar to the role of IP addresses in traditional networks.
+
+Dynamic routing identifiers provide several important security properties:
+\begin{itemize}
+    \item \textbf{Replay protection:} Prevents reuse of captured identifiers outside their valid epoch.
+    \item \textbf{Proof of possession:} Ensures that only peers holding the corresponding private key can establish secure channels.
+    \item \textbf{Forward privacy:} Compromise of a single routing ID does not expose past or future identifiers.
+\end{itemize}
+
+\paragraph*{Mesh Protocol Address Properties}
+
+The Mesh Protocol Address is designed to satisfy several fundamental properties. First, it must be cryptographically bound to the device's static public key, ensuring that valid addresses cannot be generated without possession of the corresponding private key. Second, the derivation process must be strictly one-way, preventing recovery of the static key from the address. These properties form the basis for the secure channel establishment mechanisms described in Section~\ref{sec:secure-channel-establishment}.
+
+Additionally, the MP Address must be universally computable by any device running the application, given the required information. To achieve interoperability and decentralization, the address construction incorporates both static and dynamic components.
+
+\paragraph*{Mesh Protocol Address Design and Rationale}
+
+The MP Address derivation integrates static elements, including the device's public key, an application-specific salt, protocol metadata, and a static arbitrary key embedded within the application. These elements establish a strong cryptographic binding between the address and the device identity. Dynamic elements, primarily time-based epochs, introduce regular rotation to enhance privacy and reduce predictability.
+
+\paragraph*{Construction Flow of the Mesh Protocol Address}
+
+\textbf{Static part.}
+The static component includes the long-term static public key, protocol metadata, an application-specific salt, and an embedded arbitrary static key.
+
+\textbf{Dynamic part.}
+The dynamic component is defined by a time-based window derived from the current Unix time. Time is divided into fixed two-hour intervals, each corresponding to a unique epoch index. The MP Address is refreshed at each epoch.
+
+\textbf{Cryptographic function.}
+The routing identifier is derived using the HMAC-based Key Derivation Function (HKDF) \cite{RFC5869}. HKDF takes as input the hash of the static public key, the salt, protocol metadata, the hash of the static arbitrary key, and the epoch index, producing a one-way derived key securely bound to the original identity.
+
+\paragraph*{Address Beautification}
+
+To improve usability, the derived routing ID is transformed into a human-readable format resembling an IP address. Every two bytes of the derived key are grouped into an integer between 0 and 65535, forming an address of the form:
+\[
+X.X.X.X
+\]
+where each segment represents two bytes of the underlying key material.
+
+\paragraph*{Routing Identifier Formula}
+
+The MP Address is derived as follows:
+\begin{equation}
+\begin{aligned}
+\mathrm{MP\_Address}
+&= \mathrm{HKDF}\big( \\
+&\quad \mathrm{IKM} = \mathrm{SHA256}(\mathrm{PK}_{\text{peer}}), \\
+&\quad \mathrm{salt} = \mathrm{salt\_value}, \\
+&\quad \mathrm{info} = \mathrm{info\_prefix}
+    \parallel \mathrm{epoch}
+    \parallel \mathrm{SHA256}(\mathrm{PK}_{\text{app}}), \\
+&\quad \mathrm{length} = L
+\big)
+\end{aligned}
+\end{equation}
+
+\paragraph*{Static Public Key}
+
+The static public key is generated once during the initial launch of the application using a long-term Diffie--Hellman key pair based on the X25519 elliptic curve, as specified in the Noise Protocol Framework. This key serves as the definitive cryptographic identity of the device. It is used for authentication, secure channel establishment, and routing identifier derivation. For privacy reasons, the static public key is transmitted only in encrypted form during handshake procedures and is never exposed outside secure communication contexts.
+
+
+
+\subsubsection{\mbox{Routing Algorithm}}
+
+In a Bluetooth-based P2P mesh system, routing must operate under strict constraints such as low bandwidth, limited Maximum Transmission Unit (MTU), short-range connectivity, and frequent topology changes. Moreover, the system’s core use cases—including bootstrapping, peer discovery, message relaying, packet processing, and secure channel establishment—require low-latency forwarding, resilience to intermittent connectivity, minimal control overhead, and support for both unicast and broadcast transmission models.
+
+After evaluating multiple routing approaches, the system adopts \textit{Hybrid Multi-hop Forwarding Over Routing (HMFOR)} as the primary routing algorithm. HMFOR combines selective broadcast and opportunistic unicast forwarding to provide a lightweight and adaptive routing strategy optimized for Bluetooth Low Energy (BLE) environments. Unlike classical Mobile Ad Hoc Network (MANET) protocols, HMFOR does not rely on periodic link-state advertisements or explicit route discovery. Instead, it maintains minimal next-hop knowledge learned passively through normal packet exchanges.
+
+When a valid forwarding path exists, packets are transmitted using unicast to the known next hop. If no route information is available, the system falls back to controlled broadcast forwarding. This hybrid forwarding behavior aligns naturally with the system design and integrates seamlessly with existing mechanisms such as TTL reduction, packet cache filtering, duplicate suppression, and peer availability checks.
+
+\paragraph*{Comparison with Alternative Routing Algorithms}
+
+The following table summarizes the evaluated routing algorithms and highlights the rationale for selecting HMFOR.
+
+\begin{table}[!htbp]
+\centering
+\caption{Comparison of Routing Algorithms for BLE Mesh Networks}
+\label{tab:routing-algorithm-comparison}
+\renewcommand{\arraystretch}{1.25}
+
+\begin{tabularx}{\textwidth}{
+>{\raggedright\arraybackslash}p{3cm}
+>{\raggedright\arraybackslash}X
+>{\raggedright\arraybackslash}X
+>{\raggedright\arraybackslash}p{3cm}
+}
+\toprule
+\textbf{Algorithm} & \textbf{Pros} & \textbf{Cons} & \textbf{Suitability} \\
+\midrule
+
+Flooding &
+Very simple and highly resilient to topology changes. &
+Extremely high transmission overhead and poor scalability. &
+Limited \\
+
+Gossip &
+Lower overhead compared to flooding; probabilistic dissemination. &
+Reduced delivery ratio and unpredictable reliability. &
+Limited \\
+
+AODV &
+Efficient unicast routing after route establishment. &
+Heavy route discovery overhead; unsuitable for BLE constraints. &
+Not suitable \\
+
+DSR &
+Simple design using source routing; no periodic control messages. &
+Route caches become stale quickly in dynamic networks. &
+Not suitable \\
+
+OLSR &
+Low-latency routing with proactive maintenance. &
+Very high periodic control overhead and large routing tables. &
+Not suitable \\
+
+BATMAN &
+Fully decentralized and adaptive. &
+Requires large routing tables and frequent control traffic; not BLE-friendly. &
+Not suitable \\
+
+\textbf{HMFOR (Chosen)} &
+Hybrid broadcast and unicast forwarding; lightweight and BLE-optimized. &
+Slightly higher overhead than pure unicast routing. &
+\textbf{Best fit} \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph*{Core Operating Principles}
+
+\textbf{Opportunistic Route Learning:}
+HMFOR does not initiate explicit route discovery. Instead, routing knowledge is learned implicitly from packet forwarding. Each packet carries metadata including the source identifier, destination identifier, previous hop identifier, and a sequence number. By observing the previous hop, a receiving node learns potential next-hop information without generating additional control traffic. This information is stored in a lightweight next-hop table.
+
+\textbf{Hybrid Forwarding Strategy:}
+Forwarding decisions follow a two-tier approach. If a next-hop entry exists for the destination, the packet is forwarded via unicast, minimizing latency and energy consumption. If no route is known, the packet is forwarded using controlled broadcast, excluding the immediate sender to avoid trivial loops. Failed unicast attempts trigger route invalidation and immediate fallback to broadcast forwarding, enabling rapid self-healing.
+
+\textbf{Loop Prevention and Packet Management:}
+To prevent forwarding loops and excessive congestion, HMFOR employs Time-To-Live (TTL) control and duplicate suppression. Each packet carries a TTL value that is decremented at every hop and discarded upon reaching zero. Additionally, nodes maintain a cache of recently seen packet identifiers derived from the source identifier and sequence number. Duplicate packets are dropped immediately.
+
+\textbf{Neighbor Discovery and Maintenance:}
+Neighbor awareness is maintained through periodic lightweight bootstrap or presence packets with a TTL of one hop. Nodes track the last reception time of packets from each neighbor. If a neighbor becomes inactive beyond a predefined timeout, it is removed from the neighbor table, and dependent routes are invalidated automatically. This soft-state mechanism allows the network to adapt naturally to mobility.
+
+\textbf{Adaptive Route Refinement:}
+Routing paths are continuously refined through normal data traffic. Successful forwarding reinforces existing routes, leading to increased use of unicast forwarding over time. Conversely, topology changes naturally degrade stale routes. Failed transmissions result in route invalidation and rediscovery through broadcast, ensuring robustness without centralized coordination.
+
+\paragraph*{Algorithm Behavior Example}
+
+Consider a BLE mesh network consisting of nodes A, B, C, D, and E. Initially, node A has no routing information and broadcasts a packet with a bounded TTL. Intermediate nodes forward the packet while learning reverse paths. When the destination is reached, response packets follow the learned unicast path, reinforcing efficient routes. If an intermediate node becomes unreachable, the sender detects the failure, removes the stale route entry, and falls back to broadcast forwarding, allowing the network to rediscover an alternative path within a single transmission cycle.
+
+
+
+\subsubsection{\mbox{Payload Structure and Protocol}}
+
+This section provides a detailed description of the payload structure and the protocol design. The discussion begins with the payload structure, where each field is introduced, described, and assigned a specific purpose within the communication framework. This ensures that the role of every element in the payload is clearly defined and systematically documented.
+
+Following the payload description, the protocol distinguishes between two primary packet types: system packets and user packets. System packets are automatically generated and transmitted by the application to support core operations such as synchronization, routing, and security enforcement. In contrast, user packets are created exclusively in response to user input, serving as the medium for direct communication between peers. This separation of packet types ensures both operational reliability and user-driven interaction within the network.
+
+\paragraph*{Payload Structure}
+
+\textbf{Version.}
+Size: 2 bytes. 
+Purpose: Indicates the protocol version used for compatibility and parsing logic. The current version is \texttt{v1}.
+
+\textbf{Flag.}
+Size: 2 bytes. 
+Purpose: Identifies whether special handling is required for the packet.
+Valid values include \texttt{0x00} (no special treatment) and \texttt{0x01} (acknowledgment required).
+
+\textbf{Type.}
+Size: 4 bytes. 
+Purpose: Specifies the packet type (e.g., user message or system control) to guide processing behavior.
+
+\textbf{TTL (Time To Live).}
+Size: 2 bytes. 
+Purpose: Limits the lifespan of the packet across the network to prevent indefinite propagation.
+
+\textbf{Payload Length.}
+Size: 2 bytes. 
+Purpose: Defines the size of the payload in bytes for buffer allocation and parsing.
+
+\textbf{Total Fragments.}
+Size: 2 bytes. 
+Purpose: Indicates the total number of fragments belonging to the complete message, enabling segmentation and reassembly.
+
+\textbf{Fragment ID.}
+Size: 2 bytes. 
+Purpose: Identifies the index of the current fragment for correct message reassembly.
+
+\textbf{Timestamp.}
+Size: 8 bytes. 
+Purpose: Records the Unix time at which the packet was created, supporting ordering, expiration, and replay protection.
+
+\textbf{Receiver ID.}
+Size: 8 bytes. 
+Purpose: Contains the Mesh Protocol (MP) Address of the intended recipient. For broadcast packets, the value is set to
+\texttt{65535.65535.65535.65535}.
+
+\textbf{Sender ID.}
+Size: 8 bytes. 
+Purpose: Contains the MP Address of the sender and is used for reply routing and authentication.
+
+\textbf{Signature.}
+Size: 8 bytes. 
+Purpose: Stores a cryptographic signature used to verify the integrity and authenticity of the packet.
+For system packets, the signature is computed as a hash over the Sender ID, Receiver ID, Timestamp, Payload Hash, Fragment ID, and Packet Type. Upon reception, the hash is recomputed and compared; mismatched packets are discarded.
+For user packets, the signature is generated by signing the Sender ID, Receiver ID, Timestamp, Message ID, Packet Type, and Payload. At the receiver, the same fields are verified using the sender’s public key.
+
+\textbf{Payload.}
+Size: 0--396 bytes. 
+Purpose: Carries application-level data, which may include encrypted content or structured messages.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Images/System Design/PS.png}
+\end{figure}
+
+\paragraph*{Protocol}
+
+The protocol defines two primary categories of packets: \textit{system packets} and \textit{user packets}. System packets are generated automatically by the application to support network formation, routing, and security operations. User packets, in contrast, are created in response to explicit user actions and carry application-level communication data.
+
+\subparagraph*{System Packets}
+
+\textbf{Bootstrap Packet.}
+Type: \texttt{0x00}. 
+Purpose: Used to initiate network discovery and request to join the mesh network. This packet is broadcast in nature.
+Description: Upon application startup, the device scans for nearby peers running the same system. If detected, the application broadcasts bootstrap packets containing essential information such as the username, Mesh Protocol (MP) address, and routing-related attributes. These packets are transmitted periodically until an acknowledgment (ACK) is received or a predefined timeout is reached. Upon successful acknowledgment, the discovered peer information is displayed to the user. If the process fails, the user may manually re-initiate the bootstrap procedure.
+
+\textbf{Acknowledgment Packet (ACK).}
+Type: \texttt{0x01}. 
+Purpose: Confirms the successful reception of packets that require acknowledgment.
+Description: This packet is sent in response to any packet flagged as requiring acknowledgment. The payload contains only the signature field and is delivered directly to the original sender. When acknowledging user packets transmitted over secure channels, the ACK may be encrypted.
+
+\textbf{Session Packet.}
+Type: \texttt{0x02}. 
+Purpose: Supports secure channel establishment.
+Description: Session packets carry the necessary handshake data required to establish a secure channel between peers. Depending on the handshake stage, these packets may be encrypted, except for the initial message in certain handshake patterns (e.g., XX).
+
+\textbf{Control Packet.}
+Type: \texttt{0x03}. 
+Purpose: Exchanges network and routing-related information among peers.
+Description: Control packets disseminate knowledge about network topology and peer state, supporting routing decisions and protocol coordination.
+
+\subparagraph*{User Packets}
+
+\textbf{User Message Packet.}
+Type: \texttt{0x10}. 
+Purpose: Transmits user-generated messages.
+Description: The payload carries the user message to be delivered. When sent over a secure channel, the packet requires encryption and acknowledgment. A retransmission timer governs repeated delivery attempts until an ACK is received or a timeout occurs. Undelivered messages are placed in a queue and resent when the recipient is detected to be online, or may be manually retried or discarded by the user.
+
+\textbf{Seen or Reaction Packet.}
+Type: \texttt{0x11}. 
+Purpose: Indicates message read status or user reactions.
+Description: When a message is marked as seen or receives a reaction, a corresponding packet is generated and transmitted to the original sender. These packets require encryption and acknowledgment and follow the same reliability mechanisms as user message packets.
+
+\textbf{File Transfer Packet.}
+Type: \texttt{0x12}. 
+Purpose: Transfers file content between peers.
+Description: The payload contains raw file bytes. When transmitted over a secure channel, the packet requires encryption and acknowledgment and follows the same retransmission and reliability mechanisms as user message packets.
+
+\textbf{Reply or Quote Packet.}
+Type: \texttt{0x13}. 
+Purpose: Sends contextual replies referencing earlier messages.
+Description: The payload includes a reference to a prior message identifier along with new content. Delivery semantics are identical to those of user message packets.
+
+\paragraph*{Priority Order}
+
+This subsection defines the priority assigned to each packet type and provides the rationale behind the prioritization strategy.
+
+\begin{table}[!htbp]
+\centering
+\caption{Packet Priority Classification}
+\label{tab:packet-priority}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{
+>{\raggedright\arraybackslash}p{4cm}
+>{\raggedright\arraybackslash}p{2cm}
+>{\raggedright\arraybackslash}p{2.5cm}
+>{\raggedright\arraybackslash}X
+}
+\toprule
+\textbf{Packet Type} & \textbf{Code} & \textbf{Priority} & \textbf{Rationale} \\
+\midrule
+
+Bootstrap Packet & \texttt{0x00} & Medium &
+Required for initial network discovery and formation. \\
+
+Acknowledgment Packet & \texttt{0x01} & High &
+Ensures reliability and prevents unnecessary retransmissions. \\
+
+Session Packet & \texttt{0x02} & Medium &
+Essential for timely establishment of secure channels. \\
+
+Control Packet & \texttt{0x03} & Low &
+Supports routing and network awareness but is less time-sensitive. \\
+
+User Message Packet & \texttt{0x10} & High &
+Core communication functionality that must be delivered promptly. \\
+
+Seen / Reaction Packet & \texttt{0x11} & Low &
+User experience enhancement that can tolerate minor delays. \\
+
+File Transfer Packet & \texttt{0x12} & High &
+Involves large data transfer requiring prioritized and reliable delivery. \\
+
+Reply / Quote Packet & \texttt{0x13} & High &
+Provides contextual continuity, though slightly less urgent than direct messages. \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\subsubsection{\mbox{Peer Online Detection}}
+
+The peer online detection mechanism is implemented in a lightweight and decentralized manner. The system maintains a hash table of known peers, indexed by their Message Passing (MP) addresses and associated with their static public keys. These public keys may be exchanged through QR codes or established during previous communication sessions.
+
+To track peer activity, the system caches MP addresses observed in packets relayed through the network. Whenever a packet is received, the MP address of the sender or relay node is recorded, allowing the system to identify peers that have been recently active.
+
+By comparing the arrival time of the most recent packet from a peer with the current system time, the application computes a \textit{last seen} value, defined as:
+\begin{equation}
+\Delta t = t_{\text{now}} - t_{\text{arrive}}
+\end{equation}
+
+This time difference provides a simple yet effective approximation of peer presence. Although it does not guarantee continuous online availability, it enables the application to present meaningful activity indicators in a fully decentralized environment.

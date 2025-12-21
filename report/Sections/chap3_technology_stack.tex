@@ -1,0 +1,60 @@
+\section{Technology Stack}
+This section outlines the key technologies, programming languages, frameworks, and tools utilized in the development of the P2P chat application, each component is selected to meet the project's requirements.
+
+\subsection{Programming Language: Kotlin}
+The application is developed entirely in Kotlin, the modern, statically typed programming language recommended by many for Android development.
+\begin{itemize}
+    \item \textbf{Reason for selection:} Kotlin was chosen for its interoperability with Java and its modern syntax. Crucially for this project, Kotlin provides robust APIs for accessing BLE features and managing background services, which are critical for maintaining the mesh network while preserving battery life.
+    \item \textbf{Role:} Used for all backend logic (Mesh Manager, Fragmentation, Security) and frontend UI implementation.
+\end{itemize}
+
+\subsection{IDE: Android Studio}
+\textbf{Android Studio} serves as the primary development platform, providing a unified environment for coding, debugging, and building the application.
+\begin{itemize}
+    \item \textbf{Build System:} Gradle (used for dependency management and build automation).
+    \item \textbf{Role:} Facilitates the integration of Android SDK tools and manages the complex lifecycle of Android components (Activities, Services) required for the mesh architecture.
+\end{itemize}
+
+\subsection{UI/UX Design: Figma \& Kotlin}
+The user interface design followed a two-step process to ensure a user-friendly experience for non-technical users in offline scenarios.
+\begin{itemize}
+    \item \textbf{Prototyping (Figma):} Figma was used to design high-fidelity wireframes and user flows before implementation.
+    \item \textbf{Implementation (Kotlin):} The Figma designs were translated into code using Kotlin (leveraging Android's UI toolkit). This ensures the interface is responsive and follows requirement guidelines for accessibility and dark mode support.
+\end{itemize}
+
+\subsection{Testing and Simulation: Android Studio Emulator}
+Testing a P2P mesh network requires validating connectivity between multiple nodes.
+\begin{itemize}
+    \item \textbf{Android Virtual Device:} The Android Studio Simulator is used to emulate different device configurations and screen sizes.
+    \item \textbf{Mesh Simulation:} While hardware testing is required for actual Bluetooth RF signals, the logic for packet routing, message fragmentation, and database storage is validated using the emulator's debugging tools to simulate application states and data flows.
+\end{itemize}
+
+\subsection{Data Persistence: SQLite}
+\begin{itemize}
+    \item \textbf{Technology:} SQLite (via the \"Room Persistence\" library).
+    \item \textbf{Role:} As indicated in the system design, the app requires local storage for the Peer Database (caching known routes and peer identities) and Chat Storage (saving message history offline). Room provides an abstraction layer over SQLite to allow robust database access while using Kotlin Coroutines for asynchronous queries.
+\end{itemize}
+
+\subsection{Connectivity: Android BLE}
+\begin{itemize}
+    \item \textbf{Technology:} BLE stack.
+    \item \textbf{Role:} The core transport layer relies on the native Android Bluetooth adapter to handle Advertising (broadcasting presence) and Scanning (discovering peers), enabling the infrastructure-independent communication required by the project scope.
+\end{itemize}
+
+% \begin{table}[ht]
+%     \centering
+%     \caption{Visual Summary of Technology Stack}
+%     \label{tab:tech_stack}
+%     \renewcommand{\arraystretch}{1.2}
+%     \begin{tabular}{|l|l|p{6cm}|}
+%     \hline
+%     \textbf{Component} & \textbf{Technology} & \textbf{Purpose} \\ \hline
+%     Language & Kotlin & Core logic, BLE control, Battery efficiency \\ \hline
+%     IDE & Android Studio & Development, Debugging, Gradle build \\ \hline
+%     Design & Figma & UI Prototyping and Wireframing \\ \hline
+%     Frontend & Kotlin / XML & Implementing UI from Figma designs \\ \hline
+%     Database & SQLite (Room) & Storing Peer Cache and Chat History \\ \hline
+%     Testing & Android Virtual Device & Simulating app behavior and routing \\ \hline
+%     Networking & Android BLE API & Handling Mesh advertising and scanning \\ \hline
+%     \end{tabular}
+% \end{table}

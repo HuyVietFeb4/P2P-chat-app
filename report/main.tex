@@ -12,7 +12,6 @@
 % \usepackage{apacite}
 \usepackage[toc,page]{appendix}
 \usepackage{pifont,amssymb}
-\usepackage{sectionbreak}
 \newcommand{\emptysquare}{$\square$}
 \newcommand{\checkedsquare}{\makebox[0pt][l]{\raisebox{1pt}[0pt][0pt]{\large\hspace{1pt}\cmark}}$\square$}
 \newcommand{\cmark}{\ding{51}}
@@ -87,7 +86,12 @@
 \usepackage{hyperref}
 \hypersetup{urlcolor=blue,linkcolor=black,citecolor=black,colorlinks=true}
 \usepackage{listings}
-
+\usepackage{titlesec}
+\titleformat{\paragraph}
+  {\normalfont\normalsize\bfseries}
+  {\theparagraph}
+  {1em}
+  {}
 
 %\usepackage{pstcol} 								% PSTricks with the standard color package
 
@@ -200,9 +204,9 @@
 \onehalfspacing     % spacing between lines
 \setlength{\parskip}{7.5pt} % between paragraphs
 \setlength{\parindent}{7pt} % new para indentation
-\titlespacing*{\section}{0pt}{0pt}{0pt}
-\titlespacing*{\subsection}{0pt}{0pt}{0pt}
-\titlespacing*{\subsubsection}{0pt}{0pt}{0pt}
+\titlespacing*{\section}{0pt}{1.5em}{0.8em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.6em}
+\titlespacing*{\subsubsection}{0pt}{1em}{0.5em}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
@@ -256,7 +260,7 @@
 \fontsize{15}{12}\selectfont{
 \renewcommand{\arraystretch}{1.3}
 \begin{tabular}{rl}
-    \textbf{THESIS COMMITTEE:} & HCMUT. CompSience Council  \\
+    \textbf{THESIS COMMITTEE:} & HCMUT. CompScience Council  \\
     \textbf{SUPERVISOR:} & Assoc. Prof. Trương Tuấn Anh, PhD  \\
     \multicolumn{2}{c}{\textbf{---o0o---}} \\
     \textbf{STUDENT 1:} & Trần Trung Vĩnh (2252914) \\
@@ -315,7 +319,7 @@
 \begin{center}
     \textbf{\Large Abstract}
 \end{center}
-This project presents the design and development of a decentralized messaging and file-sharing application using a Bluetooth mesh network. The system enables communication in environments where conventional internet or cellular networks are unavailable, such as during natural disasters, protests, large public gatherings, or remote outdoor activities. The application supports peer-to-peer encrypted messaging and secure file transfers, ensuring user privacy and data protection. To enhance reliability and scalability, it utilizes multiple data transmission techniques—including relay, hopping, and flooding—allowing messages to propagate efficiently across devices within the mesh network. This solution demonstrates how local wireless connectivity can be leveraged to create a resilient, infrastructure-independent communication platform for emergency and off-grid scenarios.
+\indent \indent This project presents the design and development of a decentralized messaging and file-sharing application using a Bluetooth mesh network. The system enables communication in environments where conventional internet or cellular networks are unavailable, such as during natural disasters, protests, large public gatherings, or remote outdoor activities. The application supports peer-to-peer encrypted messaging and secure file transfers, ensuring user privacy and data protection. To enhance reliability and scalability, it utilizes multiple data transmission techniques—including relay, hopping, and flooding—allowing messages to propagate efficiently across devices within the mesh network. This solution demonstrates how local wireless connectivity can be leveraged to create a resilient, infrastructure-independent communication platform for emergency and off-grid scenarios.
 \newpage
 
 \begin{singlespace}
@@ -379,23 +383,25 @@ This project presents the design and development of a decentralized messaging an
 
 % \subsection{Report structure}
 
-\input{section/introduction.tex}
+\input{Sections/chap1_introduction.tex}
 \newpage
-\input{section/background_knowledge.tex}
+\input{Sections/chap2_background_knowledge.tex}
 \newpage
-\input{section/technology_stack.tex}
+% \input{Sections/chap3_technology_stack.tex}
+% \newpage
+\input{Sections/chap4_related_work.tex}
 \newpage
-\input{section/related_work.tex}
+\input{Sections/chap5_requirements_elicitation.tex}
 \newpage
-\input{section/requirements_elicitation.tex}
+\input{Sections/chap6_system_analysis.tex}
 \newpage
-\input{section/system_analysis.tex}
+\input{Sections/chap7_system_design.tex}
 \newpage
-\input{section/system_implementation.tex}
+\input{Sections/chap8_system_implementation.tex}
 \newpage
-\input{section/system_evaluation.tex}
+\input{Sections/chap9_system_evaluation.tex}
 \newpage
-\input{section/conclusion.tex}
+\input{Sections/chap10_conclusion.tex}
 \newpage
 % \section*{References}
 \addcontentsline{toc}{section}{References}

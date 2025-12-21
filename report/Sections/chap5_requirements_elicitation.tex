@@ -1,0 +1,86 @@
+\section{Requirements Elicitation}
+
+\subsection{Functional requirements}
+\subsubsection*{User Requirements}
+\begin{enumerate}[label=\textbf{U\arabic*.}]
+    \item \textbf{Bootstrapping:} Upon launching the application, the system shall automatically initiate device discovery and implicitly integrate nearby compatible devices into the mesh network without requiring manual configuration.
+    \item \textbf{Offline Chat:} Users shall be able to chat without an Internet connection.
+    \item \textbf{Peer Selection:} Users shall be able to choose who to chat with when the app detects nearby peers.
+    \item \textbf{User Profile:} Users shall be able to choose and change their nickname and profile picture.
+    \item \textbf{Favorites and Blocking:} Users shall be able to mark another person as a favorite or block them.
+    \item \textbf{Broadcast Messaging:} Users shall be able to send broadcast messages to nearby users (e.g., emergency alerts or announcements).
+    \item \textbf{Reply and Quote:} Users shall be able to reply to or quote specific messages.
+    \item \textbf{Chat History:} The system shall support chat history backup and export.
+    \item \textbf{Notifications:} The system shall provide chat notifications.
+    \item \textbf{Mute Options:} Users shall be able to mute group or peer notifications.
+    \item \textbf{Tutorial/Onboarding:} The system shall provide a tutorial or onboarding flow for first-time users.
+    \item \textbf{Appearance:} The system shall support dark mode and accessibility options.
+    \item \textbf{Relay Functionality:} The user’s device must help forward messages to other peers if it is not the destination.
+    \item \textbf{Peer Detection:} The system shall continuously monitor and maintain awareness of all active devices within the mesh network.
+    \item \textbf{Battery Saving:} The system shall provide a battery-saving mode.
+    \item \textbf{File Sharing:} The system shall support file sharing between users.
+\end{enumerate}
+
+\subsubsection*{Group Requirements (Optional for this semester)}
+\begin{enumerate}[label=\textbf{G\arabic*.}]
+    \item Users shall be able to create a group chat with multiple peers.
+    \item The group chat creator is a \textbf{Leader} and can appoint \( n-2 \) more \textbf{Co-Leaders}, where \( n \) is the total number of members.
+    \item Leaders and Co-Leaders can swap roles with members who have lower roles.
+    \item Leaders and Co-Leaders can set group chat status as:
+    \begin{itemize}
+        \item \textbf{Open} – anyone can join
+        \item \textbf{Restricted} – users must request to join
+        \item \textbf{Closed} – only whitelisted users can join
+    \end{itemize}
+    \item All peers can join or request to join groups and can also leave groups.
+    \item Join/Leave actions shall be displayed in the group.
+    \item Leaders and Co-Leaders can:
+    \begin{itemize}
+        \item Add or remove members
+        \item Change the group’s name and profile picture
+    \end{itemize}
+    \item The system shall support polls or voting for group decisions.
+    \item The system shall support group event scheduling (e.g., meetups in remote areas).
+\end{enumerate}
+
+\subsection{Non-Functional Requirements}
+
+\subsubsection*{Security}
+\begin{enumerate}[label=\textbf{S\arabic*.}]
+    \item All messages and data must be encrypted end-to-end using a secure protocol.
+    \item The system must ensure message and data traceability by reliably associating each transmission with its originating sender.
+    \item The system shall guarantee data integrity by preventing unauthorized modification or tampering.
+    \item The system shall support self-destructing messages or message expiration after 24 hours for sensitive communication.
+\end{enumerate}
+
+\subsubsection*{Scalability}
+\begin{enumerate}[label=\textbf{SC\arabic*.}]
+    \item The system must be able to handle a network of 100–500 nodes.
+\end{enumerate}
+
+\subsubsection*{Reliability}
+\begin{enumerate}[label=\textbf{R\arabic*.}]
+    \item The system must detect whether data has been successfully transferred.
+    \item The system must synchronize data between peers once both are online again.
+\end{enumerate}
+
+\subsubsection*{Performance}
+\begin{enumerate}[label=\textbf{P\arabic*.}]
+    \item Peer discovery should complete within 5 seconds under typical mesh conditions.
+    \item Message delivery latency should be under 1 second for nearby peers.
+\end{enumerate}
+
+\subsubsection*{Archivability}
+\begin{enumerate}[label=\textbf{A\arabic*.}]
+    \item The system shall persistently store user-associated messages on the user's device until explicitly deleted or modified by user-defined retention settings.
+    \item Messages not directly associated with the user shall be temporarily cached for up to 24 hours and automatically forwarded upon detection of the recipient's availability. Once delivered, cached messages shall be deleted automatically.
+\end{enumerate}
+
+\subsubsection*{Efficiency}
+\begin{enumerate}[label=\textbf{E\arabic*.}]
+    \item The app must minimize battery usage during idle mesh scanning.
+    \item Each message shall be limited to 1024 characters.
+    \item Bluetooth transmissions should be optimized to reduce unnecessary chatter.
+\end{enumerate}
+
+\subsection{Data requirements}
