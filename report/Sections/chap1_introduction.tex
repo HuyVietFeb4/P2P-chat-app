@@ -1,0 +1,82 @@
+\section{Introduction}
+\subsection{Motivation}
+\indent \indent Communication has always been a fundamental human need. The desire to exchange information quickly, spontaneously, and across any distance has driven innovation for centuries, from carrier pigeons and handwritten letters to the invention of the telephone, and later, computers that revolutionized global connectivity. Today, modern technology and infrastructure allow us to communicate with anyone around the world in a matter of seconds.
+
+However, there are situations where communication becomes critical but traditional infrastructure is unavailable or unreliable, such as natural disasters where internet and phone lines are destroyed or disrupted by floods, earthquakes, or storms; protests in which governments may deliberately restrict or shut down communication networks to limit coordination; large gatherings such as concerts or festivals where overloaded networks struggle to handle the surge of users; and remote activities like hiking or picnicking in isolated areas without mobile coverage.
+
+In these scenarios, when only smartphones are available and no centralized service exists to connect them, alternative communication methods are essential. Fortunately, modern smartphones support technologies that enable direct device-to-device connections. One such technology is Bluetooth Low Energy (BLE), which provides a foundation for resilient peer-to-peer (P2P) communication.
+
+This project, \textit{``Encrypted Peer-to-Peer Messaging App over Bluetooth Mesh Networks''}, is motivated by the need for a secure, privacy-preserving, and infrastructure-independent communication system. By leveraging BLE and integrating end-to-end encryption, the proposed application enables users to communicate directly, reliably, and privately even in the absence of mobile networks or Wi-Fi. The system is designed to ensure resilience in challenging environments, empowering individuals to stay connected when traditional infrastructure fails.
+
+\subsection{Objectives}
+\indent \indent The primary objectives of this project are as follows:
+
+\begin{itemize}
+    \item \textbf{To design and develop} a decentralized P2P messaging application using Bluetooth Mesh communication.
+    \item \textbf{To ensure security and privacy} through end-to-end encryption, authentication, and integrity protection.
+    \item \textbf{To support offline communication} in environments where internet or cellular networks are unavailable or unreliable.
+    \item \textbf{To optimize performance and battery efficiency} by using Bluetooth Low Energy (BLE) for background operation.
+    \item \textbf{To provide a user-friendly interface} that allows non-technical users to communicate easily without complex setup.
+    \item \textbf{To evaluate system scalability and reliability} across different real-world use cases such as disaster zones, remote communities, and crowded public events.
+\end{itemize}
+\subsection{Scope}
+\indent \indent The scope of this project includes the design, implementation, and testing of a Bluetooth Mesh-based communication system that enables short- to medium-range P2P messaging. The project focuses on local device-to-device networking without reliance on internet or mobile infrastructure.  
+
+Key features within the project scope include:
+\begin{itemize}
+    \item Bluetooth Mesh message routing, node discovery, and relay functionality.
+    \item End-to-end encryption for all transmitted data.
+    \item Text and small media (e.g., image) message exchange.
+    \item Android-based implementation using Kotlin and BLE APIs.
+\end{itemize}
+
+Out of scope for this project:
+\begin{itemize}
+    \item Integration with cloud or server-based systems.
+    \item Long-range or cross-network message relaying via the internet.
+    \item Support for iOS or other operating systems in the current version (planned for future expansion).
+\end{itemize}
+
+The project will thus deliver a fully functional Android prototype demonstrating secure, decentralized, and offline communication over Bluetooth Mesh networks.
+\subsection{Significance of the Project}
+
+\subsubsection{Significance from the Practical Perspectives}
+
+\indent \indent From a practical standpoint, the success of this project will deliver:
+\begin{itemize}
+    \item \textbf{Alternative communication solutions:} Offering users in challenging environments such as disaster zones, remote areas, or crowded events, a reliable means of communication when conventional infrastructure is unavailable.
+    
+    \item \textbf{A secure messaging platform:} Through end-to-end encryption, authentication, integrity protection, and identity management, users can be assured that their conversations remain private, trustworthy, and verifiable.
+    
+    \item \textbf{Scalable connectivity:} The system is designed to expand seamlessly as the number of users grows. Increased participation will not compromise reliability, ensuring that messages are consistently delivered without loss or delay.
+    
+    \item \textbf{Cost-effective deployment:} By leveraging existing smartphones, the solution reduces reliance on expensive satellite phones or specialized equipment, making secure communication more accessible.
+\end{itemize}
+
+\subsubsection{Significance from the Scientific Perspectives}
+
+\indent \indent From a scientific perspective, the success of this project will contribute to:
+\begin{itemize}
+    \item \textbf{Exploring alternative communication paradigms:} While current systems depend heavily on the internet, radio signals, phone lines, cellular networks, and satellite communication, this project demonstrates the feasibility of infrastructure-independent approaches.
+    
+    \item \textbf{Evaluating security and networking protocols:} Serving as a detailed case study, the project will generate experimental results and insights into the effectiveness of various cryptographic and communication protocols in decentralized environments.
+    
+    \item \textbf{Advancing trust and identity management research:} Investigating innovative methods for establishing and maintaining trust among peers in distributed networks, with implications for broader applications in secure systems.
+    
+    \item \textbf{Informing potential standardization:} The findings could contribute to the development of future standards for secure, decentralized communication protocols, shaping the next generation of resilient communication technologies.
+\end{itemize}
+
+\subsection{Report structure}
+This report is organized into nine chapters, structured as follows:
+
+\begin{itemize}
+    \item \textbf{Chapter 1: Introduction} outlines the motivation, objectives, scope, and significance of the project.
+    \item \textbf{Chapter 2: Background Knowledge} provides the theoretical foundation required to understand the system, including concepts of Bluetooth Mesh networking and P2P communication.
+    \item \textbf{Chapter 3: Technology Stack} details the software and tools used to develop the application, including the programming language, development environment, and key libraries.
+    \item \textbf{Chapter 4: Related Works} analyzes existing solutions and discusses how this project overcomes their limitations.
+    \item \textbf{Chapter 5: Requirements Elicitation} defines the functional and non-functional requirements of the system, identifying the needs of the users and the constraints of the environment.
+    \item \textbf{Chapter 6: System Analysis} presents the detailed analysis of the system using Use Case, Activity, and Sequence diagrams to model the system's behavior.
+    \item \textbf{Chapter 7: System Design} describes the architectural design, including the 5-layer system architecture and the assignment of software components to hardware.
+    \item \textbf{Chapter 8: System Implementation} demonstrates the actual development results, including the user interface and the realization of key features.
+    \item \textbf{Chapter 9: Conclusion} summarizes the project's achievements, discusses current limitations, and proposes directions for future improvements.
+\end{itemize}

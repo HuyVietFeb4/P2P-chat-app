@@ -3059,6 +3059,17 @@
     <bcf:datasource type="file" datatype="bibtex" glob="false">newrefs.bib</bcf:datasource>
   </bcf:bibdata>
   <bcf:section number="0">
+    <bcf:citekey order="1" intorder="1">computerworld-2024</bcf:citekey>
+    <bcf:citekey order="2" intorder="1">BluetoothRAD2023</bcf:citekey>
+    <bcf:citekey order="3" intorder="1">AndroidBLEOverview</bcf:citekey>
+    <bcf:citekey order="4" intorder="1">ding-2011</bcf:citekey>
+    <bcf:citekey order="5" intorder="1">ibm-2025</bcf:citekey>
+    <bcf:citekey order="6" intorder="1">bitchat</bcf:citekey>
+    <bcf:citekey order="7" intorder="1">briarproject</bcf:citekey>
+    <bcf:citekey order="8" intorder="1">gnutellaSpecV0.4</bcf:citekey>
+    <bcf:citekey order="9" intorder="1">gnutella06draft</bcf:citekey>
+    <bcf:citekey order="10" intorder="1">noiseprotocol</bcf:citekey>
+    <bcf:citekey order="11" intorder="1">RFC5869</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="none">

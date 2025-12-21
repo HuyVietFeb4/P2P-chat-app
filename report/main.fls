@@ -152,8 +152,6 @@ INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\psnfss\upsy.fd
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\psnfss\upsy.fd
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\psnfss\upsy.fd
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\symbol\psyr.tfm
-INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\sectionbreak\sectionbreak.sty
-INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\sectionbreak\sectionbreak.sty
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\vcell\vcell.sty
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\vcell\vcell.sty
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\tabularray\tabularray.sty
@@ -494,6 +492,11 @@ INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\biblatex\lbx\english.l
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\biblatex\lbx\english.lbx
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\biblatex\lbx\english.lbx
 OUTPUT main.bcf
+INPUT main.bbl
+INPUT .\main.bbl
+INPUT .\main.bbl
+INPUT .\main.bbl
+INPUT main.bbl
 INPUT .\main.out
 INPUT .\main.out
 INPUT main.out
@@ -542,7 +545,6 @@ INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\public\latex-fonts\las
 INPUT C:\Users\AD\AppData\Local\MiKTeX\fonts\map\pdftex\pdftex.map
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\vnr\vnbx12.tfm
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\vnr\vnbx12.tfm
-INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\vnr\vnti12.tfm
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmr8.tfm
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmr6.tfm
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmmi12.tfm
@@ -585,7 +587,15 @@ INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
 OUTPUT main.toc
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
@@ -593,6 +603,10 @@ INPUT .\Images\hcmut.png
 INPUT .\main.lof
 INPUT .\main.lof
 INPUT main.lof
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
 OUTPUT main.lof
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
@@ -606,11 +620,12 @@ INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
-INPUT .\section\introduction.tex
-INPUT .\section\introduction.tex
-INPUT section\introduction.tex
+INPUT .\Sections\chap1_introduction.tex
+INPUT .\Sections\chap1_introduction.tex
+INPUT Sections\chap1_introduction.tex
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\vnr\vnr12.tfm
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\vnr\vnbx12.tfm
+INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\vnr\vnti12.tfm
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\jknappen\ec\tcrm1200.tfm
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
@@ -620,30 +635,6 @@ INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
-INPUT .\section\background_knowledge.tex
-INPUT .\section\background_knowledge.tex
-INPUT section\background_knowledge.tex
-INPUT .\Images\hcmut.png
-INPUT .\Images\hcmut.png
-INPUT .\Images\hcmut.png
-INPUT .\Images\hcmut.png
-INPUT .\section\technology_stack.tex
-INPUT .\section\technology_stack.tex
-INPUT section\technology_stack.tex
-INPUT .\Images\hcmut.png
-INPUT .\Images\hcmut.png
-INPUT .\Images\hcmut.png
-INPUT .\Images\hcmut.png
-INPUT .\section\related_work.tex
-INPUT .\section\related_work.tex
-INPUT section\related_work.tex
-INPUT .\Images\hcmut.png
-INPUT .\Images\hcmut.png
-INPUT .\Images\hcmut.png
-INPUT .\Images\hcmut.png
-INPUT .\section\requirements_elicitation.tex
-INPUT .\section\requirements_elicitation.tex
-INPUT section\requirements_elicitation.tex
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
@@ -652,23 +643,112 @@ INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
+INPUT .\Sections\chap2_background_knowledge.tex
+INPUT .\Sections\chap2_background_knowledge.tex
+INPUT Sections\chap2_background_knowledge.tex
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
-INPUT .\section\system_analysis.tex
-INPUT .\section\system_analysis.tex
-INPUT section\system_analysis.tex
-INPUT .\Images\\Usecase Diagram\UD.png
-INPUT .\Images\\Usecase Diagram\UD.png
-INPUT .\Images\\Usecase Diagram\UD.png
-INPUT .\Images\\Usecase Diagram\UD.png
-INPUT .\Images\\Usecase Diagram\UD.png
-INPUT .\Images\\Usecase Diagram\UD.png
-INPUT .\Images\\Usecase Diagram\UD.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\Background Figure\RT.png
+INPUT .\Images\Background Figure\RT.png
+INPUT .\Images\Background Figure\RT.png
+INPUT .\Images\Background Figure\RT.png
+INPUT .\Images\Background Figure\RT.png
+INPUT .\Images\Background Figure\RT.png
+INPUT .\Images\Background Figure\RT.png
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\vnr\vnr10.tfm
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\vnr\vnbx10.tfm
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\vnr\vnti10.tfm
+INPUT .\Images\Background Figure\HT.png
+INPUT .\Images\Background Figure\HT.png
+INPUT .\Images\Background Figure\HT.png
+INPUT .\Images\Background Figure\HT.png
+INPUT .\Images\Background Figure\HT.png
+INPUT .\Images\Background Figure\HT.png
+INPUT .\Images\Background Figure\HT.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\Background Figure\DT.png
+INPUT .\Images\Background Figure\DT.png
+INPUT .\Images\Background Figure\DT.png
+INPUT .\Images\Background Figure\DT.png
+INPUT .\Images\Background Figure\DT.png
+INPUT .\Images\Background Figure\DT.png
+INPUT .\Images\Background Figure\DT.png
+INPUT .\Images\Background Figure\H-CT.png
+INPUT .\Images\Background Figure\H-CT.png
+INPUT .\Images\Background Figure\H-CT.png
+INPUT .\Images\Background Figure\H-CT.png
+INPUT .\Images\Background Figure\H-CT.png
+INPUT .\Images\Background Figure\H-CT.png
+INPUT .\Images\Background Figure\H-CT.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Sections\chap4_related_work.tex
+INPUT .\Sections\chap4_related_work.tex
+INPUT Sections\chap4_related_work.tex
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Sections\chap5_requirements_elicitation.tex
+INPUT .\Sections\chap5_requirements_elicitation.tex
+INPUT Sections\chap5_requirements_elicitation.tex
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Sections\chap6_system_analysis.tex
+INPUT .\Sections\chap6_system_analysis.tex
+INPUT Sections\chap6_system_analysis.tex
+INPUT .\Images\\Usecase Diagram\UD.png
+INPUT .\Images\\Usecase Diagram\UD.png
+INPUT .\Images\\Usecase Diagram\UD.png
+INPUT .\Images\\Usecase Diagram\UD.png
+INPUT .\Images\\Usecase Diagram\UD.png
+INPUT .\Images\\Usecase Diagram\UD.png
+INPUT .\Images\\Usecase Diagram\UD.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
@@ -739,6 +819,42 @@ INPUT .\Images\\Usecase Diagram\UD6.png
 INPUT .\Images\\Usecase Diagram\UD6.png
 INPUT .\Images\\Usecase Diagram\UD6.png
 INPUT .\Images\\Usecase Diagram\UD6.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
@@ -878,17 +994,201 @@ INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
+INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\vntex\t5cmtt.fd
+INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\vntex\t5cmtt.fd
+INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\tex\latex\vntex\t5cmtt.fd
+INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\vnr\vntt12.tfm
+INPUT .\Images\Class Diagram\Class Diagram.png
+INPUT .\Images\Class Diagram\Class Diagram.png
+INPUT .\Images\Class Diagram\Class Diagram.png
+INPUT .\Images\Class Diagram\Class Diagram.png
+INPUT .\Images\Class Diagram\Class Diagram.png
+INPUT .\Images\Class Diagram\Class Diagram.png
+INPUT .\Images\Class Diagram\Class Diagram.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
-INPUT .\Images\SystemArchitecture.png
-INPUT .\Images\SystemArchitecture.png
-INPUT .\Images\SystemArchitecture.png
-INPUT .\Images\SystemArchitecture.png
-INPUT .\Images\SystemArchitecture.png
-INPUT .\Images\SystemArchitecture.png
-INPUT .\Images\SystemArchitecture.png
+INPUT .\Sections\chap7_system_design.tex
+INPUT .\Sections\chap7_system_design.tex
+INPUT Sections\chap7_system_design.tex
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\Database\ERD.png
+INPUT .\Images\Database\ERD.png
+INPUT .\Images\Database\ERD.png
+INPUT .\Images\Database\ERD.png
+INPUT .\Images\Database\ERD.png
+INPUT .\Images\Database\ERD.png
+INPUT .\Images\Database\ERD.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\Database\Relation Entity.png
+INPUT .\Images\Database\Relation Entity.png
+INPUT .\Images\Database\Relation Entity.png
+INPUT .\Images\Database\Relation Entity.png
+INPUT .\Images\Database\Relation Entity.png
+INPUT .\Images\Database\Relation Entity.png
+INPUT .\Images\Database\Relation Entity.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\User Interface\onboarding1.png
+INPUT .\Images\User Interface\onboarding1.png
+INPUT .\Images\User Interface\onboarding1.png
+INPUT .\Images\User Interface\onboarding1.png
+INPUT .\Images\User Interface\onboarding1.png
+INPUT .\Images\User Interface\onboarding1.png
+INPUT .\Images\User Interface\onboarding1.png
+INPUT .\Images\User Interface\onboarding2.png
+INPUT .\Images\User Interface\onboarding2.png
+INPUT .\Images\User Interface\onboarding2.png
+INPUT .\Images\User Interface\onboarding2.png
+INPUT .\Images\User Interface\onboarding2.png
+INPUT .\Images\User Interface\onboarding2.png
+INPUT .\Images\User Interface\onboarding2.png
+INPUT .\Images\User Interface\onboarding3.png
+INPUT .\Images\User Interface\onboarding3.png
+INPUT .\Images\User Interface\onboarding3.png
+INPUT .\Images\User Interface\onboarding3.png
+INPUT .\Images\User Interface\onboarding3.png
+INPUT .\Images\User Interface\onboarding3.png
+INPUT .\Images\User Interface\onboarding3.png
+INPUT .\Images\User Interface\onboarding4.png
+INPUT .\Images\User Interface\onboarding4.png
+INPUT .\Images\User Interface\onboarding4.png
+INPUT .\Images\User Interface\onboarding4.png
+INPUT .\Images\User Interface\onboarding4.png
+INPUT .\Images\User Interface\onboarding4.png
+INPUT .\Images\User Interface\onboarding4.png
+INPUT .\Images\User Interface\bluetoothRequire.png
+INPUT .\Images\User Interface\bluetoothRequire.png
+INPUT .\Images\User Interface\bluetoothRequire.png
+INPUT .\Images\User Interface\bluetoothRequire.png
+INPUT .\Images\User Interface\bluetoothRequire.png
+INPUT .\Images\User Interface\bluetoothRequire.png
+INPUT .\Images\User Interface\bluetoothRequire.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\User Interface\userProfile.png
+INPUT .\Images\User Interface\userProfile.png
+INPUT .\Images\User Interface\userProfile.png
+INPUT .\Images\User Interface\userProfile.png
+INPUT .\Images\User Interface\userProfile.png
+INPUT .\Images\User Interface\userProfile.png
+INPUT .\Images\User Interface\userProfile.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\User Interface\chatInterface.png
+INPUT .\Images\User Interface\chatInterface.png
+INPUT .\Images\User Interface\chatInterface.png
+INPUT .\Images\User Interface\chatInterface.png
+INPUT .\Images\User Interface\chatInterface.png
+INPUT .\Images\User Interface\chatInterface.png
+INPUT .\Images\User Interface\chatInterface.png
+INPUT .\Images\User Interface\addUserManual.png
+INPUT .\Images\User Interface\addUserManual.png
+INPUT .\Images\User Interface\addUserManual.png
+INPUT .\Images\User Interface\addUserManual.png
+INPUT .\Images\User Interface\addUserManual.png
+INPUT .\Images\User Interface\addUserManual.png
+INPUT .\Images\User Interface\addUserManual.png
+INPUT .\Images\User Interface\importManual.png
+INPUT .\Images\User Interface\importManual.png
+INPUT .\Images\User Interface\importManual.png
+INPUT .\Images\User Interface\importManual.png
+INPUT .\Images\User Interface\importManual.png
+INPUT .\Images\User Interface\importManual.png
+INPUT .\Images\User Interface\importManual.png
+INPUT .\Images\User Interface\exportManual.png
+INPUT .\Images\User Interface\exportManual.png
+INPUT .\Images\User Interface\exportManual.png
+INPUT .\Images\User Interface\exportManual.png
+INPUT .\Images\User Interface\exportManual.png
+INPUT .\Images\User Interface\exportManual.png
+INPUT .\Images\User Interface\exportManual.png
+INPUT .\Images\User Interface\profileManual.png
+INPUT .\Images\User Interface\profileManual.png
+INPUT .\Images\User Interface\profileManual.png
+INPUT .\Images\User Interface\profileManual.png
+INPUT .\Images\User Interface\profileManual.png
+INPUT .\Images\User Interface\profileManual.png
+INPUT .\Images\User Interface\profileManual.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\User Interface\displayPeers.png
+INPUT .\Images\User Interface\displayPeers.png
+INPUT .\Images\User Interface\displayPeers.png
+INPUT .\Images\User Interface\displayPeers.png
+INPUT .\Images\User Interface\displayPeers.png
+INPUT .\Images\User Interface\displayPeers.png
+INPUT .\Images\User Interface\displayPeers.png
+INPUT .\Images\User Interface\successRequest.png
+INPUT .\Images\User Interface\successRequest.png
+INPUT .\Images\User Interface\successRequest.png
+INPUT .\Images\User Interface\successRequest.png
+INPUT .\Images\User Interface\successRequest.png
+INPUT .\Images\User Interface\successRequest.png
+INPUT .\Images\User Interface\successRequest.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\User Interface\chat.png
+INPUT .\Images\User Interface\chat.png
+INPUT .\Images\User Interface\chat.png
+INPUT .\Images\User Interface\chat.png
+INPUT .\Images\User Interface\chat.png
+INPUT .\Images\User Interface\chat.png
+INPUT .\Images\User Interface\chat.png
+INPUT .\Images\User Interface\chatNotification.png
+INPUT .\Images\User Interface\chatNotification.png
+INPUT .\Images\User Interface\chatNotification.png
+INPUT .\Images\User Interface\chatNotification.png
+INPUT .\Images\User Interface\chatNotification.png
+INPUT .\Images\User Interface\chatNotification.png
+INPUT .\Images\User Interface\chatNotification.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\User Interface\saveExport.png
+INPUT .\Images\User Interface\saveExport.png
+INPUT .\Images\User Interface\saveExport.png
+INPUT .\Images\User Interface\saveExport.png
+INPUT .\Images\User Interface\saveExport.png
+INPUT .\Images\User Interface\saveExport.png
+INPUT .\Images\User Interface\saveExport.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\User Interface\importProcess.png
+INPUT .\Images\User Interface\importProcess.png
+INPUT .\Images\User Interface\importProcess.png
+INPUT .\Images\User Interface\importProcess.png
+INPUT .\Images\User Interface\importProcess.png
+INPUT .\Images\User Interface\importProcess.png
+INPUT .\Images\User Interface\importProcess.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
@@ -901,19 +1201,127 @@ INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
-INPUT .\section\system_implementation.tex
-INPUT .\section\system_implementation.tex
-INPUT section\system_implementation.tex
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
-INPUT .\section\system_evaluation.tex
-INPUT .\section\system_evaluation.tex
-INPUT section\system_evaluation.tex
-INPUT .\section\conclusion.tex
-INPUT .\section\conclusion.tex
-INPUT section\conclusion.tex
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\System Design\PS.png
+INPUT .\Images\System Design\PS.png
+INPUT .\Images\System Design\PS.png
+INPUT .\Images\System Design\PS.png
+INPUT .\Images\System Design\PS.png
+INPUT .\Images\System Design\PS.png
+INPUT .\Images\System Design\PS.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Sections\chap8_system_implementation.tex
+INPUT .\Sections\chap8_system_implementation.tex
+INPUT Sections\chap8_system_implementation.tex
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\Gnatt Chart\Phase 1 2 3.png
+INPUT .\Images\Gnatt Chart\Phase 1 2 3.png
+INPUT .\Images\Gnatt Chart\Phase 1 2 3.png
+INPUT .\Images\Gnatt Chart\Phase 1 2 3.png
+INPUT .\Images\Gnatt Chart\Phase 1 2 3.png
+INPUT .\Images\Gnatt Chart\Phase 1 2 3.png
+INPUT .\Images\Gnatt Chart\Phase 1 2 3.png
+INPUT .\Images\Gnatt Chart\Phase 4 5 6.png
+INPUT .\Images\Gnatt Chart\Phase 4 5 6.png
+INPUT .\Images\Gnatt Chart\Phase 4 5 6.png
+INPUT .\Images\Gnatt Chart\Phase 4 5 6.png
+INPUT .\Images\Gnatt Chart\Phase 4 5 6.png
+INPUT .\Images\Gnatt Chart\Phase 4 5 6.png
+INPUT .\Images\Gnatt Chart\Phase 4 5 6.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\Gnatt Chart\Phase 7 8.png
+INPUT .\Images\Gnatt Chart\Phase 7 8.png
+INPUT .\Images\Gnatt Chart\Phase 7 8.png
+INPUT .\Images\Gnatt Chart\Phase 7 8.png
+INPUT .\Images\Gnatt Chart\Phase 7 8.png
+INPUT .\Images\Gnatt Chart\Phase 7 8.png
+INPUT .\Images\Gnatt Chart\Phase 7 8.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Sections\chap9_system_evaluation.tex
+INPUT .\Sections\chap9_system_evaluation.tex
+INPUT Sections\chap9_system_evaluation.tex
+INPUT .\Sections\chap10_conclusion.tex
+INPUT .\Sections\chap10_conclusion.tex
+INPUT Sections\chap10_conclusion.tex
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
+INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
 INPUT .\Images\hcmut.png
@@ -925,6 +1333,8 @@ INPUT main.run.xml
 OUTPUT main.run.xml
 INPUT C:\Users\AD\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\tcrm1200.pk
 INPUT C:\Users\AD\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\tcrm1200.pk
+INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmex10.pfb
+INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmex10.pfb
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmmi12.pfb
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmmi12.pfb
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr12.pfb
@@ -945,3 +1355,5 @@ INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\vntex\vnr\vnti10.pfb
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\vntex\vnr\vnti10.pfb
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\vntex\vnr\vnti12.pfb
 INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\vntex\vnr\vnti12.pfb
+INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\vntex\vnr\vntt12.pfb
+INPUT C:\Users\AD\AppData\Local\Programs\MiKTeX\fonts\type1\vntex\vnr\vntt12.pfb
