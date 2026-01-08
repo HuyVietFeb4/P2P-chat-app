@@ -1,0 +1,124 @@
+\section{Background Knowledge}
+
+\subsection{Decentralized Communication Systems}
+
+\subsubsection{Peer-to-Peer Networks}
+
+\indent \indent A P2P network is a decentralized system in which two or more computers are directly connected to exchange data. Unlike traditional client--server models, each computer in a P2P network can function as a client, a server, or both simultaneously. When a device joins the network, it can request data from other peers while also providing data to them, depending on the application in use.
+
+The applications of P2P networking are diverse and far-reaching. Early examples include file-sharing systems such as Napster and BitTorrent, which revolutionized digital content distribution. Today, P2P principles underpin critical technologies such as cryptocurrencies and blockchain platforms. \cite{computerworld-2024}
+
+\subsubsection{Comparison with Centralized Client--Server Architecture}
+
+\indent \indent Both centralized and decentralized architectures present distinct advantages and disadvantages when applied to messaging applications.
+
+\paragraph*{Centralized Client--Server Systems}
+\par
+\textbf{Advantages:}
+\begin{itemize}
+    \item \textit{Ease of governance:} Administrators can manage users, enforce policies, and moderate content through a central authority.
+    \item \textit{Simplified implementation:} Features such as chat history synchronization, group management, and data backup are straightforward to implement.
+    \item \textit{Performance optimization:} Central servers can be optimized to provide consistent latency and throughput.
+    \item \textit{Security control:} Uniform security policies are easier to enforce when all traffic passes through a single point.
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item \textit{Single point of failure:} Server outages, attacks, or maintenance can disrupt the entire system.
+    \item \textit{Limited scalability:} Rapid growth in users may cause congestion and degraded performance.
+    \item \textit{Data ownership concerns:} Without end-to-end encryption, service providers may access user data.
+    \item \textit{Censorship and surveillance risks:} Centralized control enables external intervention.
+    \item \textit{Infrastructure dependency:} Requires stable internet connectivity and server infrastructure.
+\end{itemize}
+
+\paragraph*{Decentralized Topologies}
+\par
+\textbf{Advantages:}
+\begin{itemize}
+    \item \textit{Scalability potential:} Each new peer contributes resources to the network.
+    \item \textit{High availability:} The absence of a central server reduces the risk of total system failure.
+    \item \textit{User data ownership:} End-to-end encryption preserves privacy without centralized control.
+    \item \textit{Resilience in restrictive environments:} Difficult to censor or shut down.
+    \item \textit{Cost efficiency:} No requirement for expensive centralized infrastructure.
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+    \item \textit{Implementation complexity:} Requires advanced routing, synchronization, and consistency algorithms.
+    \item \textit{Data integrity challenges:} Ensuring reliability across distributed peers is difficult.
+    \item \textit{Performance variability:} Latency and throughput depend on peer availability.
+    \item \textit{Security risks:} Malicious peers may disrupt communication without strong identity management.
+    \item \textit{Resource consumption:} Peer discovery and message relaying increase battery and CPU usage.
+\end{itemize}
+
+\subsection{Bluetooth Low Energy}
+
+\indent \indent Bluetooth Low Energy (BLE) was introduced in 2010 as an alternative to Bluetooth BR/EDR, specifically optimized for low power consumption \cite{BluetoothRAD2023}. This efficiency makes BLE well-suited for battery-constrained devices such as smartphones and IoT systems. On Android, BLE is supported through official APIs that enable device discovery, connection management, and data exchange.
+
+However, when devices communicate via BLE, transmitted data may be accessible to applications running on the same device, introducing potential security risks. To address this concern, the proposed system integrates strong cryptographic mechanisms to ensure that all exchanged data remains confidential and protected against unauthorized access or interception. \cite{AndroidBLEOverview}
+\subsection{Mesh Topology}
+
+\indent \indent Mesh networks allow devices to be organized in various configurations depending on system requirements. Commonly used topologies include:
+
+\subsubsection{Ring Topology}
+
+\indent \indent In a ring topology, devices are connected in a circular structure, as illustrated in Figure \ref{fig:ring_top}. This topology is effective when devices are physically close and is often used for load balancing and fault tolerance.
+\begin{figure}[!htbp]
+   \centering
+   \includegraphics[width=0.4\linewidth]{Images/Background Figure/RT.png}
+   \caption{Ring Topology}
+   \label{fig:ring_top}
+\end{figure}
+\subsubsection{Hierarchical Topology}
+
+\indent \indent Hierarchical topology organizes nodes into a tree-like structure, as shown in Figure \ref{fig:hie_top}. This approach is widely used in systems requiring governance and delegation, such as the Domain Name System (DNS).
+\begin{figure}[!htbp]
+   \centering
+   \includegraphics[width=0.4\linewidth]{Images/Background Figure/HT.png}
+   \caption{Hierarchical Topology}
+   \label{fig:hie_top}
+\end{figure}
+\subsubsection{Decentralized Topology}
+
+\indent \indent In a decentralized topology, any machine can connect directly to any other machine, as illustrated in Figure \ref{fig:decen_top}. To join the network, a peer typically begins by contacting and advertising itself to a neighboring peer — a process known as bootstrapping. Through bootstrapping, the peer may also receive additional network information depending on the application’s implementation. A well-known example of this topology is the early versions of the Gnutella file-sharing system, which relied on peers discovering and connecting to one another without centralized coordination.
+\begin{figure}[!htbp]
+   \centering
+   \includegraphics[width=0.4\linewidth]{Images/Background Figure/DT.png}
+   \caption{Decentralized Topology}
+   \label{fig:decen_top}
+\end{figure}
+\subsubsection{Hybrid Centralized--Decentralized Topology}
+
+\indent \indent The hybrid topology introduces a special type of peer known as a super peer. Super peers possess greater processing power and network capacity compared to regular peers. They primarily communicate with other super peers when transferring data, while ordinary peers connect to a super peer to access services. The super peer then handles processing and data transmission on their behalf. This topology, shown in Figure {number}, is exemplified by Internet email systems. Mail clients maintain decentralized relationships with specific mail servers, while the servers themselves exchange emails in a decentralized fashion similar to super nodes. \cite{ding-2011}
+\begin{figure}[!htbp]
+   \centering
+   \includegraphics[width=0.4\linewidth]{Images/Background Figure/H-CT.png}
+   \caption{Hybrid Centralized--Decentralized Topology}
+   \label{fig:hybrid_top}
+\end{figure}
+\subsection{Cryptography and Security}
+
+\subsubsection{End-to-End Encryption}
+
+End-to-end encryption (E2EE) is a secure communication technique in which a message is encrypted at the sender's device and remains encrypted while traversing the network, including any intermediate nodes. Only the intended recipient, possessing the correct decryption key, can decrypt and read the message. This ensures that no third party — including service providers, network operators, or potential attackers — can access the content of the communication \cite{ibm-2025}. Over the years, several protocols have been developed to support end-to-end encryption, including: 
+\begin{itemize}
+    \item \textbf{Signal Protocol} Widely adopted in modern messaging applications such as Signal, WhatsApp, and Facebook Messenger (secret chats). It provides strong security guarantees through the Double Ratchet algorithm, forward secrecy, and authentication. 
+    \item \textbf{TLS in E2EE mode} While Transport Layer Security (TLS) is commonly used to secure client-server communication, it can also be configured to provide end-to-end encryption between communicating parties. 
+    \item \textbf{Matrix Protocol (Olm/Megolm)} Used in decentralized messaging platforms like Element, supporting both one-to-one and group messaging with end-to-end encryption.
+\end{itemize}
+
+\subsubsection{Hash Functions}
+
+Hash functions convert arbitrary-length input into fixed-size outputs, enabling integrity verification. Common hash algorithms include SHA-2, SHA-3, and legacy algorithms such as MD5 and SHA-1, which are now considered insecure.
+
+\subsubsection{Symmetric-Key Cryptography}
+
+Symmetric-key algorithms use a single shared key for encryption and decryption. Popular examples include AES, DES (obsolete), and ChaCha20.
+
+\subsubsection{Asymmetric-Key Cryptography}
+
+Asymmetric-key cryptography employs public and private key pairs, enabling secure communication without prior key exchange. Widely used algorithms include RSA, ECC, and DSA.
+
+\subsubsection{Key Exchange Mechanisms}
+
+Key exchange protocols allow secure establishment of shared secrets over insecure channels. Notable mechanisms include Diffie--Hellman (DH), Elliptic Curve Diffie--Hellman (ECDH), and Internet Key Exchange (IKE).

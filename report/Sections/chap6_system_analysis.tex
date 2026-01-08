@@ -78,6 +78,253 @@ The <Create signature through metadata> use case is shown as an extension of the
 To further enhance security, the <Encrypt data with session key> use case is introduced as another extended relationship. This step ensures that the payload is encrypted before transmission using a shared session key between peers. This encryption maintains confidentiality, ensuring that only authorized nodes can read the message contents even though the mesh operates as a distributed network.\\
 Once the packet has been properly constructed, signed, and encrypted, it is ready to be transmitted. The Send packet to transport layer use case — connected via an include relationship — handles forwarding the completed packet to the underlying transport layer. This layer then manages the packet’s transmission across the mesh network, whether via unicast or broadcast, depending on the routing configuration.
 
+\subsection{Use Case Description}
+\subsubsection{Use Case 1: Boostrapping}
+
+\begin{longtable}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Use Case ID} & UC-01 \\ \hline
+\textbf{Use Case Name} & Bootstrapping - Device Network Connection \\ \hline
+\textbf{Actors} & 
+\begin{itemize}
+    \item Outsider Device (Primary Actor)
+    \item Devices in the Network (Secondary Actor)
+\end{itemize} \\ \hline
+\textbf{Description} & The bootstrapping process where an outsider device discovers, authenticates, and joins the Bluetooth mesh network. \\ \hline
+\textbf{Preconditions} & 
+\begin{itemize}
+    \item Bluetooth is enabled on both devices
+    \item Network devices are broadcasting
+    \item Application is installed
+\end{itemize} \\ \hline
+\textbf{Postconditions} & 
+\begin{itemize}
+    \item New device is provisioned and can communicate securely
+    \item Contact database is updated on all devices
+    \item User appears in network member list
+\end{itemize} \\ \hline
+\textbf{Main Flow} & 
+\begin{enumerate}
+    \item Outsider device scans for available networks
+    \item Network devices broadcast their presence
+    \item Outsider device displays list of discovered networks
+    \item User selects network and sends join request
+    \item Network device validates authentication credentials
+    \item Network device accepts request and sends provisioning data
+    \item Outsider device receives encryption keys and network configuration
+    \item All network devices update their contact database
+    \item System displays updated user list on all devices
+\end{enumerate} \\ \hline
+\textbf{Alternative Flow} & 
+\textbf{3a.} No devices found
+\begin{enumerate}
+    \item System displays "No devices found"
+    \item User can retry scanning
+\end{enumerate}
+
+\textbf{5a.} Authentication fails
+\begin{enumerate}
+    \item Network device declines the request
+    \item System sends rejection notification
+    \item Use case ends with failure
+\end{enumerate} \\ \hline
+\end{longtable}
+
+\subsubsection{Use Case 2: Open single communication channel}
+\begin{longtable}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Use Case ID} & UC-02 \\ \hline
+\textbf{Use Case Name} & Open Single Communication Channel \\ \hline
+\textbf{Actors} & User (Sender), User (Receiver) \\ \hline
+\textbf{Description} & Establishing a secure one-to-one communication channel between two users in the mesh network. \\ \hline
+\textbf{Preconditions} & 
+\begin{itemize}
+    \item Both users are provisioned in the network
+    \item Users are within mesh network range
+\end{itemize} \\ \hline
+\textbf{Postconditions} & 
+\begin{itemize}
+    \item Secure communication channel established
+    \item Both users can exchange encrypted messages
+    \item Connection status displayed to both users
+\end{itemize} \\ \hline
+\textbf{Main Flow} & 
+\begin{enumerate}
+    \item Sender opens the application
+    \item System displays list of available peers
+    \item Sender chooses peer from the list
+    \item System sends connection request to receiver
+    \item Receiver's device receives connection request
+    \item Receiver accepts the connection request
+    \item System establishes secure encrypted channel
+    \item System notifies both users of successful connection
+    \item Communication channel is ready for messaging
+\end{enumerate} \\ \hline
+\textbf{Alternative Flow} & 
+\textbf{2a.} No peers available
+\begin{enumerate}
+    \item System displays "No peers found"
+    \item System suggests scanning for new devices
+    \item Use case ends
+\end{enumerate}
+
+\textbf{6a.} Receiver declines connection
+\begin{enumerate}
+    \item Receiver selects decline option
+    \item System sends decline notification to sender
+    \item System displays "Connection declined" message
+    \item Use case ends without establishing channel
+\end{enumerate} \\ \hline
+
+\textbf{Exception Flow} & 
+\textbf{4a.} Connection timeout
+\begin{enumerate}
+    \item No response from receiver within 30 seconds
+    \item System notifies sender of timeout
+    \item Use case ends
+\end{enumerate}
+
+\textbf{7a.} Channel establishment fails
+\begin{enumerate}
+    \item System retries establishing secure channel
+    \item If retry fails, display error message
+    \item Use case ends
+\end{enumerate} \\ \hline
+\end{longtable}
+
+\subsubsection{Use Case 3: Process Message}
+\begin{longtable}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Use Case ID} & UC-03 \\ \hline
+\textbf{Use Case Name} & Process Message \\ \hline
+\textbf{Actor} & Device (System) \\ \hline
+\textbf{Description} & Receiving, validating, and routing incoming packets through the mesh network. \\ \hline
+\textbf{Preconditions} & Device is part of mesh network, packet received from another peer. \\ \hline
+\textbf{Postconditions} & Packet delivered to destination or forwarded to next hop. \\ \hline
+\textbf{Main Flow} & 
+\begin{enumerate}
+    \item Device receives packet from mesh network
+    \item System decreases packet TTL (Time-To-Live)
+    \item System checks packet TTL validity
+    \item System checks packet information (headers, integrity)
+    \item System checks packet cache for duplicates
+    \item System confirms packet routing path
+    \item System accepts packet for processing
+    \item System updates packet/contact database cache
+    \item System unicasts to known peer or forwards to destination
+\end{enumerate} \\ \hline
+\textbf{Alternative Flow} &
+\textbf{4a.} Sender is in block list
+\begin{enumerate}
+    \item System checks block list
+    \item System drops packet
+    \item Use case ends
+\end{enumerate}
+
+\textbf{5a.} Packet is duplicate (found in cache)
+\begin{enumerate}
+    \item System drops packet to prevent loop
+    \item Use case ends
+\end{enumerate}
+
+\textbf{7a.} Routing path unknown
+\begin{enumerate}
+    \item System broadcasts packet to mesh
+    \item Use case ends
+\end{enumerate} \\ \hline
+\textbf{Exception Flow} & 
+\textbf{3a.} TTL expired (reaches 0)
+\begin{enumerate}
+    \item System drops packet
+    \item Use case ends
+\end{enumerate}
+
+\textbf{4b.} Packet corrupted or invalid
+\begin{enumerate}
+    \item System drops packet
+    \item Use case ends
+\end{enumerate} \\ \hline
+\end{longtable}
+
+\subsubsection{Use Case 4: Send Message}
+\begin{longtable}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Use Case ID} & UC-04 \\ \hline
+\textbf{Use Case Name} & Send Message \\ \hline
+\textbf{Actor} & User \\ \hline
+\textbf{Description} & Sending encrypted message to peer(s) through the mesh network. \\ \hline
+\textbf{Preconditions} & User is connected to mesh network, communication channel established. \\ \hline
+\textbf{Postconditions} & Message delivered to recipient(s), delivery status confirmed. \\ \hline
+\textbf{Main Flow} & 
+\begin{enumerate}
+    \item User types message in channel
+    \item System forms encrypted packet
+    \item System checks packet cache to avoid duplication
+    \item System checks peer cache for recipient availability
+    \item System confirms peer's availability
+    \item System confirms optimal routing path
+    \item System unicasts message to known peer
+\end{enumerate} \\ \hline
+\textbf{Alternative Flow} & 
+\textbf{5a.} Peer not immediately available
+\begin{enumerate}
+    \item System buffers message until peer available
+    \item Message delivered when peer comes online
+\end{enumerate}
+
+\textbf{6a.} Direct path unavailable
+\begin{enumerate}
+    \item System broadcasts message through mesh
+    \item Message routed via intermediate peers
+\end{enumerate} \\ \hline
+\end{longtable}
+
+\subsubsection{Use Case 5: Fragmentation}
+\begin{longtable}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Use Case ID} & UC-05 \\ \hline
+\textbf{Use Case Name} & Fragmentation \\ \hline
+\textbf{Actor} & Device (System) \\ \hline
+\textbf{Description} & Breaking large data into smaller chunks to fit Bluetooth mesh packet size limits. \\ \hline
+\textbf{Preconditions} & Data ready to transmit, packet size threshold defined. \\ \hline
+\textbf{Postconditions} & Data fragmented into multiple packets ready for transmission. \\ \hline
+\textbf{Main Flow} & 
+\begin{enumerate}
+    \item Device receives data to transmit
+    \item System checks data size against threshold
+    \item System breaks data into smaller predefined chunks
+    \item System forms packets from each chunk
+\end{enumerate} \\ \hline
+\textbf{Alternative Flow} & 
+\textbf{2a.} Data size within threshold
+\begin{enumerate}
+    \item System forms single packet directly
+    \item Skip fragmentation step
+    \item Use case ends
+\end{enumerate} \\ \hline
+\end{longtable}
+
+\subsubsection{Use Case 6: Form Packet}
+\begin{longtable}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Use Case ID} & UC-06 \\ \hline
+\textbf{Use Case Name} & Form Packet \\ \hline
+\textbf{Actor} & Device (System) \\ \hline
+\textbf{Description} & Creating network packet with headers, encryption, and metadata for transmission. \\ \hline
+\textbf{Preconditions} & Data/request ready, session keys available. \\ \hline
+\textbf{Postconditions} & Complete encrypted packet ready for transport layer. \\ \hline
+\textbf{Main Flow} & 
+\begin{enumerate}
+    \item Device receives data or request
+    \item System fills out packet header (sender, receiver, timestamp, sequence)
+    \item System encrypts data with session key
+    \item System creates signature through metadata (integrity check)
+    \item System sends packet to transport layer
+\end{enumerate} \\ \hline
+\end{longtable}
+
+\newpage
+
 \subsection{Activity Diagrams}
 \begin{wrapfigure}{r}{0.6\textwidth}
   \begin{center}
@@ -110,10 +357,10 @@ The app continuously scans nearby devices over Bluetooth and reads each peer’s
 \begin{figure}[H]
     \centering  
     \includegraphics[width=0.5\linewidth]{Images//Activity Diagram/AD6.png}
-    \caption{Activity diagram: Form package}
+    \caption{Activity diagram: Form packet}
 \end{figure}
 
-\subsection{Sequence Diagrams}
+\subsection{\mbox{Sequence Diagram}}
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\linewidth]{Images//Sequence diagram/Bootstrapping.png}
@@ -139,95 +386,27 @@ The app continuously scans nearby devices over Bluetooth and reads each peer’s
     \includegraphics[width=1\linewidth]{Images//Sequence diagram/Form Packet.png}
 \end{figure}
 
-\subsection{Deployment diagram}
+\subsection{\mbox{Deployment Diagram}}
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\linewidth]{Images/Deployment Diagram/Deployment Diagram.drawio.png}
 \end{figure}
-This diagram shows the execution architecture of the hardware system and the assignment of software artifacts to the hardware. Each device (smartphone) runs the app, which includes several components: Interface, Mesh manager, Encryption engine, Data cache (message queue, encryption keys, etc). Devices communicate directly using BLE in a mesh topology. The Mesh manager handles discovery, relaying, and routing of the package while the encryption engine keeps things private.
-\newpage
-\section{System Design}
-\subsection{System Architecture}
-\begin{figure}[H]
+This diagram shows the execution architecture of the hardware system and the assignment of software artifacts to the hardware. Each device (smartphone) runs the app, which includes several components: Interface, Mesh manager, Encryption engine, Data cache (message queue, encryption keys, etc). Devices communicate directly using BLE in a mesh topology. The Mesh manager handles discovery, relaying, and routing of the payload while the encryption engine keeps things private.
+
+\subsection{Class Diagram}
+The Class Diagram illustrated depicts the static structure of the system, defining the attributes, operations, and relationships between the core components.
+
+This diagram combines the entities defined in the sequence diagrams into a unified architectural model. Key components include:
+\begin{itemize}
+    \item \textbf{UI Layer:} Represented by the \texttt{User} and \texttt{ChatBox} classes, handling user interactions.
+    \item \textbf{Mesh Logic:} The \texttt{MeshManager} acts as the central controller, coordinating with \texttt{BootstrappingController} for node discovery.
+    \item \textbf{Data Handling:} The \texttt{MessageProcessor} delegates specialized tasks to the \texttt{SecurityHandler} (encryption) and \texttt{FragmentationHandler} (packet sizing).
+    \item \textbf{Storage:} \texttt{ChatStorage} and \texttt{Cache} provide local persistence for messages and routing tables, essential for the offline capability.
+\end{itemize}
+
+\begin{figure}[ht]
     \centering
-    \includegraphics[width=0.3\linewidth]{Images/SystemArchitecture.png}
+    \includegraphics[width=\textwidth]{Images/Class Diagram/Class Diagram.png} 
+    \caption{System Class Diagram showing the relationships between the Mesh Manager, Controllers, and Data Entities.}
+    \label{fig:class_diagram}
 \end{figure}
-The system is structured into five interacting layers, each responsible for a set of tasks:
-
-\begin{itemize}
-    \item \textbf{Application layer}
-    \begin{itemize}
-        \item Provide user interface
-        \item Manage notifications
-    \end{itemize}
-
-    \item \textbf{Presentation layer}
-    \begin{itemize}
-        \item Handle formatting
-    \end{itemize}
-
-    \item \textbf{Session layer}
-    \begin{itemize}
-        \item Maintain active peer connection across the mesh
-        \item Control session establishment, routing, and sequencing between nodes
-        \item Manage acknowledgements, retransmission, and relay within the mesh
-    \end{itemize}
-
-    \item \textbf{Security layer}
-    \begin{itemize}
-        \item Implement end-to-end (E2E) security using cryptographic protocols
-        \item Manage keys, authentications, and data integrity
-    \end{itemize}
-
-    \item \textbf{Transport layer}
-    \begin{itemize}
-        \item Provide the BLE transport function
-        \item Handle advertising, scanning, connection establishment, and packet delivery
-    \end{itemize}
-\end{itemize}
-
-This architecture ensures that each function of the app is independent and replaceable, enhancing scalability and maintainability.
-
-\subsection{Technology Selection}
-\textbf{Why Kotlin?}
-
-On the Android platform, Kotlin provides the most control over BLE and background executions, which is critical for reliability and battery life. Kotlin is also a modern and productive platform with a wide range of APIs and available documentation. Scaling path is also a big reason why we chose the platform; the app can be upgraded or moved to iOS with minimal work.
-
-\textbf{Other Solutions}
-
-Some other solutions that can provide similar services have many disadvantages that our system can overcome.
-
-\begin{itemize}
-    \item \textbf{Conventional Internet-based messaging apps:}
-    \begin{itemize}
-        \item Require internet or mobile data.
-        \item Expose user metadata and routing paths to service providers.
-        \item Stop functioning in offline or low-connectivity environments (disasters, protests, rural areas).
-    \end{itemize}
-
-    \item \textbf{Local Wi-Fi or Hotspot:}
-    \begin{itemize}
-        \item Only provide short-range offline messaging.
-        \item High power consumption.
-        \item Often requires manual connection.
-    \end{itemize}
-
-    \item \textbf{SMS or Radio communication:}
-    \begin{itemize}
-        \item Depend on pre-existing infrastructure.
-        \item Not end-to-end encrypted, easily monitored or intercepted.
-        \item Limited in data capacity and flexibility for file or image sharing.
-    \end{itemize}
-\end{itemize}
-
-\textbf{Why Bluetooth Mesh is Superior}
-
-\begin{itemize}
-    \item \textbf{Fully Decentralized:} No servers, SIM cards, or internet needed. Every device becomes a node and relay, ensuring communication continues even when infrastructure fails.
-    \item \textbf{End-to-End Encryption:} Messages remain private and secure, even when relayed through other users’ phones.
-    \item \textbf{Energy-Efficient and Automatic:} Uses Bluetooth Low Energy (BLE) for background operation with minimal battery drain.
-    \item \textbf{Resilient and Scalable Mesh:} Messages hop through nearby peers; the more peers, the more reliable and powerful the system becomes.
-    \item \textbf{Privacy by Design:} No centralized storage or tracking; data stays local on the device.
-    \item \textbf{Perfect for Offline Scenarios:} Ideal for natural disasters, remote areas, festivals, protests, or emergency conditions.
-\end{itemize}
-\newpage
