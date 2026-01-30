@@ -1,0 +1,46 @@
+import { Image } from "expo-image";
+import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
+export default function Onboarding1() {
+    const { width, height } = useWindowDimensions();
+    return (
+        <>
+            <View style = {{ width: width, height: height * 0.7 }}>
+                <Image
+                    source={require('@/assets/images/onboarding1.png')}
+                    style={styles.imageStyle}
+                    contentFit="cover"
+                />
+            </View>
+
+            <View style = { styles.textContainer }>
+                <Text style = { styles.title}>Chat without Wifi or Internet</Text>
+                <Text style = { styles.subtitle }>Stay connected anywhere through Bluetooth Mesh — even when you’re offline.</Text>
+            </View>
+        </>
+    );
+}
+
+const styles = StyleSheet.create({
+    imageStyle: {
+        width: "100%",
+        height: "100%"
+    },
+
+    textContainer: {
+        alignItems: "center",
+        paddingHorizontal: 25,
+        marginTop: 20
+    },
+
+    title: {
+        fontSize: 20,
+        fontWeight: "600",
+        marginBottom: 10,
+        textAlign: "center"
+    },
+    subtitle: {
+        fontSize: 14,
+        textAlign: "center",
+        color: "#666"
+    }
+});
