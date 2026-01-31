@@ -3,7 +3,7 @@ import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 export default function Onboarding1() {
     const { width, height } = useWindowDimensions();
     return (
-        <>
+        <View style = {{ flex: 1}}>
             <View style = {{ width: width, height: height * 0.7 }}>
                 <Image
                     source={require('@/assets/images/onboarding1.png')}
@@ -16,7 +16,7 @@ export default function Onboarding1() {
                 <Text style = { styles.title}>Chat without Wifi or Internet</Text>
                 <Text style = { styles.subtitle }>Stay connected anywhere through Bluetooth Mesh — even when you’re offline.</Text>
             </View>
-        </>
+        </View>
     );
 }
 
@@ -27,20 +27,24 @@ const styles = StyleSheet.create({
     },
 
     textContainer: {
-        alignItems: "center",
+        flexShrink: 1,
         paddingHorizontal: 25,
-        marginTop: 20
+        marginTop: 20,
+        width: "100%"
     },
 
     title: {
+        flexShrink: 1,
         fontSize: 20,
         fontWeight: "600",
         marginBottom: 10,
-        textAlign: "center"
+        textAlign: "center",
     },
     subtitle: {
+        flexShrink: 1,
+        lineHeight: 20,
         fontSize: 14,
         textAlign: "center",
-        color: "#666"
+        color: "#666",
     }
 });
