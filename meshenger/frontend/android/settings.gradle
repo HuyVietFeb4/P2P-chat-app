@@ -31,14 +31,12 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
 }
 expoAutolinking.useExpoModules()
 
-rootProject.name = 'Meshenger'
+rootProject.name = 'meshenger'
 
 expoAutolinking.useExpoVersionCatalog()
 
 include ':app'
 include ':backend:application'
-include ':backend:session'
-include ':backend:network'
-include ':backend:ble'
+project(':backend:application').projectDir = new File(rootDir, '../../backend/application')
 
 includeBuild(expoAutolinking.reactNativeGradlePlugin)

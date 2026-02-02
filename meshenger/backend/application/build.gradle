@@ -9,5 +9,6 @@ android {
 }
 
 dependencies {
-    implementation project(':backend:session')
+    implementation "com.facebook.react:react-android"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }
