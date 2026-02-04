@@ -1,0 +1,21 @@
+@echo off
+"C:\\Users\\Viet\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\cmake.exe" ^
+  "-HC:\\AndroidStudioProjects\\P2P-chat-app\\meshenger\\session\\src\\main\\cpp" ^
+  "-DCMAKE_SYSTEM_NAME=Android" ^
+  "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" ^
+  "-DCMAKE_SYSTEM_VERSION=24" ^
+  "-DANDROID_PLATFORM=android-24" ^
+  "-DANDROID_ABI=arm64-v8a" ^
+  "-DCMAKE_ANDROID_ARCH_ABI=arm64-v8a" ^
+  "-DANDROID_NDK=C:\\Users\\Viet\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973" ^
+  "-DCMAKE_ANDROID_NDK=C:\\Users\\Viet\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973" ^
+  "-DCMAKE_TOOLCHAIN_FILE=C:\\Users\\Viet\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973\\build\\cmake\\android.toolchain.cmake" ^
+  "-DCMAKE_MAKE_PROGRAM=C:\\Users\\Viet\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe" ^
+  "-DCMAKE_CXX_FLAGS=-std=c++17 -fexceptions -frtti" ^
+  "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=C:\\AndroidStudioProjects\\P2P-chat-app\\meshenger\\session\\build\\intermediates\\cxx\\Debug\\5e6r4z1e\\obj\\arm64-v8a" ^
+  "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=C:\\AndroidStudioProjects\\P2P-chat-app\\meshenger\\session\\build\\intermediates\\cxx\\Debug\\5e6r4z1e\\obj\\arm64-v8a" ^
+  "-DCMAKE_BUILD_TYPE=Debug" ^
+  "-DCMAKE_FIND_ROOT_PATH=C:\\AndroidStudioProjects\\P2P-chat-app\\meshenger\\session\\.cxx\\Debug\\5e6r4z1e\\prefab\\arm64-v8a\\prefab" ^
+  "-BC:\\AndroidStudioProjects\\P2P-chat-app\\meshenger\\session\\.cxx\\Debug\\5e6r4z1e\\arm64-v8a" ^
+  -GNinja ^
+  "-DANDROID_STL=c++_shared"

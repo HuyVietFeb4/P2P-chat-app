@@ -1,0 +1,2 @@
+ninja: Entering directory `C:\AndroidStudioProjects\P2P-chat-app\meshenger\session\.cxx\Debug\5a502l55\armeabi-v7a'
+ninja: no work to do.
