@@ -1,1 +1,1 @@
-com.meshenger.backend.application
+com.meshenger.network.application

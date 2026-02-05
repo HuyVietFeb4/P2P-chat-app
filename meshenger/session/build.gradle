@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace "com.meshenger.backend.session"
+    namespace "com.meshenger.network.session"
     compileSdkVersion 34
 
     defaultConfig {

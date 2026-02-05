@@ -1,3 +1,15 @@
 # ninja log v5
-1	568	7919180845776282	CMakeFiles/session.dir/HelloWorld.cpp.o	e2a1d6195c5706e3
-573	681	7919180846853026	C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/build/intermediates/cxx/Debug/5a502l55/obj/x86/libsession.so	fbd469c6f0d582d8
+7	726	7920021646317324	CMakeFiles/session.dir/HelloWorld.cpp.o	e2a1d6195c5706e3
+6	142	7920025040417279	C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/build/intermediates/cxx/Debug/5a502l55/obj/x86/libsession.so	9d963d1d69845a43
+6	580	7920028155492316	CMakeFiles/session.dir/HelloWorld.cpp.o	e2a1d6195c5706e3
+581	708	7920028156733186	C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/build/intermediates/cxx/Debug/5a502l55/obj/x86/libsession.so	9d963d1d69845a43
+4	881	7920044832830337	CMakeFiles/session.dir/HelloWorld.cpp.o	e2a1d6195c5706e3
+882	1139	7920044835355681	C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/build/intermediates/cxx/Debug/5a502l55/obj/x86/libsession.so	9d963d1d69845a43
+4	576	7920056449715387	CMakeFiles/session.dir/HelloWorld.cpp.o	e2a1d6195c5706e3
+576	685	7920056450805361	C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/build/intermediates/cxx/Debug/5a502l55/obj/x86/libsession.so	9d963d1d69845a43
+9	3335	7920062373062032	CMakeFiles/session.dir/HelloWorld.cpp.o	e2a1d6195c5706e3
+3338	3916	7920062378659488	C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/build/intermediates/cxx/Debug/5a502l55/obj/x86/libsession.so	9d963d1d69845a43
+10	1171	7920071574072488	CMakeFiles/session.dir/HelloWorld.cpp.o	e2a1d6195c5706e3
+1172	1482	7920071576574028	C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/build/intermediates/cxx/Debug/5a502l55/obj/x86/libsession.so	9d963d1d69845a43
+23	1983	7920076216414213	CMakeFiles/session.dir/HelloWorld.cpp.o	e2a1d6195c5706e3
+1985	2290	7920076219473462	C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/build/intermediates/cxx/Debug/5a502l55/obj/x86/libsession.so	9d963d1d69845a43

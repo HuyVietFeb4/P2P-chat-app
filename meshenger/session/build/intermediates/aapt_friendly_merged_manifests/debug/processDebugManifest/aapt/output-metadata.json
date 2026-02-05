@@ -4,7 +4,7 @@
     "type": "AAPT_FRIENDLY_MERGED_MANIFESTS",
     "kind": "Directory"
   },
-  "applicationId": "com.meshenger.backend.session",
+  "applicationId": "com.meshenger.network.session",
   "variantName": "debug",
   "elements": [
     {

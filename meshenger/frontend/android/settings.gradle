@@ -38,7 +38,11 @@ expoAutolinking.useExpoVersionCatalog()
 include ':app'
 include ':backend:application'
 include ':backend:session'
+include ':backend:network'
+include ':backend:transport'
 project(':backend:application').projectDir = new File(rootDir, '../../application')
 project(':backend:session').projectDir = new File(rootDir, '../../session')
+project(':backend:network').projectDir = new File(rootDir, '../../network')
+project(':backend:transport').projectDir = new File(rootDir, '../../transport')
 
 includeBuild(expoAutolinking.reactNativeGradlePlugin)
