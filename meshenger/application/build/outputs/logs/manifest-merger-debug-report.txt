@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from C:\AndroidStudioProjects\P2P-chat-app\meshenger\application\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest11794148548010795996.xml:2:13-83
+INJECTED from C:\AndroidStudioProjects\P2P-chat-app\meshenger\application\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest11794148548010795996.xml:2:13-83
+	package
+		INJECTED from C:\AndroidStudioProjects\P2P-chat-app\meshenger\application\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest11794148548010795996.xml
+	xmlns:android
+		ADDED from C:\AndroidStudioProjects\P2P-chat-app\meshenger\application\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest11794148548010795996.xml:2:23-81
+uses-sdk
+INJECTED from C:\AndroidStudioProjects\P2P-chat-app\meshenger\application\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest11794148548010795996.xml reason: use-sdk injection requested
+INJECTED from C:\AndroidStudioProjects\P2P-chat-app\meshenger\application\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest11794148548010795996.xml
+INJECTED from C:\AndroidStudioProjects\P2P-chat-app\meshenger\application\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest11794148548010795996.xml
+	android:targetSdkVersion
+		INJECTED from C:\AndroidStudioProjects\P2P-chat-app\meshenger\application\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest11794148548010795996.xml
+	android:minSdkVersion
+		INJECTED from C:\AndroidStudioProjects\P2P-chat-app\meshenger\application\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest11794148548010795996.xml

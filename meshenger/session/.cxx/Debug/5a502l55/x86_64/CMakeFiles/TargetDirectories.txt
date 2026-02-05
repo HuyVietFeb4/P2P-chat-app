@@ -1,0 +1,3 @@
+C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/.cxx/Debug/5a502l55/x86_64/CMakeFiles/session.dir
+C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/.cxx/Debug/5a502l55/x86_64/CMakeFiles/edit_cache.dir
+C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/.cxx/Debug/5a502l55/x86_64/CMakeFiles/rebuild_cache.dir

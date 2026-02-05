@@ -1,3 +1,8 @@
+// Test Hello world
+import { NativeModules } from 'react-native';
+
+const { HelloWorldModuleApplication } = NativeModules;
+
 import { Image } from "expo-image";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 export default function Onboarding1() {
@@ -13,8 +18,8 @@ export default function Onboarding1() {
             </View>
 
             <View style = { styles.textContainer }>
-                <Text style = { styles.title}>Chat without Wifi or Internet</Text>
-                <Text style = { styles.subtitle }>Stay connected anywhere through Bluetooth Mesh — even when you’re offline.</Text>
+                <Text style = { styles.title}>{HelloWorldModuleApplication.getMessage()}</Text>
+                <Text style = { styles.subtitle }>{HelloWorldModuleApplication.getMessageSession()}</Text>
             </View>
         </View>
     );

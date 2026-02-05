@@ -1,0 +1,9 @@
+ninja: Entering directory `C:\AndroidStudioProjects\P2P-chat-app\meshenger\session\.cxx\Debug\5e6r4z1e\arm64-v8a'
+[1/2] Building CXX object CMakeFiles/session.dir/HelloWorld.cpp.o
+FAILED: CMakeFiles/session.dir/HelloWorld.cpp.o 
+C:\Users\Viet\AppData\Local\Android\Sdk\ndk\27.0.12077973\toolchains\llvm\prebuilt\windows-x86_64\bin\clang++.exe --target=aarch64-none-linux-android24 --sysroot=C:/Users/Viet/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dsession_EXPORTS  -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++17 -fexceptions -frtti -fno-limit-debug-info  -fPIC -MD -MT CMakeFiles/session.dir/HelloWorld.cpp.o -MF CMakeFiles\session.dir\HelloWorld.cpp.o.d -o CMakeFiles/session.dir/HelloWorld.cpp.o -c C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/src/main/cpp/HelloWorld.cpp
+C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/src/main/cpp/HelloWorld.cpp:9:1: error: extraneous closing brace ('}')
+    9 | }
+      | ^
+1 error generated.
+ninja: build stopped: subcommand failed.
