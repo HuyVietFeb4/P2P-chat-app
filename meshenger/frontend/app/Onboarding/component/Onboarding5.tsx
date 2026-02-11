@@ -1,18 +1,26 @@
-import React, { useState } from 'react';
-import {View, Text, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context'; // Recommended for professional apps, or use standard View with paddingTop
+import { SafeAreaView } from 'react-native-safe-area-context';
+// 1. CHANGE: Import expo-device
+import * as Device from 'expo-device'; 
 
 export default function Onboarding5() {
     const { width, height } = useWindowDimensions();
-    const [deviceName, setDeviceName] = useState('Galaxy S Series');
+    const [deviceName, setDeviceName] = useState('Loading...');
+
+    // 2. CHANGE: Update useEffect logic
+    useEffect(() => {
+        // Device.modelName is synchronous in Expo
+        // We use a fallback logic: modelName -> designName -> generic string
+        const name = Device.modelName || Device.designName || 'Galaxy S Series';
+        setDeviceName(name);
+    }, []);
 
     return (
         <View style={styles.container}>
-            {/* Background Gradient Ellipse 
-              (We keep absolute here because it is a background decoration separate from the layout flow)
-            */}
+            {/* Background Gradient Ellipse */}
             <LinearGradient
                 colors={['#278EFF', '#278EFF']}
                 start={{ x: 0, y: 0 }}
@@ -100,16 +108,17 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#E6F9FF',
     },
-    // Background Shape - Kept Absolute as it is decorative
+    // Background Shape
     backgroundEllipse: {
         position: 'absolute',
         width: 873,
         height: 873,
-        left: '50%',
-        top: '25%',
-        marginLeft: -436.5, // Half of width
-        marginTop: -436.5,  // Half of height
-        borderRadius: 873 / 2, // Mathematically correct circle
+        // Centered horizontally based on the center of the shape
+        left: '50%', 
+        // Positioned vertically relative to screen top
+        top: -250, 
+        marginLeft: -436.5, // Shift left by half width to center
+        borderRadius: 873 / 2,
         zIndex: 0,
     },
     safeArea: {
@@ -123,7 +132,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingBottom: 30, // Bottom padding for scroll
+        paddingBottom: 30,
     },
     
     // --- Header Section ---
@@ -131,7 +140,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 40,
         width: '100%',
-        gap: 25, // Uniform spacing between elements
+        gap: 25,
     },
     title: {
         fontSize: 30,
@@ -139,7 +148,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         textAlign: 'center',
         lineHeight: 36,
-        // fontFamily: 'Afacad', 
     },
     iconContainer: {
         width: 100,
@@ -147,7 +155,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 50,
-        backgroundColor: 'rgba(255, 255, 255, 0.15)', // Subtle background for the icon
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.3)',
     },
@@ -164,17 +172,15 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#FFFFFF',
         textAlign: 'center',
-        // fontFamily: 'Afacad',
     },
     inputContainer: {
         width: '100%',
-        maxWidth: 350, // Prevents input from getting too wide on tablets
+        maxWidth: 350,
         height: 50,
         backgroundColor: '#FFFFFF',
         borderRadius: 12,
         justifyContent: 'center',
         paddingHorizontal: 15,
-        // Professional Shadow
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -185,12 +191,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#000',
         height: '100%',
-        // fontFamily: 'Roboto',
     },
 
     // --- Buttons ---
     actionButton: {
-        borderRadius: 12, // Modern border radius
+        borderRadius: 12,
         overflow: 'hidden',
         minWidth: 140,
         elevation: 4,
@@ -202,7 +207,7 @@ const styles = StyleSheet.create({
     chatButton: {
         marginTop: 20,
         width: '100%',
-        maxWidth: 350, // Matches input width
+        maxWidth: 350,
         height: 50,
     },
     buttonContent: {
@@ -217,12 +222,11 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '600',
-        // fontFamily: 'Poppins',
     },
 
     // --- Footer ---
     footerSection: {
-        marginTop: 'auto', // Pushes footer to the bottom of the scroll view
+        marginTop: 'auto',
         paddingTop: 40,
         width: '90%',
     },
@@ -233,6 +237,5 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontStyle: 'italic',
         lineHeight: 20,
-        // fontFamily: 'Roboto',
     },
 });
