@@ -18,8 +18,8 @@ export default function Onboarding1() {
             </View>
 
             <View style = { styles.textContainer }>
-                <Text style = { styles.title}>{HelloWorldModuleApplication.getMessage()}</Text>
-                <Text style = { styles.subtitle }>{HelloWorldModuleApplication.getMessageSession()}</Text>
+                <Text style = { styles.title}>{HelloWorldModuleApplication?.getMessage?.() || "Welcome to Meshenger"}</Text>
+                <Text style = { styles.subtitle }>{HelloWorldModuleApplication?.getMessageSession?.() || "Your secure messaging app"}</Text>
             </View>
         </View>
     );
