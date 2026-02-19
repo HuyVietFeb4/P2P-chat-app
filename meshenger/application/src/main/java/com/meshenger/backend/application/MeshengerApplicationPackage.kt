@@ -5,9 +5,12 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ViewManager
 
-class HelloWorldPackage : ReactPackage {
+/**
+ * Registers the Application layer native module with React Native.
+ */
+class MeshengerApplicationPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-        return listOf(HelloWorldModuleApplication(reactContext))
+        return listOf(MeshengerApplicationModule(reactContext))
     }
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {

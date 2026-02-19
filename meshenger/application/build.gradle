@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace "com.meshenger.network.application"
+    namespace "com.meshenger.backend.application"
     compileSdk 34
 }
 

@@ -1,12 +1,24 @@
-// Test Hello world
 import { NativeModules } from 'react-native';
-
-const { HelloWorldModuleApplication } = NativeModules;
-
+import { useEffect, useState } from 'react';
 import { Image } from "expo-image";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
+
+const { MeshengerApplicationModule } = NativeModules;
+
 export default function Onboarding1() {
     const { width, height } = useWindowDimensions();
+    const [appMessage, setAppMessage] = useState<string>('');
+    const [sessionMessage, setSessionMessage] = useState<string>('');
+
+    useEffect(() => {
+        if (MeshengerApplicationModule?.getMessage) {
+            MeshengerApplicationModule.getMessage().then(setAppMessage).catch(() => setAppMessage(''));
+        }
+        if (MeshengerApplicationModule?.getMessageSession) {
+            MeshengerApplicationModule.getMessageSession().then(setSessionMessage).catch(() => setSessionMessage(''));
+        }
+    }, []);
+
     return (
         <View style = {{ flex: 1}}>
             <View style = {{ width: width, height: height * 0.7 }}>
@@ -18,8 +30,8 @@ export default function Onboarding1() {
             </View>
 
             <View style = { styles.textContainer }>
-                <Text style = { styles.title}>{HelloWorldModuleApplication?.getMessage?.() || "Welcome to Meshenger"}</Text>
-                <Text style = { styles.subtitle }>{HelloWorldModuleApplication?.getMessageSession?.() || "Your secure messaging app"}</Text>
+                <Text style = { styles.title}>{appMessage}</Text>
+                <Text style = { styles.subtitle }>{sessionMessage}</Text>
             </View>
         </View>
     );

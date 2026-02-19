@@ -7,16 +7,20 @@ import com.facebook.react.bridge.Promise
 
 import com.meshenger.backend.session.HelloWorldBridge
 
-class HelloWorldModuleApplication(reactContext: ReactApplicationContext) :
+/**
+ * React Native native module for the Application layer.
+ * Exposes APIs to the JS frontend (e.g. getMessage, getMessageSession).
+ */
+class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     private val bridge = HelloWorldBridge()
 
-    override fun getName(): String = "HelloWorldModuleApplication"
+    override fun getName(): String = "MeshengerApplicationModule"
 
     @ReactMethod
     fun getMessage(promise: Promise) {
-        promise.resolve("Application layer says: ${HelloWorld.getMessage()}")
+        promise.resolve("Application layer says: ${AppInfo.getMessage()}")
     }
 
     @ReactMethod
