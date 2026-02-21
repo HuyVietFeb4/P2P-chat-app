@@ -44,7 +44,7 @@ export default function OnboardingScreen() {
 
     return (
         <View style={styles.container}>
-        <View style={styles.contentWrapper}>
+        <View>
             <FlatList
                 ref={flatListRef}
                 data={SCREENS}
@@ -56,13 +56,13 @@ export default function OnboardingScreen() {
                 viewabilityConfig={viewConfig}
                 keyExtractor={(item) => item.id.toString()}
                 bounces={false}
-            />               
+            />
             <MenuDot totalDots={SCREENS.length} currentIndex={currentIndex} />
         </View>
 
         <View style={styles.buttonFooter}>
             {currentIndex === SCREENS.length - 1 && (
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.button}
                     activeOpacity={0.8}
                     onPress={() => router.push('/Onboarding/component/Onboarding5')}
