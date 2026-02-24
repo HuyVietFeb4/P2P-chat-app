@@ -1,0 +1,2 @@
+ninja: Entering directory `D:\P2P-chat-app\meshenger\session\.cxx\Debug\6960y5g3\x86'
+ninja: no work to do.
