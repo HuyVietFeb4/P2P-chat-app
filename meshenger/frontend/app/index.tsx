@@ -1,12 +1,13 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import OnboardingScreen from "./Onboarding";
+import ChatBox from "./ChatBox";
 
 export default function Index() {
   return (
     <View style={ styles.container }>
-      <OnboardingScreen />
-
+      {/* test screens first */}
+      {/* <OnboardingScreen /> */}
+      <ChatBox />
     </View>
   );
 }

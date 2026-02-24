@@ -1,0 +1,27 @@
+{
+  "buildFiles": [
+    "D:\\P2P-chat-app\\meshenger\\session\\src\\main\\cpp\\CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "D:\\AndroidSDK\\cmake\\3.22.1\\bin\\ninja.exe",
+      "-C",
+      "D:\\P2P-chat-app\\meshenger\\session\\.cxx\\Debug\\6960y5g3\\arm64-v8a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "D:\\AndroidSDK\\cmake\\3.22.1\\bin\\ninja.exe",
+    "-C",
+    "D:\\P2P-chat-app\\meshenger\\session\\.cxx\\Debug\\6960y5g3\\arm64-v8a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "session::@6890427a1f51a3e7e1df": {
+      "artifactName": "session",
+      "abi": "arm64-v8a",
+      "output": "D:\\P2P-chat-app\\meshenger\\session\\build\\intermediates\\cxx\\Debug\\6960y5g3\\obj\\arm64-v8a\\libsession.so",
+      "runtimeFiles": []
+    }
+  }
+}
