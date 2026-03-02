@@ -16,11 +16,17 @@ object PaddingUtil {
     
     fun prepareAlignedPayload(rawData: ByteArray): ByteArray {
         val rawSize = rawData.size
-        val alignedSize = (rawSize + 3) and 3.inv() // bit manipulation trick
-        val finalSize = min(alignedSize, maxPayloadLength)
+        val alignedSize = (rawSize + 3) and 3.inv() 
+        
+        val finalSize = minOf(alignedSize, maxPayloadLength)
+        
         if (finalSize == rawSize) return rawData
+        
         val alignedArray = ByteArray(finalSize)
-        System.arraycopy(rawData, 0, alignedArray, 0, currentSize)
+        
+        val bytesToCopy = minOf(rawSize, finalSize)
+        System.arraycopy(rawData, 0, alignedArray, 0, bytesToCopy)
+        
         return alignedArray
     }
 

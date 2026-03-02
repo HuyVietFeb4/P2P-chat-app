@@ -1,7 +1,9 @@
 package com.meshenger.backend.network
 
+import java.io.ByteArrayOutputStream
+
 object FragmentUtil {
-    fun fragment(rawData: ByteArray): List<ByteArray> {
+    fun toFragments(rawData: ByteArray): List<ByteArray> {
         //ceil(rawData.size / bleMaxSize)
         val totalFragments = ((rawData.size + maxPayloadLength - 1) / maxPayloadLength).toUShort()
         val fragmentLst = mutableListOf<ByteArray>()
@@ -13,7 +15,11 @@ object FragmentUtil {
         }
         return fragmentLst
     }
-    fun reassembly(rawData: ByteArray): List<ByteArray> {
-        
+    fun reassembly(fragments: List<ByteArray>): ByteArray {
+        val buffer = ByteArrayOutputStream()
+        for (fragment in fragments) {
+            buffer.write(fragment)
+        }
+        return buffer.toByteArray()
     }
 }
