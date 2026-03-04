@@ -6,10 +6,11 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import android.util.Log
 
-
-val maxPayloadLength = 396
-val signatureSize = 64
-val bleMaxSize = 512
+object BLEProtocolConfig {
+    const val MAX_PAYLOAD_LENGTH = 396
+    const val SIGNATURE_SIZE = 64
+    const val BLE_MAX_SIZE = 512
+}
 
 enum class MessageType(val value: UInt) {
     BOOTSTRAP(0x0000u),
@@ -67,31 +68,32 @@ data class Header(
     val type: UInt,
     val TTL: UShort,
     val totalFragments: UShort,
-    val fragmentID: Ushort,
+    val fragmentID: UShort,
     val timeStamp: ULong,
     val recieverID: ULong,
     val senderID: ULong,
-    val signature: ByteArray
+    val signature: ByteArray,
+) {
     init {
-        require(signature.size == signatureSize) {
-            "Signature size must be exactly $signatureSize bytes!"
+        require(signature.size == BLEProtocolConfig.SIGNATURE_SIZE) {
+            "Signature size must be exactly $BLEProtocolConfig.SIGNATURE_SIZE bytes!"
         }
     }
-)
+}
 
- @Parcelize
+@Parcelize
 data class Packet(
     // val version: UShort,
     // val flags: UShort,
     // val type: UInt,
     // val TTL: UShort,
     // val totalFragments: UShort,
-    // val fragmentID: Ushort,
+    // val fragmentID: UShort,
     // val timeStamp: ULong,
     // val recieverID: ULong,
     // val senderID: ULong
     val header: Header,
-    val payload: ByteArray
+    val payload: ByteArray,
 ): Parcelable {
     val payloadLength: UShort 
         get() = payload.size.toUShort()
@@ -100,8 +102,8 @@ data class Packet(
         // Validation happens here, ensuring NO Packet can ever be created 
         // that is too large, regardless of which constructor is used.
         // will always be used No matter how a class is created (Primary constructor, Secondary constructor, or even by the @Parcelize internal code) 
-        require(payload.size <= maxPayloadLength) {
-            "Payload is too large! Max is $maxPayloadSize bytes, but got ${payload.size}."
+        require(payload.size <= BLEProtocolConfig.MAX_PAYLOAD_LENGTH) {
+            "Payload is too large! Max is $BLEProtocolConfig.MAX_PAYLOAD_LENGTH bytes, but got ${payload.size}."
         }
     }
 
@@ -110,7 +112,7 @@ data class Packet(
         type: UInt,
         TTL: UShort,
         totalFragments: UShort,
-        fragmentID: Ushort,
+        fragmentID: UShort,
         recieverID: ULong,
         senderID: ULong,
         signature: ByteArray,
@@ -151,7 +153,7 @@ data class Packet(
                 val time = buffer.long.toULong()
                 val receiver = buffer.long.toULong()
                 val sender = buffer.long.toULong()
-                val signature = ByteArray(signatureSize)
+                val signature = ByteArray(BLEProtocolConfig.SIGNATURE_SIZE)
                 buffer.get(signature)
                 val payload = ByteArray(payloadLength.toInt())
                 buffer.get(payload)
@@ -168,7 +170,7 @@ data class Packet(
 
         fun encode(packet: Packet): ByteArray {
             try {
-                val buffer = ByteBuffer.allocate(bleMaxSize).order(ByteOrder.BIG_ENDIAN)
+                val buffer = ByteBuffer.allocate(BLEProtocolConfig.BLE_MAX_SIZE).order(ByteOrder.BIG_ENDIAN)
                 
                 buffer.putShort(packet.header.version.toShort())
                 buffer.putShort(packet.header.flags.toShort())
@@ -181,13 +183,36 @@ data class Packet(
                 buffer.putLong(packet.header.recieverID.toLong())
                 buffer.putLong(packet.header.senderID.toLong())
                 buffer.put(packet.header.signature)
-                val payload = PaddingUtil.pad(packet.payload, maxPayloadLength)
+                val payload = PaddingUtil.pad(packet.payload, BLEProtocolConfig.MAX_PAYLOAD_LENGTH)
                 buffer.put(payload)
                 return buffer.array()
             } catch(e: Exception) {
-                Log.e("BinaryUtil", "Error encoding packet type ${packet.type}: ${e.message}")
+                Log.e("BinaryUtil", "Error encoding packet type ${packet.header.type}: ${e.message}")
                 return null
             }
         }
     }
 }
+
+object PacketFactory {
+    private const val DEFAULT_VERSION: UShort = 1u
+    private const val DEFAULT_TTL: UShort = 7u
+
+    fun createPackets(
+        flags: UShort,
+        type: UInt,
+        TTL: UShort,
+        totalFragments: UShort,
+        fragmentID: UShort,
+        recieverID: ULong,
+        senderID: ULong,
+        signature: ByteArray,
+        payload: ByteArray
+    ): List<Packet> {
+        // Todo: Fragment the payload then create multiple packets
+    }
+}
+
+// Init key first
+// Do the signing logic
+// Do this

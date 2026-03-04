@@ -9,7 +9,7 @@ object PaddingUtil {
         if(rawData.size >= targetSize) return rawData
         val paddedData = ByteArray(targetSize)
         System.arraycopy(rawData, 0, paddedData, 0, rawData.size)
-        val randomPadding = SecureRandom().generateSeed(maxPayloadLength - rawData.size)
+        val randomPadding = SecureRandom().generateSeed(BLEProtocolConfig.MAX_PAYLOAD_LENGTH - rawData.size)
         System.arraycopy(randomPadding, 0, paddedData, rawData.size, randomPadding.size)
         return paddedData
     }
@@ -18,7 +18,7 @@ object PaddingUtil {
         val rawSize = rawData.size
         val alignedSize = (rawSize + 3) and 3.inv() 
         
-        val finalSize = minOf(alignedSize, maxPayloadLength)
+        val finalSize = minOf(alignedSize, BLEProtocolConfig.MAX_PAYLOAD_LENGTH)
         
         if (finalSize == rawSize) return rawData
         
@@ -28,9 +28,5 @@ object PaddingUtil {
         System.arraycopy(rawData, 0, alignedArray, 0, bytesToCopy)
         
         return alignedArray
-    }
-
-    fun unpad(data: ByteArray): ByteArray {
-
     }
 }
