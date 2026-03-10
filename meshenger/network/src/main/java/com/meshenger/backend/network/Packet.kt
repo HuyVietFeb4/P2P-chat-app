@@ -5,6 +5,13 @@ import kotlinx.parcelize.Parcelize
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import android.util.Log
+import kotlinx.parcelize.RawValue
+import java.security.MessageDigest
+
+import com.meshenger.backend.security_native.NativeCredentials
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+import kotlin.math.sign
 
 object BLEProtocolConfig {
     const val MAX_PAYLOAD_LENGTH = 396
@@ -26,12 +33,14 @@ enum class MessageType(val value: UInt) {
     WELCOME_GROUP(0x000Au),
     GENERATE_SEED_GROUP(0x000Bu),
 
-    USER_MESSAGE(0x0101u),
-    SEEN(0x0102u),
-    REACTION(0x0103u),
-    FILE(0x0104u),
-    REPLY_QUOTE(0x0105u),
-    AUDIO(0x0106u);
+    USER_MESSAGE_ALL(0x0101u),
+    USER_MESSAGE_ONE_TO_ONE(0x0102u),
+    USER_MESSAGE_GROUP(0x0103u),
+    SEEN(0x0104u),
+    REACTION(0x0105u),
+    FILE(0x0106u),
+    REPLY_QUOTE(0x0107u),
+    AUDIO(0x0108u);
 
     companion object {
         fun fromValue(value: UInt): MessageType? {
@@ -41,7 +50,10 @@ enum class MessageType(val value: UInt) {
 }
 
 object SpecialRecipients {
-    val BROADCAST = ByteArray(8) { 0xFF.toByte() }  // All 0xFF = broadcast
+    val BROADCAST_BYTE = ByteArray(8) { 0xFF.toByte() }
+    val BROADCAST: ULong by lazy {
+        ByteBuffer.wrap(BROADCAST_BYTE).getLong().toULong()
+    }
 }
 
 /**
@@ -61,7 +73,7 @@ object SpecialRecipients {
  *
  * Payload sections: 0-396 bytes
  */
-
+@Parcelize
 data class Header(
     val version: UShort,
     val flags: UShort,
@@ -72,14 +84,8 @@ data class Header(
     val timeStamp: ULong,
     val recieverID: ULong,
     val senderID: ULong,
-    val signature: ByteArray,
-) {
-    init {
-        require(signature.size == BLEProtocolConfig.SIGNATURE_SIZE) {
-            "Signature size must be exactly $BLEProtocolConfig.SIGNATURE_SIZE bytes!"
-        }
-    }
-}
+
+): Parcelable
 
 @Parcelize
 data class Packet(
@@ -93,6 +99,7 @@ data class Packet(
     // val recieverID: ULong,
     // val senderID: ULong
     val header: Header,
+    val signature: ByteArray,
     val payload: ByteArray,
 ): Parcelable {
     val payloadLength: UShort 
@@ -105,39 +112,42 @@ data class Packet(
         require(payload.size <= BLEProtocolConfig.MAX_PAYLOAD_LENGTH) {
             "Payload is too large! Max is $BLEProtocolConfig.MAX_PAYLOAD_LENGTH bytes, but got ${payload.size}."
         }
+        require(signature.size == BLEProtocolConfig.SIGNATURE_SIZE) {
+            "Signature size must be exactly $BLEProtocolConfig.SIGNATURE_SIZE bytes!"
+        }
     }
 
     constructor(
+        version: UShort,
         flags: UShort,
         type: UInt,
         TTL: UShort,
         totalFragments: UShort,
         fragmentID: UShort,
+        timeStamp: ULong,
         recieverID: ULong,
         senderID: ULong,
         signature: ByteArray,
         payload: ByteArray
     ): this(
         header = Header(
-            version = 1u,
+            version = version,
             flags = flags,
             type = type,
             TTL = TTL,
             totalFragments = totalFragments,
             fragmentID = fragmentID,
-            timeStamp = System.currentTimeMillis().toULong(),
+            timeStamp = timeStamp,
             recieverID = recieverID,
             senderID = senderID,
-            signature = signature
         ),
+        signature = signature,
         payload = payload
     )
 
     companion object {
-        object Flags {
-            const val NEED_ACK: UByte = 0x01u
-            const val IS_COMPRESSED: UByte = 0x02u
-        }
+        const val NEED_ACK: UShort = 0x0001u
+        const val IS_COMPRESSED: UShort = 0x0002u
         private const val HEADER_SIZE = 102
 
         fun decode(rawData: ByteArray): Packet? {
@@ -159,7 +169,8 @@ data class Packet(
                 buffer.get(payload)
 
                 return Packet(
-                    header = Header(version, flags, type, ttl, totalFrags, fragID, time, receiver, sender, signature),
+                    header = Header(version, flags, type, ttl, totalFrags, fragID, time, receiver, sender),
+                    signature = signature,
                     payload = payload
                 )
             } catch(e: Exception) {
@@ -168,7 +179,7 @@ data class Packet(
             }
         }
 
-        fun encode(packet: Packet): ByteArray {
+        fun encode(packet: Packet): ByteArray? {
             try {
                 val buffer = ByteBuffer.allocate(BLEProtocolConfig.BLE_MAX_SIZE).order(ByteOrder.BIG_ENDIAN)
                 
@@ -182,7 +193,7 @@ data class Packet(
                 buffer.putLong(packet.header.timeStamp.toLong())
                 buffer.putLong(packet.header.recieverID.toLong())
                 buffer.putLong(packet.header.senderID.toLong())
-                buffer.put(packet.header.signature)
+                buffer.put(packet.signature)
                 val payload = PaddingUtil.pad(packet.payload, BLEProtocolConfig.MAX_PAYLOAD_LENGTH)
                 buffer.put(payload)
                 return buffer.array()
@@ -196,23 +207,62 @@ data class Packet(
 
 object PacketFactory {
     private const val DEFAULT_VERSION: UShort = 1u
-    private const val DEFAULT_TTL: UShort = 7u
+    private const val DEFAULT_TTL: UShort = 20u
 
-    fun createPackets(
-        flags: UShort,
+    fun createBroadcastPackets( // For packet of type broadcasts
         type: UInt,
-        TTL: UShort,
-        totalFragments: UShort,
-        fragmentID: UShort,
-        recieverID: ULong,
         senderID: ULong,
-        signature: ByteArray,
-        payload: ByteArray
+        payload: ByteArray,
+        needAck: Boolean = false,
+        isCompressed: Boolean = false,
+        version: UShort = DEFAULT_VERSION,
+        TTL: UShort = DEFAULT_TTL
     ): List<Packet> {
-        // Todo: Fragment the payload then create multiple packets
+        val fragments = FragmentUtil.toFragments(payload)
+        val packetList = mutableListOf<Packet>()
+        var flags: UShort = 0u
+        if(needAck) {
+            flags = flags or Packet.NEED_ACK
+        }
+        if(isCompressed) {
+            flags = flags or Packet.IS_COMPRESSED
+        }
+        if(MessageType.fromValue(type) == MessageType.USER_MESSAGE_ALL) {
+            val secretKey = NativeCredentials.getAppSecretKey()
+            val sha512Mac = Mac.getInstance("HmacSHA512")
+            val secretKeySpec = SecretKeySpec(secretKey.toByteArray(), "HmacSHA512")
+
+        }
+        for ((index, fragment) in fragments.withIndex()) {
+
+            // Signature:
+                // If for all chat: using native hiding secret key to hmac payload and other field
+                    // The payload must be encrypted from session layer above
+            val timeStamp = System.currentTimeMillis().toULong()
+            val secretKey = NativeCredentials.getAppSecretKey()
+            val sha512HMAC = Mac.getInstance("HmacSHA512")
+            val secretKeySpec = SecretKeySpec(secretKey.toByteArray(), "HmacSHA512")
+            sha512HMAC.init(secretKeySpec)
+            // data to put into Hmac
+            val buffer = ByteBuffer.allocate(38 + payload.size)
+            buffer.order(ByteOrder.BIG_ENDIAN)
+            buffer.putShort(1u.toShort())
+            buffer.putShort(flags.toShort())
+            buffer.putInt(type.toInt())
+            buffer.putShort(TTL.toShort())
+            buffer.putShort(fragments.size.toShort())
+            buffer.putShort(index.toShort())
+            buffer.putLong(timeStamp.toLong())
+            buffer.putLong(senderID.toLong())
+
+            buffer.put(payload)
+            val signature = sha512HMAC.doFinal(buffer.array())
+
+
+            val packet = Packet(version, flags, type, TTL, fragments.size.toUShort(), index.toUShort(), timeStamp,
+                SpecialRecipients.BROADCAST, senderID, signature,fragment)
+            packetList.add(packet)
+        }
+        return packetList
     }
 }
-
-// Init key first
-// Do the signing logic
-// Do this
