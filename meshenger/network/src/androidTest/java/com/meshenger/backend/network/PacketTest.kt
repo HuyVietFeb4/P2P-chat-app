@@ -91,4 +91,63 @@ class PacketFactoryTest {
         assertEquals(0.toUShort(), packets[0].header.fragmentID)
         assertEquals(1.toUShort(), packets[1].header.fragmentID)
     }
+
+    @Test
+    fun testPacketSerializationRoundTrip() {
+        // 1. Create a dummy packet
+        val originalHeader = Header(
+            version = 1u,
+            flags = Packet.NEED_ACK,
+            type = MessageType.USER_MESSAGE_ALL.value,
+            TTL = 20u,
+            totalFragments = 1u,
+            fragmentID = 0u,
+            timeStamp = System.currentTimeMillis().toULong(),
+            recieverID = SpecialRecipients.BROADCAST,
+            senderID = 987654321uL
+        )
+        val dummySignature = ByteArray(64) { 0xA.toByte() }
+        val dummyPayload = "Test Payload".toByteArray()
+
+        val originalPacket = Packet(originalHeader, dummySignature, dummyPayload)
+
+        // 2. Encode to ByteArray
+        val encodedBytes = Packet.encode(originalPacket)
+        assertNotNull("Encoded bytes should not be null", encodedBytes)
+
+        // 3. Decode back to Packet
+        val decodedPacket = Packet.decode(encodedBytes!!)
+        assertNotNull("Decoded packet should not be null", decodedPacket)
+
+        // 4. Assertions (Compare all fields)
+        assertEquals(originalPacket.header.version, decodedPacket!!.header.version)
+        assertEquals(originalPacket.header.type, decodedPacket.header.type)
+        assertEquals(originalPacket.header.senderID, decodedPacket.header.senderID)
+        assertEquals(originalPacket.header.timeStamp, decodedPacket.header.timeStamp)
+
+        // Verify Binary Data
+        assertArrayEquals("Signature mismatch after decoding", originalPacket.signature, decodedPacket.signature)
+        assertArrayEquals("Payload mismatch after decoding", originalPacket.payload, decodedPacket.payload)
+    }
+
+    @Test
+    fun testDecodeWithInvalidData() {
+        val garbageData = byteArrayOf(0x00, 0x01, 0x02) // Too short to be a packet
+        val result = Packet.decode(garbageData)
+
+        assertNull("Decoding garbage data should return null, not throw exception", result)
+    }
+
+    @Test
+    fun testPaddingDoesNotCorruptData() {
+        val shortPayload = "Short".toByteArray()
+        val packet = Packet(1u, 0u, 1u, 20u, 1u, 0u, 100uL, 0uL, 0uL, ByteArray(64), shortPayload)
+
+        val encoded = Packet.encode(packet)
+        val decoded = Packet.decode(encoded!!)
+
+        assertEquals("Payload length should match original despite padding",
+            shortPayload.size, decoded?.payload?.size)
+        assertArrayEquals(shortPayload, decoded?.payload)
+    }
 }
