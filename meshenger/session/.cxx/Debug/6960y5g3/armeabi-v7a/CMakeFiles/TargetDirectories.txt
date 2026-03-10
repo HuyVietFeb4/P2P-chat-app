@@ -1,3 +1,0 @@
-D:/P2P-chat-app/meshenger/session/.cxx/Debug/6960y5g3/armeabi-v7a/CMakeFiles/session.dir
-D:/P2P-chat-app/meshenger/session/.cxx/Debug/6960y5g3/armeabi-v7a/CMakeFiles/edit_cache.dir
-D:/P2P-chat-app/meshenger/session/.cxx/Debug/6960y5g3/armeabi-v7a/CMakeFiles/rebuild_cache.dir
