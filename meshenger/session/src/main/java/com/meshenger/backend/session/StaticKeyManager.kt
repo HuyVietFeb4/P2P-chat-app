@@ -1,3 +1,5 @@
+package com.meshenger.backend.session
+
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import java.security.KeyFactory
@@ -5,7 +7,6 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.Signature
-import java.security.spec.ECGenParameterSpec
 import java.security.spec.X509EncodedKeySpec
 import android.util.Log
 // To do: to init the static public and private's key
