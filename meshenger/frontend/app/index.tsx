@@ -1,22 +1,27 @@
-import React from "react";
-import { StyleSheet, View } from "react-native";
-import ChatBox from "./ChatBox";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 
-export default function Index() {
-  return (
-    <View style={ styles.container }>
-      {/* test screens first */}
-      {/* <OnboardingScreen /> */}
-      <ChatBox />
-    </View>
-  );
+SplashScreen.preventAutoHideAsync();
+
+export default function App() {
+    const router = useRouter();
+    useEffect(() => {
+        const checkFirstLaunch = async (): Promise<void> => {
+            const value = await AsyncStorage.getItem("firstLaunch");
+
+            if (value === null) {
+                await AsyncStorage.setItem("firstLaunch", "false");
+                router.replace("/Onboarding");
+            } else {
+                router.replace("/ChatBox");
+            }
+            await SplashScreen.hideAsync();
+        };
+
+        checkFirstLaunch();
+    }, []);
+    
+    return null;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E6F9FF'
-  }
-});
