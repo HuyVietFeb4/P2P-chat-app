@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 // 1. CHANGE: Import expo-device
-import * as Device from 'expo-device'; 
+import * as Device from 'expo-device';
 
 export default function Onboarding5() {
     const { width, height } = useWindowDimensions();
     const [deviceName, setDeviceName] = useState('Loading...');
+    const router = useRouter();
 
     // 2. CHANGE: Update useEffect logic
     useEffect(() => {
@@ -82,7 +84,7 @@ export default function Onboarding5() {
                                 <TouchableOpacity 
                                     style={styles.buttonContent} 
                                     activeOpacity={0.8}
-                                    onPress={() => console.log('Navigate to Chat')}
+                                    onPress={() => router.replace("/ChatBox")}
                                 >
                                     <Text style={[styles.buttonText, { fontSize: 18 }]}>Go to chat!</Text>
                                     <MaterialCommunityIcons name="arrow-right" size={22} color="#FFFFFF" />
