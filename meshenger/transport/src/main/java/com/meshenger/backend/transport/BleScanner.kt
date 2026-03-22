@@ -1,6 +1,7 @@
 package com.meshenger.backend.transport
 
 
+import android.bluetooth.BluetoothDevice
 import no.nordicsemi.android.support.v18.scanner.ScanSettings
 import no.nordicsemi.android.support.v18.scanner.ScanFilter
 import no.nordicsemi.android.support.v18.scanner.BluetoothLeScannerCompat
@@ -15,11 +16,26 @@ import android.os.Looper
 object BleScanner {
     private const val SCAN_PEROID : Long = 10000
     private var isScanning : Boolean  = false
+
     val scanner = BluetoothLeScannerCompat.getScanner()
     private val handler = Handler(Looper.getMainLooper())
+
+    val discoveredDevices = mutableListOf<BluetoothDevice>()
+
     val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            Log.d("BleScaner", "Device found: ${result.device.address}")
+            result?.let {
+                val device = result.device
+                val deviceName = device.name
+                val deviceAddress = device.address
+                if (!discoveredDevices.contains(device)) {
+                    discoveredDevices.add(device)
+                }
+
+                Log.d("BleScaner", "Device found, address: ${result.device.address}")
+                Log.d("BleScaner", "Device found, name: ${result.device.name}")
+            }
+
         }
 
         override fun onBatchScanResults(results: MutableList<ScanResult?>) {

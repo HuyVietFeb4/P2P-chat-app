@@ -1,13 +1,14 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import ChatBox from "./ChatBox";
-
+import BleTest from "./BackendTest/BleTest";
 export default function Index() {
   return (
     <View style={ styles.container }>
       {/* test screens first */}
       {/* <OnboardingScreen /> */}
-      <ChatBox />
+      {/* <ChatBox /> */}
+      <BleTest />
     </View>
   );
 }

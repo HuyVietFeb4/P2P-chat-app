@@ -8,7 +8,9 @@ class BleModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMod
 
     // This is the name you will use in your JavaScript code
     override fun getName(): String = "BleModule"
-
+    init {
+        BleAdvertiser.init(reactContext.applicationContext)
+    }
     @ReactMethod
     fun onDemandScan(scanPeriodMs: Int = 10000) {
         // This calls the object you just built!
@@ -18,5 +20,10 @@ class BleModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMod
     @ReactMethod
     fun onBackgroundScan() {
         BleScanner.onBackgroundScan()
+    }
+
+    @ReactMethod
+    fun onStartAdvertise() {
+        BleAdvertiser.onStartAdvertise()
     }
 }
