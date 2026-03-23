@@ -29,7 +29,7 @@ const BleTest: React.FC = () => {
     const hasPermission = await requestBlePermissions();
     if (hasPermission && BleModule) {
       setMode('ADVERTISING');
-      BleModule.onStartAdvertise();
+      BleModule.onBackgroundAdvertise();
     }
   };
 

@@ -22,8 +22,13 @@ class BleModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaMod
         BleScanner.onBackgroundScan()
     }
 
+//    @ReactMethod
+//    fun onDemandAdvertise(advertisePeriodMs: Int = 10000) {
+//        BleAdvertiser.onDemandAdvertise(advertisePeriodMs)
+//    }
+
     @ReactMethod
-    fun onStartAdvertise() {
-        BleAdvertiser.onStartAdvertise()
+    fun onBackgroundAdvertise() {
+        BleAdvertiser.onBackgroundAdvertise()
     }
 }

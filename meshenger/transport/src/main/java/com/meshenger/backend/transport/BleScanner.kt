@@ -28,12 +28,16 @@ object BleScanner {
                 val device = result.device
                 val deviceName = device.name
                 val deviceAddress = device.address
+                val isExtended = !it.isLegacy
                 if (!discoveredDevices.contains(device)) {
                     discoveredDevices.add(device)
+                    Log.d("BleScanner", "Found ${if(isExtended) "Extended" else "Legacy"} Device: $deviceName ($deviceAddress). Address: ${result.device.address}")
+                    if(isExtended) {
+                        Log.d("BleScanner", "Filler data: ${result.scanRecord?.getManufacturerSpecificData(0xFFFF)}")
+                    }
                 }
 
-                Log.d("BleScaner", "Device found, address: ${result.device.address}")
-                Log.d("BleScaner", "Device found, name: ${result.device.name}")
+
             }
 
         }
@@ -58,6 +62,8 @@ object BleScanner {
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .setReportDelay(0)
+            .setLegacy(false)
+            .setPhy(ScanSettings.PHY_LE_ALL_SUPPORTED)
             .build()
 
         val filters = listOf(
