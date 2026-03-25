@@ -78,7 +78,7 @@ export default function Header() {
                     <>
                         <Pressable style={styles.overlay} onPress={() => setOpenPopUp(false)}>
                         </Pressable>
-                        <ScanPopUp />
+                        <ScanPopUp setOnClose={() => setOpenPopUp(false)} />
                     </>
                 ) : null
             }
