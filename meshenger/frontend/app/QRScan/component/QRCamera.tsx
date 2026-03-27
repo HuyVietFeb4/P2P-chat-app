@@ -1,13 +1,24 @@
 
 import { useRouter } from "expo-router";
 import { useEffect } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { Camera, useCameraDevice, useCameraPermission } from "react-native-vision-camera";
+import { StyleSheet, Text, View } from "react-native";
+import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from "react-native-vision-camera";
 export default function QRCamera() {
-    const { width, height } = useWindowDimensions();
     const router = useRouter();
     const device = useCameraDevice('back');
     const { hasPermission, requestPermission } = useCameraPermission();
+    const codeScanner = useCodeScanner({
+        codeTypes: ['qr'],
+        onCodeScanned: (code) => {
+            console.log(code)
+        }
+    });
+
+    useEffect(() => {
+        if (!hasPermission) {
+            requestPermission();
+        }
+    }, [hasPermission]);
 
     if (device == null) {
     return (
@@ -17,27 +28,13 @@ export default function QRCamera() {
     );
 }
 
-    useEffect(() => {
-        if (!hasPermission) {
-            requestPermission();
-        }
-    }, [hasPermission]);
-
     return (
-        <View style={styles.cameraContainer}>
-            <Camera
-                style={[{width: width * 0.8, height: width * 0.8}]}
-                device={device}
-                isActive={true}
-            />
-        </View>
+        <Camera
+            style={StyleSheet.absoluteFill}
+            device={device}
+            isActive={true}
+            codeScanner={codeScanner}
+        />
     )
 }
 
-const styles = StyleSheet.create({
-    cameraContainer: {
-        flex: 0.5,
-        justifyContent: 'center',
-        alignItems: 'center'  
-    }
-});
