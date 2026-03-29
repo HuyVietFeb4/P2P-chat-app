@@ -1,14 +1,16 @@
 import React, { useRef, useState } from "react";
-import { View, FlatList, useWindowDimensions, StyleSheet } from "react-native";
+import { View, FlatList, useWindowDimensions, StyleSheet, Pressable } from "react-native";
 import Header from "./component/Header";
 import Footer from "./component/Footer";
 import AllChat from "./component/AllChat";
 import IndividualChat from "./component/IndividualChat";
 import GroupChat from "./component/GroupChat";
 import EmergencyChat from "./component/EmergencyChat";
+import ScanPopUp from "./component/ScanPopUp";
 
 export default function ChatBox() {
-    const { width } = useWindowDimensions();
+    const [openPopUp, setOpenPopUp] = useState<boolean>(false);
+    const { width, height } = useWindowDimensions();
     const flatListRef = useRef<FlatList>(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -21,7 +23,7 @@ export default function ChatBox() {
 
     const handleTabPress = (index: number) => {
         setActiveIndex(index);
-        flatListRef.current?.scrollToIndex({ index, animated: true });
+        flatListRef.current?.scrollToIndex({ index, animated: false });
     };
 
     const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
@@ -36,7 +38,7 @@ export default function ChatBox() {
 
     return (
         <View style={styles.container}>
-            <Header activeIndex={activeIndex} onTabPress={handleTabPress} />
+            <Header activeIndex={activeIndex} onTabPress={handleTabPress} openPopUp={openPopUp} setOpenPopUp={() => setOpenPopUp(true)} />
 
             <FlatList
                 ref={flatListRef}
@@ -55,6 +57,16 @@ export default function ChatBox() {
             />
 
             <Footer />
+
+             {
+                openPopUp ? (
+                    <>
+                        <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpenPopUp(false)}>
+                        </Pressable>
+                        <ScanPopUp setOnClose={() => setOpenPopUp(false)} />
+                    </>
+                ) : null
+            }
         </View>
     );
 }

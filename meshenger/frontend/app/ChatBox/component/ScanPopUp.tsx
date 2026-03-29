@@ -61,7 +61,8 @@ const styles = StyleSheet.create({
         top: 90,
         borderWidth: 0.5,
         borderColor: 'rgba(95, 46, 234, 0.2)',
-        elevation: 6
+        elevation: 6,
+        zIndex: 10
     },
 
     addUser: {

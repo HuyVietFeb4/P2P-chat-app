@@ -6,12 +6,13 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions, TouchableOpacit
 import ScanPopUp from "./ScanPopUp";
 
 interface HeaderProps {
-    activeIndex: number;
-    onTabPress: (index: number) => void;
+    activeIndex: number,
+    onTabPress: (index: number) => void,
+    openPopUp: boolean,
+    setOpenPopUp: () => void
 }
 
-export default function Header({ activeIndex, onTabPress }: HeaderProps) {
-    const [openPopUp, setOpenPopUp] = useState<boolean>(false);
+export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopUp }: HeaderProps) {
     const {width, height} = useWindowDimensions();
 
     const tabs = [
@@ -29,7 +30,7 @@ export default function Header({ activeIndex, onTabPress }: HeaderProps) {
                 end={{x: 1, y: 0}}
                 style={{width: width, height: height * 0.2}}
             >
-                <View style={[styles.headerContainer, {width: width * 0.9}]}>
+                <View style={[styles.headerContainer, {width: width * 0.95}]}>
                     <View style={styles.actionContainer}> 
                         <View style={styles.appTitleContainer}>
                             <Image
@@ -47,7 +48,7 @@ export default function Header({ activeIndex, onTabPress }: HeaderProps) {
                             <UserPlus
                                 size={22}
                                 color='#fff'
-                                onPress={() => setOpenPopUp(true)}
+                                onPress={setOpenPopUp}
                             />
                         </View>
                     </View>
@@ -71,7 +72,8 @@ export default function Header({ activeIndex, onTabPress }: HeaderProps) {
                                     <Text style={[
                                         styles.filterText,
                                         isActive && styles.activeFilterText
-                                    ]}>
+                                        ]}
+                                    >
                                         {tab.label}
                                     </Text>
                                 </TouchableOpacity>
@@ -80,16 +82,6 @@ export default function Header({ activeIndex, onTabPress }: HeaderProps) {
                     </View>
                 </View>
             </LinearGradient>
-
-            {
-                openPopUp ? (
-                    <>
-                        <Pressable style={styles.overlay} onPress={() => setOpenPopUp(false)}>
-                        </Pressable>
-                        <ScanPopUp setOnClose={() => setOpenPopUp(false)} />
-                    </>
-                ) : null
-            }
         </>
     );
 }
@@ -130,8 +122,8 @@ const styles = StyleSheet.create({
     },
 
     filterText: {
-        fontSize: 12,
-        color: '#5F2EEA'
+        fontSize: 10,
+        color: '#5F2EEA',
     },
 
     activeFilterText: {
@@ -143,6 +135,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 5,
         alignItems: 'center',
+        justifyContent: 'center',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 15,
@@ -154,23 +147,14 @@ const styles = StyleSheet.create({
 
     filterContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         backgroundColor: 'rgba(233, 230, 255, 0.8)',
-        paddingHorizontal: 10,
         paddingVertical: 8,
+        paddingHorizontal: 10,
         borderRadius: 20,
-        alignItems: 'center'
+        justifyContent: 'space-between'
     },
 
     headerWrapper: {
         position: 'relative'
     },
-
-    overlay: {
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0
-    }
 });
