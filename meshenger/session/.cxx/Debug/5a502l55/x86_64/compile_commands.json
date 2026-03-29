@@ -1,0 +1,7 @@
+[
+{
+  "directory": "C:/AndroidStudioProjects/P2P-chat-app/meshenger/session/.cxx/Debug/5a502l55/x86_64",
+  "command": "C:\\Users\\Viet\\AppData\\Local\\Android\\Sdk\\ndk\\27.0.12077973\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=x86_64-none-linux-android24 --sysroot=C:/Users/Viet/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dsession_EXPORTS -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++17 -fno-limit-debug-info  -fPIC -o CMakeFiles\\session.dir\\HelloWorld.cpp.o -c C:\\AndroidStudioProjects\\P2P-chat-app\\meshenger\\session\\src\\main\\cpp\\HelloWorld.cpp",
+  "file": "C:\\AndroidStudioProjects\\P2P-chat-app\\meshenger\\session\\src\\main\\cpp\\HelloWorld.cpp"
+}
+]

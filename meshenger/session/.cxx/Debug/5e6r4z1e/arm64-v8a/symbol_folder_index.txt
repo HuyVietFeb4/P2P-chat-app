@@ -1,0 +1,1 @@
+C:\AndroidStudioProjects\P2P-chat-app\meshenger\session\build\intermediates\cxx\Debug\5e6r4z1e\obj\arm64-v8a
