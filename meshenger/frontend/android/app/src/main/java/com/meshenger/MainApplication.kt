@@ -16,8 +16,11 @@ import com.facebook.react.defaults.DefaultReactNativeHost
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 
+<<<<<<< HEAD
 import com.meshenger.backend.application.MeshengerApplicationPackage
 
+=======
+>>>>>>> origin/UI
 class MainApplication : Application(), ReactApplication {
 
   override val reactNativeHost: ReactNativeHost = ReactNativeHostWrapper(
@@ -26,7 +29,11 @@ class MainApplication : Application(), ReactApplication {
         override fun getPackages(): List<ReactPackage> =
             PackageList(this).packages.apply {
               // Packages that cannot be autolinked yet can be added manually here, for example:
+<<<<<<< HEAD
               add(MeshengerApplicationPackage())
+=======
+              // add(MyReactNativePackage())
+>>>>>>> origin/UI
             }
 
           override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"
