@@ -2,20 +2,25 @@ import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
-export default function Header() {
+type Props = {
+    title: String,
+    instruction: String
+}
+
+export default function Header({ title, instruction }: Props) {
     const { width, height } = useWindowDimensions();
     const router = useRouter();
 
     return (
-        <View style={[{ width: width * 0.95, height: height * 0.15 }, styles.headerContainer]}>
+        <View style={[{ width: width * 0.95 }, styles.headerContainer]}>
             
             <Pressable style={styles.left} onPress={() => router.back()}>
                 <ArrowLeft size={20} color='#fff' />
             </Pressable>
 
             <View style={styles.titleContainer}>
-                <Text style={styles.title}>Devices Scanning</Text>
-                <Text style={styles.instruction}>Scan QR to add a new device</Text>
+                <Text style={styles.title}>{title}</Text>
+                <Text style={styles.instruction}>{instruction}</Text>
             </View>
         </View>
     );
@@ -25,7 +30,8 @@ const styles = StyleSheet.create({
     headerContainer: {
         marginTop: 20,
         justifyContent: 'center',
-        alignSelf: 'center'
+        alignSelf: 'center',
+        paddingVertical: 30
     },
 
     left: {

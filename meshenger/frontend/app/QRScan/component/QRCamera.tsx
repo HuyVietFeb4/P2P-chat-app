@@ -3,9 +3,10 @@ import { useRouter } from "expo-router";
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from "react-native";
 import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from "react-native-vision-camera";
+
 export default function QRCamera() {
     const router = useRouter();
-    const device = useCameraDevice('back');
+    const device = useCameraDevice('front');
     const { hasPermission, requestPermission } = useCameraPermission();
     const codeScanner = useCodeScanner({
         codeTypes: ['qr'],
