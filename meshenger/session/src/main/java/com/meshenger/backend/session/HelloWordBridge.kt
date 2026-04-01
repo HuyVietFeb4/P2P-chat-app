@@ -1,6 +1,5 @@
 package com.meshenger.backend.session
 
-<<<<<<< HEAD
 import android.util.Log
 
 class HelloWorldBridge {
@@ -26,14 +25,3 @@ class HelloWorldBridge {
 
     private external fun getMessageNative(): String
 }
-=======
-class HelloWorldBridge {
-    companion object {
-        init {
-            System.loadLibrary("session")
-        }
-    }
-
-    external fun getMessage(): String
-}
->>>>>>> origin/UI
