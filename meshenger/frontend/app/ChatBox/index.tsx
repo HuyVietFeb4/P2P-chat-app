@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { View, FlatList, useWindowDimensions, StyleSheet, Pressable } from "react-native";
-import Header from "./component/Header";
-import Footer from "./component/Footer";
+import Header from "../common components/Header";
+import Footer from "../common components/Footer";
 import AllChat from "./component/AllChat";
 import IndividualChat from "./component/IndividualChat";
 import GroupChat from "./component/GroupChat";

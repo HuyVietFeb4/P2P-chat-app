@@ -3,11 +3,13 @@ import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "r
 
 type Props = {
     activeTab: "my-qr" | "album" | "scan-qr",
-    setActiveTab: (tab: "my-qr" | "album" | "scan-qr") => void
+    setActiveTab: (tab: "my-qr" | "scan-qr") => void,
+    openAlbum: () => Promise<void>;
 }
 
-export default function Footer({ activeTab, setActiveTab }: Props) {
+export default function Footer({ activeTab, setActiveTab, openAlbum }: Props) {
     const { width } = useWindowDimensions();
+
     return (
         <View style={[styles.footerContainer, { width: width * 0.8 }]}>
             <TouchableOpacity style={styles.actionContainer} onPress={() => setActiveTab("my-qr")}>
@@ -19,7 +21,7 @@ export default function Footer({ activeTab, setActiveTab }: Props) {
                 <ScanLine color="#fff" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionContainer} onPress={() => setActiveTab("album")}>
+            <TouchableOpacity style={styles.actionContainer} onPress={openAlbum}>
                 <Images color="#fff" />
                 <Text style={styles.actionText}>Album</Text>
             </TouchableOpacity>
@@ -59,4 +61,6 @@ const styles = StyleSheet.create({
         left: '50%',
         transform: [{ translateX: -10 }, { translateY: -30 }],
     },
+
+    
 });
