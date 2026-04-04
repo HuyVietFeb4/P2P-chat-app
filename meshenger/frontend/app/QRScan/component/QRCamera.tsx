@@ -6,7 +6,7 @@ import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from "re
 
 export default function QRCamera() {
     const router = useRouter();
-    const device = useCameraDevice('back');
+    const device = useCameraDevice('front');
     const { hasPermission, requestPermission } = useCameraPermission();
     const codeScanner = useCodeScanner({
         codeTypes: ['qr'],

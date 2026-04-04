@@ -1,7 +1,6 @@
 package com.meshenger.backend.application
 
 import com.facebook.react.bridge.Arguments
-<<<<<<< HEAD
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -12,30 +11,15 @@ import com.meshenger.backend.application.db.MeshengerDbHelper
 import com.meshenger.backend.application.messaging.MessagingStore
 import com.meshenger.backend.application.user.UserProfile
 import com.meshenger.backend.application.user.UserStore
-=======
-import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactContextBaseJavaModule
-import com.facebook.react.bridge.ReactMethod
-import com.facebook.react.bridge.Promise
-import com.facebook.react.bridge.WritableArray
-import com.facebook.react.bridge.WritableMap
-
-import com.meshenger.backend.application.messaging.MessagingStore
->>>>>>> origin/UI
 import com.meshenger.backend.session.HelloWorldBridge
 
 /**
  * React Native native module for the Application layer.
-<<<<<<< HEAD
-=======
- * Exposes APIs to the JS frontend (getMessage, getMessageSession, sendMessage, getConversation).
->>>>>>> origin/UI
  */
 class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     private val bridge = HelloWorldBridge()
-<<<<<<< HEAD
     private val dbHelper = MeshengerDbHelper(reactContext.applicationContext)
 
     init {
@@ -43,13 +27,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         MessagingStore.init(dbHelper)
         UserStore.init(dbHelper)
     }
-=======
->>>>>>> origin/UI
 
     override fun getName(): String = "MeshengerApplicationModule"
 
     @ReactMethod
-<<<<<<< HEAD
     fun addPeer(id: String, displayName: String, avatarUrl: String?, promise: Promise) {
         try {
             if (id.isBlank() || displayName.isBlank()) {
@@ -74,10 +55,6 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun getMessage(promise: Promise) {
         promise.resolve("Application layer is active")
-=======
-    fun getMessage(promise: Promise) {
-        promise.resolve("Application layer says: ${AppInfo.getMessage()}")
->>>>>>> origin/UI
     }
 
     @ReactMethod
@@ -85,25 +62,11 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         promise.resolve(bridge.getMessage())
     }
 
-<<<<<<< HEAD
     @ReactMethod
     fun sendMessage(peerId: String, text: String, promise: Promise) {
         try {
             if (peerId.isBlank() || text.isBlank()) {
                 promise.reject("INVALID_INPUT", "Inputs cannot be empty")
-=======
-    // --- Messaging API ---
-
-    @ReactMethod
-    fun sendMessage(peerId: String, text: String, promise: Promise) {
-        try {
-            if (peerId.isBlank()) {
-                promise.reject("INVALID_PEER", "peerId cannot be empty")
-                return
-            }
-            if (text.isBlank()) {
-                promise.reject("INVALID_TEXT", "text cannot be empty")
->>>>>>> origin/UI
                 return
             }
             val message = MessagingStore.sendMessage(peerId, text, fromMe = true)
@@ -116,7 +79,6 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             }
             promise.resolve(result)
         } catch (e: Exception) {
-<<<<<<< HEAD
             promise.reject("SEND_FAILED", e.message)
         }
     }
@@ -135,9 +97,6 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             promise.resolve(result)
         } catch (e: Exception) {
             promise.reject("PUSH_INCOMING_FAILED", e.message)
-=======
-            promise.reject("SEND_FAILED", e.message ?: "Failed to send message")
->>>>>>> origin/UI
         }
     }
 
@@ -149,10 +108,6 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             for (msg in messages) {
                 val map: WritableMap = Arguments.createMap().apply {
                     putString("id", msg.id)
-<<<<<<< HEAD
-=======
-                    putString("peerId", msg.peerId)
->>>>>>> origin/UI
                     putString("text", msg.text)
                     putBoolean("fromMe", msg.fromMe)
                     putDouble("timestamp", msg.timestamp.toDouble())
@@ -161,7 +116,6 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             }
             promise.resolve(array)
         } catch (e: Exception) {
-<<<<<<< HEAD
             promise.reject("GET_CONVERSATION_FAILED", e.message)
         }
     }
@@ -257,9 +211,4 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         UserStore.setBlocked(peerId, isBlocked)
         promise.resolve(null)
     }
-=======
-            promise.reject("GET_CONVERSATION_FAILED", e.message ?: "Failed to get conversation")
-        }
-    }
->>>>>>> origin/UI
 }
