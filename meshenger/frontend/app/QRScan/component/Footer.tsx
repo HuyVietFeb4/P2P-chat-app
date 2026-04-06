@@ -2,12 +2,11 @@ import { Images, QrCode, ScanLine } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
 type Props = {
-    activeTab: "my-qr" | "album" | "scan-qr",
     setActiveTab: (tab: "my-qr" | "scan-qr") => void,
     openAlbum: () => Promise<void>;
 }
 
-export default function Footer({ activeTab, setActiveTab, openAlbum }: Props) {
+export default function Footer({ setActiveTab, openAlbum }: Props) {
     const { width } = useWindowDimensions();
 
     return (
