@@ -29,6 +29,9 @@ export default function QRScan() {
         fetchUsername();
     }, []);
 
+
+
+
     const pickImage = async () => {
         if (!permission?.granted) {
             await requestPermission();
@@ -67,7 +70,7 @@ export default function QRScan() {
                 activeTab === "my-qr" && <MyQR username={username} />
             }
 
-            <Footer activeTab={activeTab} setActiveTab={setActiveTab} openAlbum={pickImage}/>
+            <Footer setActiveTab={setActiveTab} openAlbum={pickImage}/>
         </View>
     )
 }
