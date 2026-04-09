@@ -23,7 +23,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-        backgroundColor: '#FFE5E5'
+        backgroundColor: '#FFE5E5',
+        zIndex: 10
     },
 
     text: {

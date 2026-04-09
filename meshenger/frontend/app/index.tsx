@@ -16,7 +16,6 @@ export default function App() {
 
             if (value === null) {
                 // First time launch: set flag and go to Onboarding
-                await AsyncStorage.setItem("firstLaunch", "false");
                 router.replace("/Onboarding");
             } else {
                 // Subsequent launches: go straight to the ChatBox
