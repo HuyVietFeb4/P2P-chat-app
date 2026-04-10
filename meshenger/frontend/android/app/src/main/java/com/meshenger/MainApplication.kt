@@ -17,6 +17,8 @@ import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 import com.meshenger.backend.application.MeshengerApplicationPackage
 
+import com.meshenger.backend.transport.BlePackage
+
 class MainApplication : Application(), ReactApplication {
 
   override val reactNativeHost: ReactNativeHost = ReactNativeHostWrapper(
@@ -27,6 +29,7 @@ class MainApplication : Application(), ReactApplication {
           // Packages that cannot be autolinked yet can be added manually here, for example:
           // add(MyReactNativePackage())
           add(MeshengerApplicationPackage())
+          add(BlePackage())
         }
 
       override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"

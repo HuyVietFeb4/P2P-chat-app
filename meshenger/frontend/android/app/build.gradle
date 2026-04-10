@@ -90,7 +90,7 @@ android {
     namespace 'com.meshenger'
     defaultConfig {
         applicationId 'com.meshenger'
-        minSdkVersion rootProject.ext.minSdkVersion
+        minSdkVersion 26
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
@@ -156,6 +156,7 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation project(':backend:application')
+    implementation project(':backend:transport')
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

@@ -8,6 +8,7 @@ import GroupChat from "./component/GroupChat";
 import EmergencyChat from "./component/EmergencyChat";
 import ScanPopUp from "./component/ScanPopUp";
 
+const { BleModule } = NativeModules;
 export default function ChatBox() {
     const [openPopUp, setOpenPopUp] = useState<boolean>(false);
     const { width, height } = useWindowDimensions();
