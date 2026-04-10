@@ -1,14 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import Message from '@/app/common components/Message';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 // 1. CHANGE: Import expo-device
-import * as Device from 'expo-device'; 
+import * as Device from 'expo-device';
 
 export default function Onboarding5() {
     const { width, height } = useWindowDimensions();
     const [deviceName, setDeviceName] = useState('Loading...');
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
 
     // 2. CHANGE: Update useEffect logic
     useEffect(() => {
@@ -17,6 +22,31 @@ export default function Onboarding5() {
         const name = Device.modelName || Device.designName || 'Galaxy S Series';
         setDeviceName(name);
     }, []);
+
+    const handleNavigateToChat = async () => {
+        let validateError = null;
+        if (!deviceName.trim()) {
+            validateError = 'Device name cannot be empty! ';
+        }
+
+        if (deviceName.length > 15) {
+            validateError = 'Device name must be 15 characters or less. ';
+        }
+
+        if (validateError) {
+            setError(validateError);
+            setTimeout(() => setError(null), 3000);
+            return;
+        }
+
+        if (error) {
+            setTimeout(() => setError(null), 3000);
+            return;
+        } else {
+            await AsyncStorage.setItem("firstLaunch", deviceName.trim());
+            router.replace("/ChatBox");
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -82,7 +112,7 @@ export default function Onboarding5() {
                                 <TouchableOpacity 
                                     style={styles.buttonContent} 
                                     activeOpacity={0.8}
-                                    onPress={() => console.log('Navigate to Chat')}
+                                    onPress={handleNavigateToChat}
                                 >
                                     <Text style={[styles.buttonText, { fontSize: 18 }]}>Go to chat!</Text>
                                     <MaterialCommunityIcons name="arrow-right" size={22} color="#FFFFFF" />
@@ -99,6 +129,7 @@ export default function Onboarding5() {
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
+            {error && <Message />}
         </View>
     );
 }
