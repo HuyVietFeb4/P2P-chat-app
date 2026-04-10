@@ -6,6 +6,7 @@ const requestBlePermissions = async (): Promise<boolean> => {
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
     ]);
     return Object.values(granted).every(res => res === 'granted');
   }

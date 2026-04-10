@@ -1,14 +1,13 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import ChatBox from "./ChatBox";
-import BleTest from "./BackendTest/BleTest";
+import MeshControl from "./BackendTest/MeshControl";
 export default function Index() {
   return (
     <View style={ styles.container }>
       {/* test screens first */}
       {/* <OnboardingScreen /> */}
       {/* <ChatBox /> */}
-      <BleTest />
+      <MeshControl />
     </View>
   );
 }
