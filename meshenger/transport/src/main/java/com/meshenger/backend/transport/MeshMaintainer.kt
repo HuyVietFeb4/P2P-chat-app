@@ -31,6 +31,9 @@ class MeshMaintainer : Service() {
         appContext = applicationContext
         server = BleServer(applicationContext)
         scanner = BleScanner()
+        globalPacketListener?.let {
+            server.setListener(it)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -93,72 +96,140 @@ class MeshMaintainer : Service() {
         startForeground(1, notification)
     }
 
+//    private fun startMeshMaintainerLoop() {
+//        serviceScope.launch {
+//            while(true) {
+//                try {
+//                    var activeConnectionCount = MeshConnectionRegistry.getCountConnections()
+//                    if(activeConnectionCount < BleLimitConstants.MIN_CONNECTIONS_LIMIT) {
+//                        scanner.onDemandScanSync(1000)
+//                        if(scanner.getInMeshDevices().size > 0) {
+//                            Log.d("MeshMaintainer", "Out Mesh Mode")
+//                            if(server.isServerActive()) server.shutDownServer()
+//                            var oldState = MeshConnectionRegistry.isInMesh()
+//                            MeshConnectionRegistry.updateIsInMesh(false)
+//                            if(oldState != false) {
+//                                BleAdvertiser.resetBackgroundAdvertiser()
+//                            }
+//                            connectToDiscoveredPeers()
+//                            delay(10000)
+//                            activeConnectionCount = MeshConnectionRegistry.getCountConnections()
+//                            Log.d("MeshMaintainer", "activeConnectionCount: $activeConnectionCount")
+//                            while(activeConnectionCount < BleLimitConstants.MIN_CONNECTIONS_LIMIT) {
+//                                scanner.onDemandScanSync(1000)
+//                                connectToDiscoveredPeers()
+//                                delay(10000)
+//                                activeConnectionCount = MeshConnectionRegistry.getCountConnections()
+//                                Log.d("MeshMaintainer", "activeConnectionCount: $activeConnectionCount")
+//                            }
+//                            oldState = MeshConnectionRegistry.isInMesh()
+//                            MeshConnectionRegistry.updateIsInMesh(true)
+//                            if(oldState != true) {
+//                                BleAdvertiser.resetBackgroundAdvertiser()
+//                            }
+//                            if(!server.isServerActive()) server.open()
+//                            Log.d("MeshMaintainer", "In Mesh Mode")
+//                        } else {
+//                            Log.d("MeshMaintainer", "In Mesh Mode")
+//                            if(!server.isServerActive()) server.open()
+//                            val oldState = MeshConnectionRegistry.isInMesh()
+//                            MeshConnectionRegistry.updateIsInMesh(true)
+//                            if(oldState != true) {
+//                                BleAdvertiser.resetBackgroundAdvertiser()
+//                            }
+//                        }
+//                    } else {
+//                        Log.d("MeshMaintainer", "In Mesh Mode")
+//                    }
+//
+//                } catch (e: Exception) {
+//                    Log.e("MeshMaintainer", "Loop error: ${e.message}")
+//                }
+//                delay(1000)
+//            }
+//        }
+//    }
+
     private fun startMeshMaintainerLoop() {
         serviceScope.launch {
-            while(true) {
+            while (isRunning) {
                 try {
-                    var activeConnectionCount = MeshConnectionRegistry.getCountConnections()
-                    if(activeConnectionCount < BleLimitConstants.MIN_CONNECTIONS_LIMIT) {
-                        scanner.onDemandScanSync(3000)
-                        if(scanner.getInMeshDevices().size > 0) {
-                            Log.d("MeshMaintainer", "Out Mesh Mode")
-                            if(server.isServerActive()) server.shutDownServer()
-                            var oldState = MeshConnectionRegistry.isInMesh()
-                            MeshConnectionRegistry.updateIsInMesh(false)
-                            if(oldState != false) {
-                                BleAdvertiser.resetBackgroundAdvertiser()
-                            }
-                            connectToDiscoveredPeers()
-                            delay(2000)
-                            activeConnectionCount = MeshConnectionRegistry.getCountConnections()
-                            Log.d("MeshMaintainer", "activeConnectionCount: $activeConnectionCount")
-                            while(activeConnectionCount < BleLimitConstants.MIN_CONNECTIONS_LIMIT) {
-                                scanner.onDemandScanSync(5000)
-                                connectToDiscoveredPeers()
-                                delay(5000)
-                                activeConnectionCount = MeshConnectionRegistry.getCountConnections()
-                                Log.d("MeshMaintainer", "activeConnectionCount: $activeConnectionCount")
-                            }
-                            oldState = MeshConnectionRegistry.isInMesh()
-                            MeshConnectionRegistry.updateIsInMesh(true)
-                            if(oldState != true) {
-                                BleAdvertiser.resetBackgroundAdvertiser()
-                            }
-                            if(!server.isServerActive()) server.open()
-                            Log.d("MeshMaintainer", "In Mesh Mode")
+                    val activeCount = MeshConnectionRegistry.getCountConnections()
+
+                    if (activeCount < BleLimitConstants.MIN_CONNECTIONS_LIMIT) {
+                        Log.d(
+                            "MeshMaintainer",
+                            "Under connection limit ($activeCount). Scanning..."
+                        )
+
+                        // 1. Scan for peers
+                        scanner.onDemandScanSync(2000)
+                        val discovered = scanner.getInMeshDevices()
+
+                        if (discovered.isNotEmpty()) {
+                            // 2. Transition Logic: Only shut down server if we have targets to connect to
+                            // Adding a random delay prevents two phones from shutting down servers simultaneously
+                            delay((500..2000).random().toLong())
+
+                            handleOutMeshTransition()
+                            connectToDiscoveredPeers(discovered)
                         } else {
-                            Log.d("MeshMaintainer", "In Mesh Mode")
-                            if(!server.isServerActive()) server.open()
-                            val oldState = MeshConnectionRegistry.isInMesh()
-                            MeshConnectionRegistry.updateIsInMesh(true)
-                            if(oldState != true) {
-                                BleAdvertiser.resetBackgroundAdvertiser()
-                            }
+                            // No one found? Be a Server and wait.
+                            handleInMeshTransition()
                         }
                     } else {
-                        Log.d("MeshMaintainer", "In Mesh Mode")
+                        handleInMeshTransition()
                     }
-
                 } catch (e: Exception) {
                     Log.e("MeshMaintainer", "Loop error: ${e.message}")
                 }
-                delay(5000)
+                delay(5000) // Don't hammer the CPU/Radio
             }
         }
     }
 
+    private fun handleOutMeshTransition() {
+        if (server.isServerActive()) server.shutDownServer()
+        if (MeshConnectionRegistry.isInMesh()) {
+            MeshConnectionRegistry.updateIsInMesh(false)
+            BleAdvertiser.resetBackgroundAdvertiser()
+        }
+    }
+
+    private fun handleInMeshTransition() {
+        if (!server.isServerActive()) server.open()
+        if (!MeshConnectionRegistry.isInMesh()) {
+            MeshConnectionRegistry.updateIsInMesh(true)
+            BleAdvertiser.resetBackgroundAdvertiser()
+        }
+    }
     fun startServer() {
         server.open()
     }
-    fun connectToDiscoveredPeers() {
-        val connectedToUs = MeshConnectionRegistry.getPhysicalPeerList()
-        val discoveredPeers = scanner.getInMeshDevices()
-        for (peer in discoveredPeers) {
-            val address = peer.device.address
+//    fun connectToDiscoveredPeers() {
+//        val connectedToUs = MeshConnectionRegistry.getPhysicalPeerList()
+//        val discoveredPeers = scanner.getInMeshDevices()
+//        for (peer in discoveredPeers) {
+//            val address = peer.device.address
+//
+//            if (connectedToUs.contains(peer)) continue
+//
+//            if (MeshConnectionRegistry.getOutboundMap().containsKey(address)) continue
+//
+//            initiateConnection(peer.device)
+//        }
+//    }
+    private fun connectToDiscoveredPeers(discovered: List<PhysicalPeer>) {
+        for (peer in discovered) {
+            val addr = peer.device.address
 
-            if (connectedToUs.contains(peer)) continue
-
-            if (MeshConnectionRegistry.getOutboundMap().containsKey(address)) continue
+            // Safety Checks:
+            // 1. Not already connected as Client
+            if (MeshConnectionRegistry.getOutboundMap().containsKey(addr)) continue
+            // 2. Not already connected to us as Server (prevents circular loops)
+            if (MeshConnectionRegistry.getInboundMap().containsKey(addr)) continue
+            // 3. Not already trying to connect
+            if (MeshConnectionRegistry.isPending(addr)) continue
 
             initiateConnection(peer.device)
         }
@@ -169,31 +240,66 @@ class MeshMaintainer : Service() {
         Log.i("MeshMaintainer", "Message from ${device.address}: $messageStr")
     }
 
+//    private fun initiateConnection(device: BluetoothDevice) {
+//        val client = BleClientConnection(appContext)
+//
+//        client.onDataReceived = { sender, packet -> // entry point of receiving incoming packet
+//            // Network routing
+//            Log.d("BleClientConnection", "Recieve data from ${sender.address}")
+//            globalPacketListener?.onRecievePacket(packet, sender.address)
+//        }
+//
+//        client.onDisconnected = { address ->
+//            MeshConnectionRegistry.removeOutbound(address)
+//            client.close()
+//        }
+//
+//        client.connect(device)
+//            .retry(3, 1000)
+//            .useAutoConnect(false)
+//            .done {
+//                Log.i("MeshMaintainer", "Successfully connected to ${device.address}")
+//                MeshConnectionRegistry.addOutBound(device.address, client)
+//            }
+//            .fail { device, status ->
+//                Log.e("MeshMaintainer", "Failed to connect to ${device.address}: $status")
+//            }
+//            .enqueue()
+//    }
     private fun initiateConnection(device: BluetoothDevice) {
-        val client = BleClientConnection(appContext)
+        val address = device.address
+        MeshConnectionRegistry.markPending(address)
 
-        client.onDataReceived = { sender, message -> // entry point of receiving incoming packet
-            handleIncomingMessage(sender, message)
+        val client = BleClientConnection(applicationContext)
+        client.onDataReceived = { sender, packet ->
+            // Immediately move the work to a background worker thread
+            serviceScope.launch(Dispatchers.Default) {
+                Log.d("BleClientConnection", "Processing data from ${sender.address} asynchronously")
+
+                // This is where your heavy lifting (routing, decryption, etc.) happens
+                globalPacketListener?.onRecievePacket(packet, sender.address)
+            }
         }
 
-        client.onDisconnected = { address ->
-            MeshConnectionRegistry.removeOutbound(address)
+        client.onDisconnected = { addr ->
+            MeshConnectionRegistry.removeOutbound(addr)
+            MeshConnectionRegistry.unmarkPending(addr)
             client.close()
         }
 
         client.connect(device)
-            .retry(3, 1000)
+            .retry(2, 1000)
             .useAutoConnect(false)
             .done {
-                Log.i("MeshMaintainer", "Successfully connected to ${device.address}")
-                MeshConnectionRegistry.addOutBound(device.address, client)
+                Log.i("MeshMaintainer", "Connected to $address")
+                MeshConnectionRegistry.addOutBound(address, client)
             }
-            .fail { device, status ->
-                Log.e("MeshMaintainer", "Failed to connect to ${device.address}: $status")
+            .fail { _, status ->
+                Log.e("MeshMaintainer", "Failed $address: $status")
+                MeshConnectionRegistry.unmarkPending(address)
             }
             .enqueue()
     }
-
     fun testSendMsgClientToServer(msg: String) {
         MeshConnectionRegistry.getOutboundMap().forEach { (address, server) ->
             server.sendMessageToServerStr(msg)
@@ -202,6 +308,15 @@ class MeshMaintainer : Service() {
     fun testSendMsgServerToClient(msg: String) {
         MeshConnectionRegistry.getInboundMap().forEach { (address, client) ->
             client.sendMessageToClientStr(msg)
+        }
+    }
+
+    companion object {
+        private var globalPacketListener: TransportPacketListener? = null
+
+        // This is the "Plug" where the Network layer connects
+        fun setGlobalPacketListener(listener: TransportPacketListener) {
+            globalPacketListener = listener
         }
     }
     override fun onBind(intent: Intent?) = null

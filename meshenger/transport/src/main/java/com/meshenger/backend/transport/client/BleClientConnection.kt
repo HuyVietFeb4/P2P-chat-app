@@ -5,8 +5,10 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
 import android.util.Log
+import com.meshenger.backend.transport.BleUUIDConstants
 import no.nordicsemi.android.ble.BleManager
 import no.nordicsemi.android.ble.data.Data
+import no.nordicsemi.android.ble.ktx.suspend
 import no.nordicsemi.android.ble.observer.ConnectionObserver
 //  A client connection initiated that connect to some server
 class BleClientConnection(context: Context): BleManager(context), ConnectionObserver {
@@ -34,7 +36,7 @@ class BleClientConnection(context: Context): BleManager(context), ConnectionObse
                         val bytes = data.value
                         if (bytes != null) {
                             val receivedString = String(bytes, Charsets.UTF_8)
-                            Log.d("BleClientConnection", "Notification from ${device.name}: $receivedString")
+                            Log.d("BleClientConnection", "Notification from ${device.name}")
                             try {
                                 onDataReceived?.invoke(device, bytes)
                             }catch (e: Exception) {
@@ -43,7 +45,7 @@ class BleClientConnection(context: Context): BleManager(context), ConnectionObse
 
                         }
                     }
-                requestMtu(517)
+                requestMtu(256)
                     .done { Log.d("BleClientConnection", "MTU Negotiated") }
                     .fail { _, status -> Log.w("BleClientConnection", "MTU Failed: $status") }
                     .enqueue()
@@ -120,6 +122,48 @@ class BleClientConnection(context: Context): BleManager(context), ConnectionObse
 
         } else {
             Log.d("BleClientConnection", "Write characteristic not available")
+        }
+    }
+
+    fun sendPacketToServer(packet: ByteArray) {
+        if(writeChar != null) {
+            writeCharacteristic(
+                writeChar,
+                packet,
+                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+            )
+                .split()
+                .done { device ->
+                    Log.d("BleClientConnection", "Data successfully written to: ${device.name}")
+                }
+                .fail { device, status ->
+                    Log.d("BleClientConnection", "Failed to write characteristic: ${status}")
+                }
+                .enqueue()
+
+        } else {
+            Log.d("BleClientConnection", "Write characteristic not available")
+        }
+    }
+    suspend fun sendPacketToServerSuspending(packet: ByteArray) {
+        if (writeChar == null) {
+            Log.w("BleClientConnection", "Write characteristic not available")
+            return
+        }
+
+        try {
+            writeCharacteristic(
+                writeChar,
+                packet,
+                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+            )
+                .split()
+                .suspend()
+
+            Log.d("BleClientConnection", "Data successfully written via Suspend")
+        } catch (e: Exception) {
+            // Status -1 or other GATT errors will be caught here
+            Log.e("BleClientConnection", "Failed to write: ${e.message}")
         }
     }
 }

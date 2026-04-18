@@ -3,59 +3,51 @@ import com.meshenger.backend.transport.PhysicalPeer
 import com.meshenger.backend.transport.client.BleClientConnection
 import com.meshenger.backend.transport.server.BleServer
 import com.meshenger.backend.transport.server.BleServerConnection
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.mutableMapOf
 
+import java.util.concurrent.CopyOnWriteArrayList
 object MeshConnectionRegistry {
-    private var isInMesh = false
-    private val inboundMap = mutableMapOf<String, BleServerConnection>()
-    private val outboundMap = mutableMapOf<String, BleClientConnection>()
+    @Volatile private var isInMesh = false
 
-    private val physicalPeerList = mutableListOf<PhysicalPeer>()
+    private val inboundMap = ConcurrentHashMap<String, BleServerConnection>()
+    private val outboundMap = ConcurrentHashMap<String, BleClientConnection>()
+    private val pendingConnections = ConcurrentHashMap.newKeySet<String>() // Track "in-flight" attempts
+
+    private val physicalPeerList = CopyOnWriteArrayList<PhysicalPeer>()
 
     fun getAllPeers(): Set<String> = inboundMap.keys + outboundMap.keys
     fun getCountConnections(): Int = inboundMap.size + outboundMap.size
+    fun isPending(address: String): Boolean = pendingConnections.contains(address)
 
-    fun getInboundMap(): Map<String, BleServerConnection> {
-        return inboundMap
-    }
-    fun addInbound(bleAddress: String, serverConnection: BleServerConnection) {
-        inboundMap[bleAddress] = serverConnection
-    }
-    fun removeInbound(bleAddress: String) {
-        inboundMap.remove(bleAddress)
-    }
-    fun getInbound(bleAddress: String): BleServerConnection? {
-        return inboundMap[bleAddress]
-    }
+    fun markPending(address: String) { pendingConnections.add(address) }
+    fun unmarkPending(address: String) { pendingConnections.remove(address) }
 
-    fun getOutboundMap(): Map<String, BleClientConnection> {
-        return outboundMap
-    }
-    fun addOutBound(bleAddress: String, serverConnection: BleClientConnection) {
-        outboundMap[bleAddress] = serverConnection
-    }
-    fun removeOutbound(bleAddress: String) {
-        outboundMap.remove(bleAddress)
-    }
-    fun getOutbound(bleAddress: String): BleClientConnection? {
-        return outboundMap[bleAddress]
-    }
+    fun addInbound(bleAddress: String, conn: BleServerConnection) { inboundMap[bleAddress] = conn }
+    fun removeInbound(bleAddress: String) { inboundMap.remove(bleAddress) }
 
-    fun getPhysicalPeerList(): List<PhysicalPeer> {
-        return physicalPeerList
+    fun addOutBound(bleAddress: String, conn: BleClientConnection) {
+        outboundMap[bleAddress] = conn
+        unmarkPending(bleAddress)
     }
+    fun removeOutbound(bleAddress: String) { outboundMap.remove(bleAddress) }
+
+    fun getInboundMap() = inboundMap
+    fun getOutboundMap() = outboundMap
+
+    fun getInbound(address: String) = inboundMap[address]
+    fun getOutbound(address: String) = outboundMap[address]
+
     fun addPhysicalPeer(device: BluetoothDevice) {
-        physicalPeerList.add(PhysicalPeer(device))
+        if (physicalPeerList.none { it.device.address == device.address }) {
+            physicalPeerList.add(PhysicalPeer(device))
+        }
     }
     fun removePhysicalPeer(device: BluetoothDevice) {
         physicalPeerList.removeAll { it.device.address == device.address }
     }
+    fun getPhysicalPeerList(): List<PhysicalPeer> = physicalPeerList
 
-    fun isInMesh(): Boolean {
-        return isInMesh
-    }
-
-    fun updateIsInMesh(newState: Boolean) {
-        isInMesh = newState
-    }
+    fun isInMesh() = isInMesh
+    fun updateIsInMesh(newState: Boolean) { isInMesh = newState }
 }

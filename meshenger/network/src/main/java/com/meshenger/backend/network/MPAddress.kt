@@ -1,10 +1,10 @@
 package com.meshenger.backend.network
-import com.meshenger.backend.session.StaticKeyManager
 import java.nio.ByteBuffer
 import com.google.crypto.tink.subtle.Hkdf
 
 import com.meshenger.backend.security_native.NativeCredentials
 import java.io.ByteArrayOutputStream
+import java.nio.ByteOrder
 
 object MPAddress {
     private val SALT = "This-is-salt-value-to-generate-routing-id".toByteArray()
@@ -32,5 +32,16 @@ object MPAddress {
             info,           // Info
             length          // Output Length
         )
+    }
+
+    fun getMyMPAddressULong(): ULong {
+        val MPAddressByteArray = this.getMyMPAddress()
+        val buffer = ByteBuffer.wrap(MPAddressByteArray)
+
+        // 2. Set the byte order (Big Endian is default, Little Endian is common in BLE)
+        buffer.order(ByteOrder.BIG_ENDIAN)
+
+        // 3. Get as Long, then convert to ULong
+        return buffer.long.toULong()
     }
 }

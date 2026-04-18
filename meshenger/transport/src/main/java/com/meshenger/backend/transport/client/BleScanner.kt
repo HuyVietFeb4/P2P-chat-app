@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
+import com.meshenger.backend.transport.BleUUIDConstants
 import com.meshenger.backend.transport.PhysicalPeer
 import kotlinx.coroutines.delay
 import no.nordicsemi.android.support.v18.scanner.BluetoothLeScannerCompat
@@ -44,7 +45,6 @@ class BleScanner {
                             Log.d("BleScanner", "MPAddress: ${mpAddress}")
                             Log.d("BleScanner", "isInMesh: ${isInMesh}")
                             Log.d("BleScanner", "raw payload: ${decoded}")
-                            newPeer.userName = userName
                             newPeer.MPAddress = mpAddress
                             newPeer.isInMesh = isInMesh
                         }

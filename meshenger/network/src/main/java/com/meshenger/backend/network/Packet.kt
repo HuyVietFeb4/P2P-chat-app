@@ -89,15 +89,6 @@ data class Header(
 
 @Parcelize
 data class Packet(
-    // val version: UShort,
-    // val flags: UShort,
-    // val type: UInt,
-    // val TTL: UShort,
-    // val totalFragments: UShort,
-    // val fragmentID: UShort,
-    // val timeStamp: ULong,
-    // val recieverID: ULong,
-    // val senderID: ULong
     val header: Header,
     val signature: ByteArray,
     val payload: ByteArray,
@@ -213,6 +204,7 @@ object PacketFactory {
         type: UInt,
         senderID: ULong,
         payload: ByteArray,
+        inputTimeStamp: ULong = System.currentTimeMillis().toULong(),
         needAck: Boolean = false,
         isCompressed: Boolean = false,
         version: UShort = DEFAULT_VERSION,
@@ -227,18 +219,17 @@ object PacketFactory {
         if(isCompressed) {
             flags = flags or Packet.IS_COMPRESSED
         }
-        if(MessageType.fromValue(type) == MessageType.USER_MESSAGE_ALL) {
-            val secretKey = NativeCredentials.getAppSecretKey()
-            val sha512Mac = Mac.getInstance("HmacSHA512")
-            val secretKeySpec = SecretKeySpec(secretKey.toByteArray(), "HmacSHA512")
-
-        }
+//        if(MessageType.fromValue(type) == MessageType.USER_MESSAGE_ALL) {
+//            val secretKey = NativeCredentials.getAppSecretKey()
+//            val sha512Mac = Mac.getInstance("HmacSHA512")
+//            val secretKeySpec = SecretKeySpec(secretKey.toByteArray(), "HmacSHA512")
+//
+//        }
         for ((index, fragment) in fragments.withIndex()) {
-
             // Signature:
                 // If for all chat: using native hiding secret key to hmac payload and other field
                     // The payload must be encrypted from session layer above
-            val timeStamp = System.currentTimeMillis().toULong()
+            val timeStamp = inputTimeStamp
             val secretKey = NativeCredentials.getAppSecretKey()
             val sha512HMAC = Mac.getInstance("HmacSHA512")
             val secretKeySpec = SecretKeySpec(secretKey.toByteArray(), "HmacSHA512")

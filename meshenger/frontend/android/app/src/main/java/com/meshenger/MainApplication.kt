@@ -1,4 +1,8 @@
 package com.meshenger
+import android.content.Intent
+import com.meshenger.backend.network.BasicFlooding
+import com.meshenger.backend.transport.MeshMaintainer
+import com.meshenger.backend.transport.server.BleAdvertiser
 
 import android.app.Application
 import android.content.res.Configuration
@@ -17,7 +21,7 @@ import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 import com.meshenger.backend.application.MeshengerApplicationPackage
 
-import com.meshenger.backend.transport.BlePackage
+import com.meshenger.backend.session.SessionPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -29,7 +33,7 @@ class MainApplication : Application(), ReactApplication {
           // Packages that cannot be autolinked yet can be added manually here, for example:
           // add(MyReactNativePackage())
           add(MeshengerApplicationPackage())
-          add(BlePackage())
+          add(SessionPackage())
         }
 
       override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"
@@ -51,7 +55,10 @@ class MainApplication : Application(), ReactApplication {
       ReleaseLevel.STABLE
     }
     loadReactNative(this)
+    BleAdvertiser.init(this)
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
+
+    MeshMaintainer.setGlobalPacketListener(BasicFlooding)
   }
 
   override fun onConfigurationChanged(newConfig: Configuration) {

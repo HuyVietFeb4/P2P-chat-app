@@ -1,3 +1,4 @@
+package com.meshenger.backend.transport
 import java.util.UUID
 
 object BleUUIDConstants {

@@ -6,23 +6,43 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattServer
 import android.content.Context
 import android.util.Log
+import com.meshenger.backend.transport.BleUUIDConstants
 import no.nordicsemi.android.ble.BleManager
 import no.nordicsemi.android.ble.data.Data
+import no.nordicsemi.android.ble.ktx.suspend
+import no.nordicsemi.android.ble.data.DataSplitter
 import no.nordicsemi.android.ble.observer.ConnectionObserver
 //  A server connection by some client to this server
 class BleServerConnection(context: Context): BleManager(context), ConnectionObserver {
+    private var server: BleServer? = null
     private var writeChar: BluetoothGattCharacteristic? = null
     private var notifyChar: BluetoothGattCharacteristic? = null
-
+    var onDataReceived: ((BluetoothDevice, ByteArray) -> Unit)? = null
     init {
         setConnectionObserver(this)
     }
+    fun setLocalServer(server: BleServer) {
+        this.server = server
+    }
     override fun isRequiredServiceSupported(gatt: BluetoothGatt): Boolean {
-        val service = gatt.getService(BleUUIDConstants.MESH_SERVICE_UUID)
-        if (service != null) {
-            writeChar = service.getCharacteristic(BleUUIDConstants.CHARACTERISTIC_DATA_WRITE_UUID)
-            notifyChar = service.getCharacteristic(BleUUIDConstants.CHARACTERISTIC_DATA_NOTIFY_UUID)
+        val myLocalServer = this.server
+
+        if (myLocalServer != null) {
+            this.writeChar = myLocalServer.getWriteChar()
+            this.notifyChar = myLocalServer.getNotifyChar()
+
+            // CRITICAL: If we are re-discovering after an invalidation,
+            // we need to make sure we are ready to send again.
+            if (this.notifyChar != null) {
+                // Check if notifications were already enabled previously
+                // or let initialize() handle it. For safety, re-arm here:
+                Log.d("BleServerConnection", "Re-bound to LOCAL server characteristics")
+            }
+        } else {
+            Log.e("BleServerConnection", "Error: Server reference is null!")
         }
+
+        // Always return true. We are the Server; we define the rules.
         return true
     }
 
@@ -33,12 +53,25 @@ class BleServerConnection(context: Context): BleManager(context), ConnectionObse
         }
     }
     override fun initialize() {
-        requestMtu(517).enqueue()
+        requestMtu(256).enqueue()
+        setWriteCallback(writeChar)
+            .with { device, data ->
+                val bytes = data.value ?: byteArrayOf()
+                onDataReceived?.invoke(device, bytes)
+            }
+        waitUntilNotificationsEnabled(notifyChar)
+            .done { device ->
+                Log.d("BleServerConnection", "Client ${device.address} has enabled notifications. Ready to push!")
+            }
+            .fail { device, status ->
+                Log.e("BleServerConnection", "Client failed to enable notifications: $status")
+            }
+            .enqueue()
     }
 
     override fun onServicesInvalidated() {
-        writeChar = null
-        notifyChar = null
+        this.writeChar = null
+        this.notifyChar = null
     }
 
     override fun onDeviceConnecting(device: BluetoothDevice) {
@@ -94,6 +127,34 @@ class BleServerConnection(context: Context): BleManager(context), ConnectionObse
                 .enqueue()
         } else {
             Log.d("BleServerConnection", "Notify characteristic not available")
+        }
+    }
+    fun sendPacketToClient(packet: ByteArray) {
+        Log.d("BleServerConnection", "Attempting to send packet to client: ${packet.size} bytes")
+        if(notifyChar != null) {
+            sendNotification(notifyChar, packet)
+                .done { device ->
+                    Log.d("BleServerConnection", "Packet sent in chunks successfully to ${device.address}!")
+                }
+                .fail { device, status ->
+                    Log.e("BleServerConnection", "Failed to send to ${device.address}. Status: $status")
+                }
+                .enqueue()
+        } else {
+            Log.d("BleServerConnection", "Notify characteristic not available")
+        }
+    }
+
+    suspend fun sendPacketToClientSuspending(packet: ByteArray) {
+        if(notifyChar != null) {
+            try {
+                sendNotification(notifyChar, packet)
+                    .split()
+                    .suspend()
+                Log.d("BleServerConnection", "Successfully sent 512 bytes via Suspend")
+            } catch (e: Exception) {
+                Log.e("BleServerConnection", "Suspend send failed: ${e}")
+            }
         }
     }
 }

@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
+import com.meshenger.backend.transport.BleUUIDConstants
 import kotlinx.coroutines.delay
 
 object BleAdvertiser {

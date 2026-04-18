@@ -1,14 +1,17 @@
-package com.meshenger.backend.session
+package com.meshenger.backend.network
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Log
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
+import java.security.PrivateKey
+import java.security.PublicKey
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
-import android.util.Log
+
 // To do: to init the static public and private's key
 object StaticKeyManager {
     private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply {
@@ -21,7 +24,7 @@ object StaticKeyManager {
 
     fun getOrCreateIdentityKey(): KeyPair {
         if(keyStore.containsAlias(STATIC_IDENTITY_ALIAS)) {
-            val privateKey = keyStore.getKey(STATIC_IDENTITY_ALIAS, null) as java.security.PrivateKey
+            val privateKey = keyStore.getKey(STATIC_IDENTITY_ALIAS, null) as PrivateKey
             val publicKey = keyStore.getCertificate(STATIC_IDENTITY_ALIAS).publicKey
             return KeyPair(publicKey, privateKey)
         }
@@ -36,12 +39,12 @@ object StaticKeyManager {
         return kpg.generateKeyPair()
     }
 
-    fun getRawIdentityPublicKey(publicKey: java.security.PublicKey): ByteArray {
+    fun getRawIdentityPublicKey(publicKey: PublicKey): ByteArray {
         val encoded = publicKey.encoded
         return encoded.takeLast(32).toByteArray()
     }
 
-    fun decodeRawIdentityPublicKey(rawKey: ByteArray): java.security.PublicKey {
+    fun decodeRawIdentityPublicKey(rawKey: ByteArray): PublicKey {
         val x509Header = byteArrayOf(
             0x30, 0x2a,                   // SEQUENCE
             0x30, 0x05,                   // SEQUENCE
@@ -55,14 +58,14 @@ object StaticKeyManager {
         return kf.generatePublic(spec)
     }
 
-    fun signData(data: ByteArray, privateKey: java.security.PrivateKey): ByteArray {
+    fun signData(data: ByteArray, privateKey: PrivateKey): ByteArray {
         val s = Signature.getInstance("Ed25519")
         s.initSign(privateKey)
         s.update(data)
         return s.sign()
     }
 
-    fun verifyData(data: ByteArray, signature:ByteArray, publicKey: java.security.PublicKey): Boolean {
+    fun verifyData(data: ByteArray, signature:ByteArray, publicKey: PublicKey): Boolean {
         return try {
             val s = Signature.getInstance("Ed25519")
             s.initVerify(publicKey)

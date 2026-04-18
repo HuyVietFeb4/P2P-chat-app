@@ -8,8 +8,14 @@ import android.bluetooth.BluetoothGattService
 import android.content.Context
 import android.util.Log
 import com.facebook.infer.annotation.FalseOnNull
+import com.meshenger.backend.transport.BleLimitConstants
+import com.meshenger.backend.transport.BleUUIDConstants
 import com.meshenger.backend.transport.PhysicalPeer
+import com.meshenger.backend.transport.TransportPacketListener
 import com.meshenger.backend.transport.client.BleScanner
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import no.nordicsemi.android.ble.BleServerManager
 import no.nordicsemi.android.ble.data.Data
 import no.nordicsemi.android.ble.observer.ServerObserver
@@ -20,6 +26,11 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
     private var writeChar: BluetoothGattCharacteristic? = null
     private var notifyChar: BluetoothGattCharacteristic? = null
     private var isRunning: Boolean = false
+    private var packetListener: TransportPacketListener? = null
+    fun setListener(listener: TransportPacketListener) {
+        this.packetListener = listener
+    }
+
     override fun log(priority: Int, message: String) {
         Log.println(priority, "BleServer", message)
     }
@@ -32,9 +43,14 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
         )
         notifyChar = characteristic(
             BleUUIDConstants.CHARACTERISTIC_DATA_NOTIFY_UUID,
-            BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+            BluetoothGattCharacteristic.PROPERTY_NOTIFY or BluetoothGattCharacteristic.PROPERTY_READ,
             BluetoothGattCharacteristic.PERMISSION_READ,
-            cccd(),
+            // Explicitly define the CCCD with both Read and Write permissions
+            descriptor(
+                BleUUIDConstants.CCC_DESCRIPTOR_UUID,
+                BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE,
+                Data(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE)
+            ),
             description("Server to Client Push Pipe", false)
         )
 
@@ -57,11 +73,29 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
     override fun onDeviceConnectedToServer(device: BluetoothDevice) {
         if(!MeshConnectionRegistry.getInboundMap().containsKey(device.address)
             && MeshConnectionRegistry.getCountConnections() < BleLimitConstants.MAX_CONNECTIONS_LIMIT) {
-            MeshConnectionRegistry.addPhysicalPeer(device)
             val client = BleServerConnection(appContext)
+            client.onDataReceived = { sender, packet -> // entry point of receiving incoming packet
+                CoroutineScope(Dispatchers.Default).launch {
+                    Log.d("BleServer", "Received packet from ${sender.address} (Inbound)")
+                    packetListener?.onRecievePacket(packet, sender.address)
+                }
+            }
             client.useServer(this)
-            client.connect(device).enqueue()
-            MeshConnectionRegistry.addInbound(device.address, client)
+            client.setLocalServer(this)
+            client.connect(device)
+                .retry(3, 100)
+                .useAutoConnect(false)
+                .done { device ->
+                    // 3. Only add to Registry when the Handshake (MTU, etc.) is DONE
+                    MeshConnectionRegistry.addInbound(device.address, client)
+                    MeshConnectionRegistry.addPhysicalPeer(device)
+                    Log.d("BleServer", "Device $device.address is now READY and REGISTERED")
+                }
+                .fail { _, status ->
+                    Log.e("BleServer", "Failed to 'attach' to $device.address: status $status")
+                    cancelConnection(device) // Hard disconnect if handshake fails
+                }
+                .enqueue()
             Log.d("BleServer", "Device ${device.address} has connected")
         } else {
             Log.w("BleServer", "Rejecting connection from ${device.address}. Criteria not met.")
@@ -91,5 +125,11 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
     }
     fun isServerActive(): Boolean {
         return isRunning
+    }
+    fun getWriteChar(): BluetoothGattCharacteristic? {
+        return this.writeChar
+    }
+    fun getNotifyChar(): BluetoothGattCharacteristic? {
+        return this.notifyChar
     }
 }
