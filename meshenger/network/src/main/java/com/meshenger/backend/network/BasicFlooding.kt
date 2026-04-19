@@ -1,9 +1,10 @@
 package com.meshenger.backend.network
 
 import android.util.Log
-import com.meshenger.backend.transport.MeshMaintainer
-import com.meshenger.backend.transport.TransportPacketListener
-import com.meshenger.backend.transport.server.BleServer
+import com.meshenger.backend.transport2.MeshConnectionRegistry
+import com.meshenger.backend.transport2.MeshMaintainer
+import com.meshenger.backend.transport2.TransportPacketListener
+import com.meshenger.backend.transport2.server.BleServer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,9 +36,6 @@ object BasicFlooding : TransportPacketListener {
                 PacketCache.addToCache(packet.signature, packet)
 
                 // Parallel flood to all neighbors
-                MeshConnectionRegistry.getInboundMap().values.forEach {
-                    launch { it.sendPacketToClientSuspending(packetEncoded) }
-                }
                 MeshConnectionRegistry.getOutboundMap().values.forEach {
                     launch { it.sendPacketToServerSuspending(packetEncoded) }
                 }
@@ -104,19 +102,6 @@ object BasicFlooding : TransportPacketListener {
         meshScope.launch(Dispatchers.IO) {
             // Parallel send: Launch each peer in its own job
             // so one broken peer doesn't hang the whole mesh
-
-            // 1. Forward to Inbound Clients (Server Mode)
-            MeshConnectionRegistry.getInboundMap()
-                .filterKeys { it != excludeMac }
-                .values
-                .forEach { connection ->
-                    launch {
-                        try {
-                            connection.sendPacketToClientSuspending(encoded)
-                        } catch (e: Exception) { /* Log error */ }
-                    }
-                }
-
             // 2. Forward to Outbound Servers (Client Mode)
             MeshConnectionRegistry.getOutboundMap()
                 .filterKeys { it != excludeMac }

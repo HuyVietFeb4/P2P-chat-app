@@ -1,4 +1,4 @@
-package com.meshenger.backend.transport
+package com.meshenger.backend.transport2
 
 import android.app.Service
 import android.bluetooth.BluetoothDevice
@@ -7,10 +7,10 @@ import android.content.Intent
 import android.graphics.MeshSpecification
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.meshenger.backend.transport.client.BleClientConnection
-import com.meshenger.backend.transport.client.BleScanner
-import com.meshenger.backend.transport.server.BleAdvertiser
-import com.meshenger.backend.transport.server.BleServer
+import com.meshenger.backend.transport2.client.BleClientConnection
+import com.meshenger.backend.transport2.client.BleScanner
+import com.meshenger.backend.transport2.server.BleAdvertiser
+import com.meshenger.backend.transport2.server.BleServer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -31,6 +31,7 @@ class MeshMaintainer : Service() {
         appContext = applicationContext
         server = BleServer(applicationContext)
         scanner = BleScanner()
+        if (!server.isServerActive()) server.open()
         globalPacketListener?.let {
             server.setListener(it)
         }
@@ -98,7 +99,7 @@ class MeshMaintainer : Service() {
         startForeground(1, notification)
     }
 
-    // write - notification version
+    // dual - write version
     private fun startMeshMaintainerLoop() {
         serviceScope.launch {
             while (isRunning) {
@@ -127,6 +128,10 @@ class MeshMaintainer : Service() {
                             handleInMeshTransition()
                         }
                     } else {
+                        Log.d(
+                            "MeshMaintainer",
+                            "Satisfy connection limit ($activeCount)."
+                        )
                         handleInMeshTransition()
                     }
                 } catch (e: Exception) {
@@ -138,7 +143,6 @@ class MeshMaintainer : Service() {
     }
 
     private fun handleOutMeshTransition() {
-        if (server.isServerActive()) server.shutDownServer()
         if (MeshConnectionRegistry.isInMesh()) {
             MeshConnectionRegistry.updateIsInMesh(false)
             BleAdvertiser.resetBackgroundAdvertiser()
@@ -146,7 +150,6 @@ class MeshMaintainer : Service() {
     }
 
     private fun handleInMeshTransition() {
-        if (!server.isServerActive()) server.open()
         if (!MeshConnectionRegistry.isInMesh()) {
             MeshConnectionRegistry.updateIsInMesh(true)
             BleAdvertiser.resetBackgroundAdvertiser()
@@ -155,23 +158,9 @@ class MeshMaintainer : Service() {
     fun startServer() {
         server.open()
     }
-//    fun connectToDiscoveredPeers() {
-//        val connectedToUs = MeshConnectionRegistry.getPhysicalPeerList()
-//        val discoveredPeers = scanner.getInMeshDevices()
-//        for (peer in discoveredPeers) {
-//            val address = peer.device.address
-//
-//            if (connectedToUs.contains(peer)) continue
-//
-//            if (MeshConnectionRegistry.getOutboundMap().containsKey(address)) continue
-//
-//            initiateConnection(peer.device)
-//        }
-//    }
     private fun connectToDiscoveredPeers(discovered: List<PhysicalPeer>) {
         for (peer in discovered) {
             val addr = peer.device.address
-
             // Safety Checks:
             // 1. Not already connected as Client
             if (MeshConnectionRegistry.getOutboundMap().containsKey(addr)) continue
@@ -189,46 +178,11 @@ class MeshMaintainer : Service() {
         Log.i("MeshMaintainer", "Message from ${device.address}: $messageStr")
     }
 
-//    private fun initiateConnection(device: BluetoothDevice) {
-//        val client = BleClientConnection(appContext)
-//
-//        client.onDataReceived = { sender, packet -> // entry point of receiving incoming packet
-//            // Network routing
-//            Log.d("BleClientConnection", "Recieve data from ${sender.address}")
-//            globalPacketListener?.onRecievePacket(packet, sender.address)
-//        }
-//
-//        client.onDisconnected = { address ->
-//            MeshConnectionRegistry.removeOutbound(address)
-//            client.close()
-//        }
-//
-//        client.connect(device)
-//            .retry(3, 1000)
-//            .useAutoConnect(false)
-//            .done {
-//                Log.i("MeshMaintainer", "Successfully connected to ${device.address}")
-//                MeshConnectionRegistry.addOutBound(device.address, client)
-//            }
-//            .fail { device, status ->
-//                Log.e("MeshMaintainer", "Failed to connect to ${device.address}: $status")
-//            }
-//            .enqueue()
-//    }
     private fun initiateConnection(device: BluetoothDevice) {
         val address = device.address
         MeshConnectionRegistry.markPending(address)
 
         val client = BleClientConnection(applicationContext)
-        client.onDataReceived = { sender, packet ->
-            // Immediately move the work to a background worker thread
-            serviceScope.launch(Dispatchers.Default) {
-                Log.d("BleClientConnection", "Processing data from ${sender.address} asynchronously")
-
-                // This is where your heavy lifting (routing, decryption, etc.) happens
-                globalPacketListener?.onRecievePacket(packet, sender.address)
-            }
-        }
 
         client.onDisconnected = { addr ->
             MeshConnectionRegistry.removeOutbound(addr)
@@ -248,16 +202,6 @@ class MeshMaintainer : Service() {
                 MeshConnectionRegistry.unmarkPending(address)
             }
             .enqueue()
-    }
-    fun testSendMsgClientToServer(msg: String) {
-        MeshConnectionRegistry.getOutboundMap().forEach { (address, server) ->
-            server.sendMessageToServerStr(msg)
-        }
-    }
-    fun testSendMsgServerToClient(msg: String) {
-        MeshConnectionRegistry.getInboundMap().forEach { (address, client) ->
-            client.sendMessageToClientStr(msg)
-        }
     }
 
     companion object {

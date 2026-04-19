@@ -20,6 +20,6 @@ dependencies {
     api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0"
     implementation "com.facebook.react:react-android"
     implementation project(":backend:network")
-    implementation project(":backend:transport")
+    implementation project(":backend:transport2")
     implementation project(":backend:security_native")
 }

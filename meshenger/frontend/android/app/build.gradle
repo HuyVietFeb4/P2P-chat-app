@@ -158,7 +158,8 @@ dependencies {
     implementation project(':backend:application')
     implementation project(':backend:session')
     implementation project(':backend:network')
-    implementation project(':backend:transport')
+//    implementation project(':backend:transport')
+    implementation project(':backend:transport2')
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

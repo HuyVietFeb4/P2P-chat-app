@@ -1,8 +1,8 @@
 package com.meshenger
 import android.content.Intent
 import com.meshenger.backend.network.BasicFlooding
-import com.meshenger.backend.transport.MeshMaintainer
-import com.meshenger.backend.transport.server.BleAdvertiser
+import com.meshenger.backend.transport2.MeshMaintainer
+import com.meshenger.backend.transport2.server.BleAdvertiser
 
 import android.app.Application
 import android.content.res.Configuration

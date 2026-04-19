@@ -1,6 +1,6 @@
 package com.meshenger
 import android.content.Intent
-import com.meshenger.backend.transport.MeshMaintainer
+import com.meshenger.backend.transport2.MeshMaintainer
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

@@ -11,7 +11,6 @@ import com.meshenger.backend.application.db.MeshengerDbHelper
 import com.meshenger.backend.application.messaging.MessagingStore
 import com.meshenger.backend.application.user.UserProfile
 import com.meshenger.backend.application.user.UserStore
-import com.meshenger.backend.session.HelloWorldBridge
 
 /**
  * React Native native module for the Application layer.
@@ -19,7 +18,6 @@ import com.meshenger.backend.session.HelloWorldBridge
 class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
-    private val bridge = HelloWorldBridge()
     private val dbHelper = MeshengerDbHelper(reactContext.applicationContext)
 
     init {
@@ -71,11 +69,6 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun getMessage(promise: Promise) {
         promise.resolve("Application layer is active")
-    }
-
-    @ReactMethod
-    fun getMessageSession(promise: Promise) {
-        promise.resolve(bridge.getMessage())
     }
 
     @ReactMethod

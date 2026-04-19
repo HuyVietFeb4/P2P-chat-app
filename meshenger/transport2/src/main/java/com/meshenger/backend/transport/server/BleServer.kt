@@ -1,4 +1,4 @@
-package com.meshenger.backend.transport.server
+package com.meshenger.backend.transport2.server
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -8,11 +8,12 @@ import android.bluetooth.BluetoothGattService
 import android.content.Context
 import android.util.Log
 import com.facebook.infer.annotation.FalseOnNull
-import com.meshenger.backend.transport.BleLimitConstants
-import com.meshenger.backend.transport.BleUUIDConstants
-import com.meshenger.backend.transport.PhysicalPeer
-import com.meshenger.backend.transport.TransportPacketListener
-import com.meshenger.backend.transport.client.BleScanner
+import com.meshenger.backend.transport2.BleLimitConstants
+import com.meshenger.backend.transport2.BleUUIDConstants
+import com.meshenger.backend.transport2.PhysicalPeer
+import com.meshenger.backend.transport2.TransportPacketListener
+import com.meshenger.backend.transport2.MeshConnectionRegistry
+import com.meshenger.backend.transport2.client.BleClientConnection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -69,21 +70,21 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
     override fun onDeviceConnectedToServer(device: BluetoothDevice) {
         if(!MeshConnectionRegistry.getInboundMap().containsKey(device.address)
             && MeshConnectionRegistry.getCountConnections() < BleLimitConstants.MAX_CONNECTIONS_LIMIT) {
-            val client = BleServerConnection(appContext)
-            client.onDataReceived = { sender, packet -> // entry point of receiving incoming packet
+            // For recieving packet
+            val server = BleServerConnection(appContext)
+            server.onDataReceived = { sender, packet -> // entry point of receiving incoming packet
                 CoroutineScope(Dispatchers.Default).launch {
                     Log.d("BleServer", "Received packet from ${sender.address} (Inbound)")
                     packetListener?.onRecievePacket(packet, sender.address)
                 }
             }
-            client.useServer(this)
-            client.setLocalServer(this)
-            client.connect(device)
+            server.useServer(this)
+            server.connect(device)
                 .retry(3, 100)
                 .useAutoConnect(false)
                 .done { device ->
                     // 3. Only add to Registry when the Handshake (MTU, etc.) is DONE
-                    MeshConnectionRegistry.addInbound(device.address, client)
+                    MeshConnectionRegistry.addInbound(device.address, server)
                     MeshConnectionRegistry.addPhysicalPeer(device)
                     Log.d("BleServer", "Device $device.address is now READY and REGISTERED")
                 }
@@ -93,6 +94,31 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
                 }
                 .enqueue()
             Log.d("BleServer", "Device ${device.address} has connected")
+
+            // Reconnect back for dual write
+            val address = device.address
+            MeshConnectionRegistry.markPending(address)
+
+            val client = BleClientConnection(appContext)
+
+            client.onDisconnected = { addr ->
+                MeshConnectionRegistry.removeOutbound(addr)
+                MeshConnectionRegistry.unmarkPending(addr)
+                client.close()
+            }
+
+            client.connect(device)
+                .retry(2, 1000)
+                .useAutoConnect(false)
+                .done {
+                    Log.i("BleServer", "Connected to $address")
+                    MeshConnectionRegistry.addOutBound(address, client)
+                }
+                .fail { _, status ->
+                    Log.e("BleServer", "Failed $address: $status")
+                    MeshConnectionRegistry.unmarkPending(address)
+                }
+                .enqueue()
         } else {
             Log.w("BleServer", "Rejecting connection from ${device.address}. Criteria not met.")
             cancelConnection(device)
