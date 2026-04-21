@@ -41,6 +41,7 @@
 
 import Message from "@/app/common components/Message";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { useRouter } from "expo-router";
 import { Camera } from "lucide-react-native";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -49,6 +50,7 @@ export default function QRCamera() {
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
 
     if (!permission) {
         return (
@@ -69,6 +71,17 @@ export default function QRCamera() {
        try {
             setScanned(true);
             const jsonData = JSON.parse(data);
+            if (jsonData.id && jsonData.username) {
+                router.push({
+                    pathname: "/ConnectUser",
+                    params: {
+                        id: jsonData.id,
+                        username: jsonData.username
+                    }
+                });
+            } else {
+                throw new Error("Invalid QR Code");
+            }
        } catch (err) {
             setError("Invalid QR Code! Please try again!");
             setTimeout(() => {

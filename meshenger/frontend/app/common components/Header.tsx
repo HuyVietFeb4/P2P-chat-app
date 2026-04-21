@@ -1,9 +1,7 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { LayoutGrid, Search, ShieldAlert, UserPlus, UserRound, Users } from "lucide-react-native";
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions, TouchableOpacity } from "react-native";
-import ScanPopUp from "./ScanPopUp";
+import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
 interface HeaderProps {
     activeIndex: number,
