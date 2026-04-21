@@ -3,12 +3,12 @@ import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 
 type QRType = {
-    key: String,
+    id: String,
     username: String
 }
 
 const userQRData: QRType = {
-    key: "abcxyz",
+    id: "abcxyz",
     username: "John Doe"
 }
 
