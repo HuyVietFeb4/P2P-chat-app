@@ -53,6 +53,22 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
+    fun myQR(promise: Promise) {
+        try {
+            // Use dbHelper to query the user_profile table for the row with id = "local-device"
+            val profile = dbHelper.getUserProfile("local-device")
+            if (profile != null) {
+                // Retrieve the display_name and return it as the QR data
+                promise.resolve(profile.displayName)
+            } else {
+                promise.reject("NOT_FOUND", "Local profile not found")
+            }
+        } catch (e: Exception) {
+            promise.reject("DB_ERROR", e.message)
+        }
+    }
+
+    @ReactMethod
     fun getMessage(promise: Promise) {
         promise.resolve("Application layer is active")
     }

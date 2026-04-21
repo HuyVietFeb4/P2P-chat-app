@@ -2,27 +2,27 @@ import { ScanQrCode } from "lucide-react-native";
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 
-type QRType = {
-    id: String,
-    username: String
-}
+type MyQRProps = {
+    username: string;
+};
 
-const userQRData: QRType = {
-    id: "abcxyz",
-    username: "John Doe"
-}
-
-export default function MyQR() {
+export default function MyQR({ username }: MyQRProps) {
     const { width, height } = useWindowDimensions();
-    return (
-        <View style={[{height: height * 0.5}, styles.container]}>
 
+    // The data carried by the QR code
+    const userQRData = {
+        id: "local-device",
+        username: username
+    };
+
+    return (
+        <View style={[{ height: height * 0.5 }, styles.container]}>
             <View style={styles.card}>
                 <View style={styles.avatarImage}>
                     <ScanQrCode size={40} color="#fff" />
                 </View>
 
-                <Text style={styles.username}>{userQRData.username as string}</Text>
+                <Text style={styles.username}>{username}</Text>
 
                 <View style={styles.qrWrapper}>
                     <View style={styles.qrBox}>
@@ -65,17 +65,6 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         elevation: 4,
     },
-    iconRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
-        marginBottom: 8,
-    },
-    cardTitle: {
-        fontSize: 16,
-        fontWeight: "700",
-        color: "#1A1D2E",
-    },
     username: {
         fontSize: 22,
         fontWeight: "800",
@@ -108,38 +97,6 @@ const styles = StyleSheet.create({
         color: "#7B8299",
         textAlign: "center",
     },
-    actions: {
-        flexDirection: "row",
-        width: "100%",
-        gap: 12,
-    },
-    btnOutline: {
-        flex: 1,
-        paddingVertical: 15,
-        borderRadius: 14,
-        borderWidth: 1.5,
-        borderColor: "#E5E9F2",
-        alignItems: "center",
-        backgroundColor: "#fff",
-    },
-    btnOutlineText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#1A1D2E",
-    },
-    btnPrimary: {
-        flex: 1,
-        paddingVertical: 15,
-        borderRadius: 14,
-        backgroundColor: TEAL,
-        alignItems: "center",
-    },
-    btnPrimaryText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#fff",
-    },
-
     avatarImage: {
         backgroundColor: "#0082FC",
         borderRadius: 999,
