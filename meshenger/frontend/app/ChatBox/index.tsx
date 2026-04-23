@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { FlatList, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
+import { FlatList, NativeModules, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import Footer from "../common components/Footer";
 import Header from "../common components/Header";
 import AllChat from "./component/AllChat";
@@ -40,7 +40,6 @@ export default function ChatBox() {
     return (
         <View style={styles.container}>
             <Header activeIndex={activeIndex} onTabPress={handleTabPress} openPopUp={openPopUp} setOpenPopUp={() => setOpenPopUp(true)} />
-
             <FlatList
                 ref={flatListRef}
                 data={screens}

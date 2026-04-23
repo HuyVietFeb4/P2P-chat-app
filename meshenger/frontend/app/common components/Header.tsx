@@ -1,17 +1,19 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { usePathname } from "expo-router";
 import { LayoutGrid, Search, ShieldAlert, UserPlus, UserRound, Users } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
 interface HeaderProps {
-    activeIndex: number,
-    onTabPress: (index: number) => void,
+    activeIndex?: number,
+    onTabPress?: (index: number) => void,
     openPopUp: boolean,
     setOpenPopUp: () => void
 }
 
 export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopUp }: HeaderProps) {
     const {width, height} = useWindowDimensions();
+    const pathname = usePathname();
 
     const tabs = [
         { label: 'All', icon: LayoutGrid },
@@ -50,34 +52,38 @@ export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopU
                             />
                         </View>
                     </View>
-                    <View style={styles.filterContainer}>
-                        {tabs.map((tab, index) => {
-                            const Icon = tab.icon;
-                            const isActive = activeIndex === index;
-                            return (
-                                <TouchableOpacity
-                                    key={tab.label}
-                                    style={[
-                                        styles.filterFieldContainer,
-                                        isActive && styles.activeFilterField
-                                    ]}
-                                    onPress={() => onTabPress(index)}
-                                >
-                                    <Icon
-                                        size={14}
-                                        color={isActive ? '#fff' : '#5F2EEA'}
-                                    />
-                                    <Text style={[
-                                        styles.filterText,
-                                        isActive && styles.activeFilterText
+
+                    {
+                        pathname === "/ChatBox" &&
+                        <View style={styles.filterContainer}>
+                            {tabs.map((tab, index) => {
+                                const Icon = tab.icon;
+                                const isActive = activeIndex === index;
+                                return (
+                                    <TouchableOpacity
+                                        key={tab.label}
+                                        style={[
+                                            styles.filterFieldContainer,
+                                            isActive && styles.activeFilterField
                                         ]}
+                                        onPress={() => onTabPress?.(index)}
                                     >
-                                        {tab.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
+                                        <Icon
+                                            size={14}
+                                            color={isActive ? '#fff' : '#5F2EEA'}
+                                        />
+                                        <Text style={[
+                                            styles.filterText,
+                                            isActive && styles.activeFilterText
+                                            ]}
+                                        >
+                                            {tab.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    }
                 </View>
             </LinearGradient>
         </>
