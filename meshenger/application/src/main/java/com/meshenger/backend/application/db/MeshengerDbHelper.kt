@@ -6,12 +6,11 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.content.ContentValues
 import com.meshenger.backend.application.messaging.Message
+import com.meshenger.backend.application.messaging.MessageStatus
 import com.meshenger.backend.application.user.UserProfile
 
 /**
  * Small SQLite helper to persist messages and local user profile.
- *
- * This is intentionally minimal (no Room) to match the "sqlhelper" request.
  */
 class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(
     context,
@@ -37,7 +36,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(
               peer_id TEXT NOT NULL,
               text TEXT NOT NULL,
               from_me INTEGER NOT NULL,
-              timestamp INTEGER NOT NULL
+              timestamp INTEGER NOT NULL,
+              status TEXT NOT NULL DEFAULT 'SENT'
             );
             """.trimIndent()
         )
@@ -47,8 +47,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // For this prototype, keep simple. Add migrations when schema evolves.
         if (oldVersion < newVersion) {
+            // Simple approach for prototype: drop and recreate
             db.execSQL("DROP TABLE IF EXISTS messages;")
             db.execSQL("DROP TABLE IF EXISTS user_profile;")
             onCreate(db)
@@ -123,6 +123,7 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(
             put(COL_MSG_TEXT, message.text)
             put(COL_MSG_FROM_ME, if (message.fromMe) 1 else 0)
             put(COL_MSG_TIMESTAMP, message.timestamp)
+            put(COL_MSG_STATUS, message.status.name)
         }
         db.insertWithOnConflict(
             TABLE_MESSAGES,
@@ -132,11 +133,19 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(
         )
     }
 
+    fun updateMessageStatus(messageId: String, status: String) {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put(COL_MSG_STATUS, status)
+        }
+        db.update(TABLE_MESSAGES, values, "$COL_MSG_ID = ?", arrayOf(messageId))
+    }
+
     fun getConversation(peerId: String): List<Message> {
         val db = readableDatabase
         val cursor: Cursor = db.query(
             TABLE_MESSAGES,
-            arrayOf(COL_MSG_ID, COL_MSG_PEER_ID, COL_MSG_TEXT, COL_MSG_FROM_ME, COL_MSG_TIMESTAMP),
+            arrayOf(COL_MSG_ID, COL_MSG_PEER_ID, COL_MSG_TEXT, COL_MSG_FROM_ME, COL_MSG_TIMESTAMP, COL_MSG_STATUS),
             "${COL_MSG_PEER_ID} = ?",
             arrayOf(peerId),
             null,
@@ -152,13 +161,16 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(
                 val text = it.getString(it.getColumnIndexOrThrow(COL_MSG_TEXT))
                 val fromMeInt = it.getInt(it.getColumnIndexOrThrow(COL_MSG_FROM_ME))
                 val timestamp = it.getLong(it.getColumnIndexOrThrow(COL_MSG_TIMESTAMP))
+                val statusStr = it.getString(it.getColumnIndexOrThrow(COL_MSG_STATUS))
+                
                 out.add(
                     Message(
                         id = id,
                         peerId = pId,
                         text = text,
                         fromMe = fromMeInt != 0,
-                        timestamp = timestamp
+                        timestamp = timestamp,
+                        status = MessageStatus.valueOf(statusStr)
                     )
                 )
             }
@@ -168,7 +180,7 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(
 
     companion object {
         private const val DATABASE_NAME = "meshenger.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
 
         private const val TABLE_USER_PROFILE = "user_profile"
         private const val COL_USER_ID = "id"
@@ -181,5 +193,6 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(
         private const val COL_MSG_TEXT = "text"
         private const val COL_MSG_FROM_ME = "from_me"
         private const val COL_MSG_TIMESTAMP = "timestamp"
+        private const val COL_MSG_STATUS = "status"
     }
 }
