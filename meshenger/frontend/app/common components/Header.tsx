@@ -1,8 +1,10 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { LayoutGrid, Search, ShieldAlert, UserPlus, UserRound, Users } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface HeaderProps {
     activeIndex?: number,
@@ -23,14 +25,16 @@ export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopU
     ];
 
     return (
-        <>
-            <LinearGradient
-                colors={['#0F4C81', '#5F2EEA']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 0}}
-                style={{width: width, height: height * 0.2}}
-            >
-                <View style={[styles.headerContainer, {width: width * 0.95}]}>
+        <LinearGradient
+            colors={['#0F4C81', '#5F2EEA']}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 0}}
+            style={{width: width, paddingTop: 10}}
+        >
+            <StatusBar translucent backgroundColor="transparent" style="light" />
+
+            <SafeAreaView edges={['top']}>
+                <View style={[styles.headerContainer, {width: width * 0.90}]}>
                     <View style={styles.actionContainer}> 
                         <View style={styles.appTitleContainer}>
                             <Image
@@ -52,7 +56,6 @@ export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopU
                             />
                         </View>
                     </View>
-
                     {
                         pathname === "/ChatBox" &&
                         <View style={styles.filterContainer}>
@@ -85,8 +88,8 @@ export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopU
                         </View>
                     }
                 </View>
-            </LinearGradient>
-        </>
+            </SafeAreaView>
+        </LinearGradient>
     );
 }
 
@@ -116,13 +119,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 25
+        marginBottom: 20
     },
 
     headerContainer: {
         alignSelf: 'center',
-        marginTop: 'auto',
-        paddingBottom: 5
+        paddingBottom: 10,
     },
 
     filterText: {
