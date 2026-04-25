@@ -1,4 +1,4 @@
-package com.meshenger.backend.network
+package com.meshenger.backend.transport2
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -41,7 +41,7 @@ object StaticKeyManager {
 
     fun getRawIdentityPublicKey(publicKey: PublicKey): ByteArray {
         val encoded = publicKey.encoded
-        return encoded.takeLast(32).toByteArray()
+        return encoded.takeLast(32).encodeToByteArray()
     }
 
     fun decodeRawIdentityPublicKey(rawKey: ByteArray): PublicKey {

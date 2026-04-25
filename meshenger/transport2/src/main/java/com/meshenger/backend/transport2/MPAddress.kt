@@ -1,14 +1,15 @@
-package com.meshenger.backend.network
+package com.meshenger.backend.transport2
 import java.nio.ByteBuffer
 import com.google.crypto.tink.subtle.Hkdf
 
 import com.meshenger.backend.security_native.NativeCredentials
 import java.io.ByteArrayOutputStream
 import java.nio.ByteOrder
+import android.util.Base64
 
 object MPAddress {
-    private val SALT = "This-is-salt-value-to-generate-routing-id".toByteArray()
-    private val INFO_PREFIX = "Meshenger-v1-generate-routing-id".toByteArray()
+    private val SALT = "This-is-salt-value-to-generate-routing-id".encodeToByteArray()
+    private val INFO_PREFIX = "Meshenger-v1-generate-routing-id".encodeToByteArray()
     fun getMyMPAddress(
         epochHours: Int = 2,
         length: Int = 8
@@ -22,9 +23,9 @@ object MPAddress {
         val stream = ByteArrayOutputStream()
         stream.write(INFO_PREFIX)
         stream.write(epochBytes)
-        stream.write(NativeCredentials.getAppSecretKey().toByteArray())
+        stream.write(NativeCredentials.getAppSecretKey().encodeToByteArray())
 
-        val info = stream.toByteArray()
+        val info = stream.encodeToByteArray()
         return Hkdf.computeHkdf(
             "HmacSHA256",
             publicKeyEncoded, // IKM
@@ -43,5 +44,18 @@ object MPAddress {
 
         // 3. Get as Long, then convert to ULong
         return buffer.long.toULong()
+    }
+
+    fun getMyMPAddressString(): String {
+        val MPAddressByteArray = this.getMyMPAddress()
+        val addrStr = Base64.encodeToString(MPAddressByteArray, Base64.NO_WRAP)
+    }
+
+    fun MPAddressStringToByteArray(address: String): ByteArray {
+        return Base64.decode(address, Base64.NO_WRAP)
+    }
+
+    fun MPAddressByteArrayToString(address: ByteArray): String {
+        return Base64.encodeToString(address, Base64.NO_WRAP)
     }
 }

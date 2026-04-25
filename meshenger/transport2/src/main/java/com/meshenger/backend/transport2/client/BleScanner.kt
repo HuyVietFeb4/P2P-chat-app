@@ -6,6 +6,7 @@ import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
 import com.meshenger.backend.transport2.BleUUIDConstants
+import com.meshenger.backend.transport2.MPAddress
 import com.meshenger.backend.transport2.PhysicalPeer
 import kotlinx.coroutines.delay
 import no.nordicsemi.android.support.v18.scanner.BluetoothLeScannerCompat
@@ -38,7 +39,7 @@ class BleScanner {
                         raw?.let {
                             val decoded = String(it, Charsets.UTF_8)
                             val parts = decoded.split("|")
-                            val mpAddress = parts[0]
+                            val mpAddress = MPAddress.MPAddressStringToByteArray(parts[0])
                             val isInMesh = parts.getOrNull(1)?.toBoolean() ?: false
                             Log.d("BleScanner", "MPAddress: ${mpAddress}")
                             Log.d("BleScanner", "isInMesh: ${isInMesh}")

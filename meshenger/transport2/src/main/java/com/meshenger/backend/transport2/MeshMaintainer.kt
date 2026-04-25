@@ -169,7 +169,7 @@ class MeshMaintainer : Service() {
             // 3. Not already trying to connect
             if (MeshConnectionRegistry.isPending(addr)) continue
 
-            initiateConnection(peer.device)
+            initiateConnection(peer)
         }
     }
 
@@ -178,8 +178,8 @@ class MeshMaintainer : Service() {
         Log.i("MeshMaintainer", "Message from ${device.address}: $messageStr")
     }
 
-    private fun initiateConnection(device: BluetoothDevice) {
-        val address = device.address
+    private fun initiateConnection(peer: PhysicalPeer) {
+        val address = peer.device.address
         MeshConnectionRegistry.markPending(address)
 
         val client = BleClientConnection(applicationContext)
@@ -190,12 +190,13 @@ class MeshMaintainer : Service() {
             client.close()
         }
 
-        client.connect(device)
+        client.connect(peer.device)
             .retry(2, 1000)
             .useAutoConnect(false)
             .done {
                 Log.i("MeshMaintainer", "Connected to $address")
                 MeshConnectionRegistry.addOutBound(address, client)
+                MeshConnectionRegistry.addPhysicalPeer(peer)
             }
             .fail { _, status ->
                 Log.e("MeshMaintainer", "Failed $address: $status")

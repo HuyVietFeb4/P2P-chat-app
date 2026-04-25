@@ -17,4 +17,6 @@ dependencies {
     api 'no.nordicsemi.android:ble-ktx:2.11.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation "com.facebook.react:react-android"
+    implementation project(":backend:security_native")
+    implementation "com.google.crypto.tink:tink-android:1.12.0"
 }

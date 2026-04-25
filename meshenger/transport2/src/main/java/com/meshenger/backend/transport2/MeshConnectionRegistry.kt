@@ -39,9 +39,14 @@ object MeshConnectionRegistry {
     fun getInbound(address: String) = inboundMap[address]
     fun getOutbound(address: String) = outboundMap[address]
 
-    fun addPhysicalPeer(device: BluetoothDevice) {
+    fun inMeshDevices(device: BluetoothDevice) {
         if (physicalPeerList.none { it.device.address == device.address }) {
             physicalPeerList.add(PhysicalPeer(device))
+        }
+    }
+    fun addPhysicalPeer(peer: PhysicalPeer) {
+        if (physicalPeerList.none { it.device.address == peer.device.address }) {
+            physicalPeerList.add(peer)
         }
     }
     fun removePhysicalPeer(device: BluetoothDevice) {

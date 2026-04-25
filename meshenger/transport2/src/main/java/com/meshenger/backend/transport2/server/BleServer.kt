@@ -85,7 +85,6 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
                 .done { device ->
                     // 3. Only add to Registry when the Handshake (MTU, etc.) is DONE
                     MeshConnectionRegistry.addInbound(device.address, server)
-                    MeshConnectionRegistry.addPhysicalPeer(device)
                     Log.d("BleServer", "Device $device.address is now READY and REGISTERED")
                 }
                 .fail { _, status ->
@@ -131,6 +130,7 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
         val connection = MeshConnectionRegistry.getInbound(device.address)
         connection?.close()
         MeshConnectionRegistry.removeInbound(device.address)
+        MeshConnectionRegistry.removePhysicalPeer(device)
         Log.i("BleServer", "Server resources for ${device.address} released.")
     }
 

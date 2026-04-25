@@ -14,6 +14,7 @@ import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
 import com.meshenger.backend.transport2.BleUUIDConstants
+import com.meshenger.backend.transport2.MPAddress
 import com.meshenger.backend.transport2.MeshConnectionRegistry
 import kotlinx.coroutines.delay
 
@@ -86,14 +87,14 @@ object BleAdvertiser {
                 .setConnectable(true)
                 .build()
 
-            val advertiseMeshAddr = "Test customize mesh address"
+            val advertiseMeshAddr = MPAddress.getMyMPAddressString()
             val isInMesh = MeshConnectionRegistry.isInMesh()
             val combinedData = "$advertiseMeshAddr|$isInMesh"
             Log.d("BleAdvertiser", "Raw payload to sent: $combinedData")
             val advertiseData = AdvertiseData.Builder()
                 .setIncludeDeviceName(true)
                 .addServiceUuid(ParcelUuid(BleUUIDConstants.MESH_SERVICE_UUID))
-                .addManufacturerData(0xFFFF, combinedData.toByteArray()) // Should only use 1 field to not waste space for more id
+                .addManufacturerData(0xFFFF, combinedData.encodeToByteArray()) // Should only use 1 field to not waste space for more id
                 .build()
                 advertiser?.startAdvertisingSet(parameters, advertiseData, null, null, null, advertisingSetCallback)
         } else {
