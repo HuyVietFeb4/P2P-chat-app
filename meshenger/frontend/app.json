@@ -7,7 +7,7 @@
     "icon": "./assets/images/appIcon.png",
     "scheme": "meshenger",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    // "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -17,7 +17,8 @@
         "foregroundImage": "./assets/images/foregroundIcon.png",
         "backgroundImage": "./assets/images/backgroundIcon.png"
       },
-      "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "pan",
+      // "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.meshenger"
     },
