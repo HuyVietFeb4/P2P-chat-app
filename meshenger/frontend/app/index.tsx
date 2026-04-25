@@ -19,7 +19,7 @@ export default function App() {
                 router.replace("/Onboarding");
             } else {
                 // Subsequent launches: go straight to the ChatBox
-                router.replace("/ChatBox");
+                router.replace("/Chat");
             }
             // Hide the splash screen once routing is determined
             await SplashScreen.hideAsync();
