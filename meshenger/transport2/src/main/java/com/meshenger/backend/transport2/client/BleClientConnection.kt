@@ -6,6 +6,8 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
 import android.util.Log
 import com.meshenger.backend.transport2.BleUUIDConstants
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import no.nordicsemi.android.ble.BleManager
 import no.nordicsemi.android.ble.data.Data
 import no.nordicsemi.android.ble.ktx.suspend
@@ -13,6 +15,7 @@ import no.nordicsemi.android.ble.observer.ConnectionObserver
 //  A client connection initiated that connect to some server
 class BleClientConnection(context: Context): BleManager(context), ConnectionObserver {
     private var writeChar: BluetoothGattCharacteristic? = null
+    private val writeMutex = Mutex()
     var onDataReceived: ((device: BluetoothDevice, data: ByteArray) -> Unit)? = null
     init {
         setConnectionObserver(this)
@@ -121,19 +124,20 @@ class BleClientConnection(context: Context): BleManager(context), ConnectionObse
             return
         }
 
-        try {
-            writeCharacteristic(
-                writeChar,
-                packet,
-                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-            )
-                .split()
-                .suspend()
+        writeMutex.withLock {
+            try {
+                writeCharacteristic(
+                    writeChar,
+                    packet,
+                    BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                )
+                    .split() // Ensures MTU limits are respected automatically
+                    .suspend()
 
-            Log.d("BleClientConnection", "Data successfully written via Suspend")
-        } catch (e: Exception) {
-            // Status -1 or other GATT errors will be caught here
-            Log.e("BleClientConnection", "Failed to write: ${e.message}")
+                Log.d("BleClientConnection", "Data successfully written via Suspend")
+            } catch (e: Exception) {
+                Log.e("BleClientConnection", "Failed to write: ${e.message}")
+            }
         }
     }
 }

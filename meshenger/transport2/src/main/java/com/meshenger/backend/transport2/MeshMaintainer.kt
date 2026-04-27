@@ -18,11 +18,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
+import kotlin.random.Random
 
 class MeshMaintainer : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Default + Job())
     private var isRunning = false
-
+    // probability to trigger anti entropy
+    private var AntiEntropyProbability = 1.0
     private lateinit var server: BleServer
     private lateinit var appContext: Context
     private lateinit var scanner: BleScanner
@@ -99,43 +101,65 @@ class MeshMaintainer : Service() {
         startForeground(1, notification)
     }
 
+    private suspend fun maintainConnections() {
+        try {
+            val activeCount = MeshConnectionRegistry.getCountConnections()
+
+            if (activeCount < BleLimitConstants.MIN_CONNECTIONS_LIMIT) {
+                Log.d(
+                    "MeshMaintainer",
+                    "Under connection limit ($activeCount). Scanning..."
+                )
+
+                // 1. Scan for peers
+                scanner.onDemandScanSync(2000)
+                val discovered = scanner.getInMeshDevices()
+
+                if (discovered.isNotEmpty()) {
+                    // 2. Transition Logic: Only shut down server if we have targets to connect to
+                    // Adding a random delay prevents two phones from shutting down servers simultaneously
+                    delay((500..2000).random().toLong())
+
+                    handleOutMeshTransition()
+                    connectToDiscoveredPeers(discovered)
+                } else {
+                    // No one found? Be a Server and wait.
+                    handleInMeshTransition()
+                }
+            } else {
+                Log.d(
+                    "MeshMaintainer",
+                    "Satisfy connection limit ($activeCount)."
+                )
+                handleInMeshTransition()
+            }
+        } catch (e: Exception) {
+            Log.e("MeshMaintainer", "Loop error: ${e.message}")
+        }
+    }
+
+    // Simple protocol to decide when to trigger anti entropy
+    private suspend fun stochasticAntiEntropyScheduler() {
+        if (Random.nextDouble() < AntiEntropyProbability) {
+            Log.d("MeshMaintainer", "Entropy Triggered! (Prob: $AntiEntropyProbability)")
+
+            // POKE THE NETWORK LAYER
+            globalPacketListener?.onTriggerAntiEntropy()
+
+            // Reset probability
+            AntiEntropyProbability = 0.05
+        } else {
+            // Increase probability for the next check (max out at 100%)
+            AntiEntropyProbability = (AntiEntropyProbability + 0.05).coerceAtMost(1.0)
+        }
+    }
     // dual - write version
     private fun startMeshMaintainerLoop() {
         serviceScope.launch {
             while (isRunning) {
-                try {
-                    val activeCount = MeshConnectionRegistry.getCountConnections()
-
-                    if (activeCount < BleLimitConstants.MIN_CONNECTIONS_LIMIT) {
-                        Log.d(
-                            "MeshMaintainer",
-                            "Under connection limit ($activeCount). Scanning..."
-                        )
-
-                        // 1. Scan for peers
-                        scanner.onDemandScanSync(2000)
-                        val discovered = scanner.getInMeshDevices()
-
-                        if (discovered.isNotEmpty()) {
-                            // 2. Transition Logic: Only shut down server if we have targets to connect to
-                            // Adding a random delay prevents two phones from shutting down servers simultaneously
-                            delay((500..2000).random().toLong())
-
-                            handleOutMeshTransition()
-                            connectToDiscoveredPeers(discovered)
-                        } else {
-                            // No one found? Be a Server and wait.
-                            handleInMeshTransition()
-                        }
-                    } else {
-                        Log.d(
-                            "MeshMaintainer",
-                            "Satisfy connection limit ($activeCount)."
-                        )
-                        handleInMeshTransition()
-                    }
-                } catch (e: Exception) {
-                    Log.e("MeshMaintainer", "Loop error: ${e.message}")
+                maintainConnections()
+                if(MeshConnectionRegistry.getCountConnections() > 0) {
+                    stochasticAntiEntropyScheduler()
                 }
                 delay(5000) // Don't hammer the CPU/Radio
             }

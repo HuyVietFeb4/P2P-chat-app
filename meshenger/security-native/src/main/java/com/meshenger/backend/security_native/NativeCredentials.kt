@@ -13,4 +13,5 @@ object NativeCredentials {
      */
     external fun getAppSecretKey(): String
     external fun getGlobalChatKey(): String
+    external fun getTwoPartyChatKey(): String
 }

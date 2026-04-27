@@ -15,11 +15,11 @@ class PacketFactoryTest {
     @Test
     fun testCreateBroadcastPackets_BasicValidation() {
         val senderId = 123456789L.toULong()
-        val payload = "Hello World".toByteArray()
+        val payload = "Hello World".encodeToByteArray()
         val type = MessageType.USER_MESSAGE_ALL.value
 
         // 1. Execute
-        val packets = PacketFactory.createBroadcastPackets(
+        val packets = PacketFactory.createPackets(
             type = type,
             senderID = senderId,
             payload = payload
@@ -40,11 +40,11 @@ class PacketFactoryTest {
 
     @Test
     fun testSignatureIntegrity() {
-        val payload = "Secret Message".toByteArray()
+        val payload = "Secret Message".encodeToByteArray()
         val senderId = 999uL
         val type = MessageType.USER_MESSAGE_ALL.value
 
-        val packets = PacketFactory.createBroadcastPackets(
+        val packets = PacketFactory.createPackets(
             type = type,
             senderID = senderId,
             payload = payload
@@ -55,7 +55,7 @@ class PacketFactoryTest {
         // Manually recreate the HMAC to verify the factory did it correctly
         val secretKey = NativeCredentials.getAppSecretKey()
         val hmac = Mac.getInstance("HmacSHA512")
-        hmac.init(SecretKeySpec(secretKey.toByteArray(), "HmacSHA512"))
+        hmac.init(SecretKeySpec(secretKey.encodeToByteArray(), "HmacSHA512"))
 
         // Note: You must match the exact buffer layout used in createBroadcastPackets
         val buffer = java.nio.ByteBuffer.allocate(38 + payload.size).order(java.nio.ByteOrder.BIG_ENDIAN)
@@ -79,7 +79,7 @@ class PacketFactoryTest {
         // Create a payload larger than MAX_PAYLOAD_LENGTH (e.g., 500 bytes)
         val largePayload = ByteArray(500) { it.toByte() }
 
-        val packets = PacketFactory.createBroadcastPackets(
+        val packets = PacketFactory.createPackets(
             type = MessageType.USER_MESSAGE_ALL.value,
             senderID = 1uL,
             payload = largePayload
@@ -107,7 +107,7 @@ class PacketFactoryTest {
             senderID = 987654321uL
         )
         val dummySignature = ByteArray(64) { 0xA.toByte() }
-        val dummyPayload = "Test Payload".toByteArray()
+        val dummyPayload = "Test Payload".encodeToByteArray()
 
         val originalPacket = Packet(originalHeader, dummySignature, dummyPayload)
 
@@ -140,7 +140,7 @@ class PacketFactoryTest {
 
     @Test
     fun testPaddingDoesNotCorruptData() {
-        val shortPayload = "Short".toByteArray()
+        val shortPayload = "Short".encodeToByteArray()
         val packet = Packet(1u, 0u, 1u, 20u, 1u, 0u, 100uL, 0uL, 0uL, ByteArray(64), shortPayload)
 
         val encoded = Packet.encode(packet)

@@ -3,27 +3,39 @@
 package com.meshenger.backend.network
 
 import android.util.LruCache
+import okio.ByteString
 import okio.ByteString.Companion.toByteString
-val maxCacheSize = 10000
-object PacketCache {
-    val cache = LruCache<String, Packet>(maxCacheSize)
-    // Bytes per entry: 56 + 24 + 80 + 412 = 572 bytes
-    // Total bytes for the cache = maxCacheSize * 572
-    // 10000 entries = 5.5 mb
-    private fun ByteArray.toHex() = this.joinToString("") { "%02x".format(it) }
-    fun checkMembership(signature: ByteArray): Boolean {
-        return cache.get(signature.toHex()) != null
-    }
+
+open class PacketCache(val maxCacheSize: Int) {
+    // 2. Initialize the LruCache with the provided size
+    protected val cache = LruCache<ByteString, Packet>(maxCacheSize)
+
+    fun checkMembership(signature: ByteArray): Boolean =
+        cache.get(signature.toByteString()) != null // return true if already present
 
     fun addToCache(signature: ByteArray, packet: Packet) {
-        cache.put(signature.toHex(), packet)
+        if(!checkMembership(signature)) {
+            cache.put(signature.toByteString(), packet)
+        }
     }
 
     fun removeFromCache(signature: ByteArray) {
-        cache.remove(signature.toHex())
+        cache.remove(signature.toByteString())
     }
 
     fun getPacketInCache(signature: ByteArray): Packet? {
-        return cache.get(signature.toHex())
+        return cache.get(signature.toByteString())
     }
+
+    fun getAllKeys(): List<ByteString> = cache.snapshot().keys.toList()
+
+    fun getAllPackets(): List<Packet> = cache.snapshot().values.toList()
+
+    fun getAllEntries(): Map<ByteString, Packet> = cache.snapshot()
 }
+
+// 3. Define the specialized caches with different sizes
+object UserPacketCache : PacketCache(5000)
+
+// Renamed to avoid confusion with the concept of a 'Protocol'
+object ProtocolPacketCache : PacketCache(500)

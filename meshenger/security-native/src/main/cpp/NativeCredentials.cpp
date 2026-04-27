@@ -53,3 +53,35 @@ Java_com_meshenger_backend_security_1native_NativeCredentials_getGlobalChatKey(
 
     return env->NewStringUTF(encrypted.c_str());
 }
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_meshenger_backend_security_1native_NativeCredentials_getTwoPartyChatKey(
+        JNIEnv* env,
+        jobject thiz,
+        jobject context) {
+            
+    unsigned char hidden_key[] = {
+    0x4D, 0x65, 0x73, 0x68, 0x65, 0x6E, 0x67, 0x65, 0x72, // Meshenger
+    0x5F,                                           // _
+    0x54, 0x77, 0x6F,                               // Two
+    0x5F,                                           // _
+    0x50, 0x61, 0x72, 0x74, 0x79,                   // Party
+    0x5F,                                           // _
+    0x43, 0x68, 0x61, 0x74,                         // Chat
+    0x5F,                                           // _
+    0x53, 0x65, 0x63, 0x72, 0x65, 0x74,             // Secret
+    0x5F,                                           // _
+    0x4B, 0x65, 0x79                                // Key
+};
+
+    // The length is 39 bytes
+    int key_len = 35;
+    char mask = 0xB9;
+
+    std::string encrypted = "";
+    for (int i = 0; i < key_len; i++) {
+        encrypted += (char)(hidden_key[i] ^ mask);
+    }
+
+    return env->NewStringUTF(encrypted.c_str());
+}

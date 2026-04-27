@@ -14,7 +14,7 @@ object MPAddress {
         epochHours: Int = 2,
         length: Int = 8
     ): ByteArray {
-        val publicKeyEncoded = StaticKeyManager.getRawIdentityPublicKey(StaticKeyManager.getOrCreateIdentityKey().public)
+        val publicKeyEncoded = StaticKeyManager.getRawPublicKey(StaticKeyManager.getOrCreateAgreementKey().public)
         val epochSeconds = epochHours * 3600
         val currentTimeStamp = System.currentTimeMillis() / 1000
         val epochIndex = currentTimeStamp / epochSeconds
@@ -25,7 +25,7 @@ object MPAddress {
         stream.write(epochBytes)
         stream.write(NativeCredentials.getAppSecretKey().encodeToByteArray())
 
-        val info = stream.encodeToByteArray()
+        val info = stream.toByteArray()
         return Hkdf.computeHkdf(
             "HmacSHA256",
             publicKeyEncoded, // IKM
@@ -49,6 +49,7 @@ object MPAddress {
     fun getMyMPAddressString(): String {
         val MPAddressByteArray = this.getMyMPAddress()
         val addrStr = Base64.encodeToString(MPAddressByteArray, Base64.NO_WRAP)
+        return addrStr
     }
 
     fun MPAddressStringToByteArray(address: String): ByteArray {
@@ -57,5 +58,19 @@ object MPAddress {
 
     fun MPAddressByteArrayToString(address: ByteArray): String {
         return Base64.encodeToString(address, Base64.NO_WRAP)
+    }
+
+    fun MPAddressByteArrayToULong(address: ByteArray): ULong {
+        val buffer = ByteBuffer.wrap(address)
+
+        // 2. Set the byte order (Big Endian is default, Little Endian is common in BLE)
+        buffer.order(ByteOrder.BIG_ENDIAN)
+
+        // 3. Get as Long, then convert to ULong
+        return buffer.long.toULong()
+    }
+
+    fun MPAddressBeautifulcation(address: ByteArray): String {
+        TODO("Implement eautifulcation format")
     }
 }
