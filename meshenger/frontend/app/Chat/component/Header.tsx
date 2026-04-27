@@ -21,7 +21,6 @@ export default function Header({ title, avatarUrl, status }: Props) {
     return (
         <>
             <StatusBar translucent backgroundColor="transparent" style="light" />
-            <SafeAreaView edges={['top']} style={styles.headerContainer}>
                 <Shadow
                     distance={20}
                     startColor="rgba(13, 10, 44, 0.07)"
@@ -63,7 +62,6 @@ export default function Header({ title, avatarUrl, status }: Props) {
                         </Pressable>
                     </Pressable>
                 </Modal>
-            </SafeAreaView>
         </>
     );
 }

@@ -94,6 +94,7 @@ export default function Input({peerId} : Props) {
                     placeholder="Type a message"
                     style={styles.input}
                     placeholderTextColor="rgba(75, 85, 99, 0.5)"
+                    onFocus={() => console.log("focus")}
                 />
 
                 <TouchableOpacity style={styles.icon}>
