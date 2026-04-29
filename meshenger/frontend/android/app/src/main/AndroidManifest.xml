@@ -46,7 +46,7 @@
       </intent-filter>
     </activity>
     <service
-        android:name=".backend.transport.MeshMaintainer"
+        android:name=".backend.transport2.MeshMaintainer"
         android:foregroundServiceType="connectedDevice"
         android:exported="false"
         />

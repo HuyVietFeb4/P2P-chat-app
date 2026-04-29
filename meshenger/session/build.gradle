@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
-
+    id 'org.jetbrains.kotlin.plugin.serialization' version "1.9.0"
     id 'kotlin-parcelize'
 }
 
@@ -17,5 +17,10 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation "com.google.crypto.tink:tink-android:1.12.0"
+    api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0"
+    implementation "com.facebook.react:react-android"
+    implementation project(":backend:network")
+    implementation project(":backend:transport2")
     implementation project(":backend:security_native")
+    implementation "org.bouncycastle:bcprov-jdk18on:1.84"
 }
