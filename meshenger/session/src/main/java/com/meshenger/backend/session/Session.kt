@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import java.security.MessageDigest
 abstract class Session {
     protected val peers = mutableListOf<Peer>()
-    protected val messageBus = MutableSharedFlow<JsonObject>(replay = 0)
+    protected val _messageBus = MutableSharedFlow<JsonObject>(replay = 1, extraBufferCapacity = 10)
     protected fun getFixedKey(rawKey: String): ByteArray {
         val digest = MessageDigest.getInstance("SHA-256")
         return digest.digest(rawKey.encodeToByteArray())
@@ -25,13 +25,17 @@ abstract class Session {
     open fun getPeerUsername(addressToFind: ULong): String? {
         return peers.find { it.MPAddress == addressToFind }?.userName
     }
+
+    open fun getMessageBus(): MutableSharedFlow<JsonObject> {
+        return _messageBus
+    }
     abstract fun sendMessageStr(
         receiverMPAddress: ULong = SpecialRecipients.BROADCAST,
         message: String
     )
-    abstract fun recieveMessageStr(senderMPAddress: ULong, encryptedData: ByteArray, nonceTimeStamp: ULong)
+    abstract fun receiveMessageStr(senderMPAddress: ULong, encryptedData: ByteArray, nonceTimeStamp: ULong)
 //    abstract fun sendFile(dest: Peer, file: ByteArray)
-//    abstract fun recieveFile(senderMPAddress: ULong, file: ByteArray)
+//    abstract fun receiveFile(senderMPAddress: ULong, file: ByteArray)
 }
 
 enum class SessionType(val value: UInt) {

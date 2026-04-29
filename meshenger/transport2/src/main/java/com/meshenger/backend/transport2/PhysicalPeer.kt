@@ -3,7 +3,7 @@ import android.bluetooth.BluetoothDevice
 
 data class PhysicalPeer (
     val device: BluetoothDevice,
-    var MPAddress: ByteArray,
+    var MPAddress: ByteArray = byteArrayOf(),
     var isInMesh: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean {

@@ -1,5 +1,5 @@
 package com.meshenger.backend.transport2
 interface TransportPacketListener {
-    fun onRecievePacket(packet: ByteArray, sourceMac: String = "DumpAddr")
+    fun onReceivePacket(packet: ByteArray, sourceMac: String = "DumpAddr")
     fun onTriggerAntiEntropy()
 }

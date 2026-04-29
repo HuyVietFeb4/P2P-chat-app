@@ -14,7 +14,7 @@ object MPAddress {
         epochHours: Int = 2,
         length: Int = 8
     ): ByteArray {
-        val publicKeyEncoded = StaticKeyManager.getRawPublicKey(StaticKeyManager.getOrCreateAgreementKey().public)
+        val publicKeyEncoded = StaticKeyManager.getRawPublicKey(StaticKeyManager.getOrCreateIdentityKey().public)
         val epochSeconds = epochHours * 3600
         val currentTimeStamp = System.currentTimeMillis() / 1000
         val epochIndex = currentTimeStamp / epochSeconds

@@ -19,6 +19,13 @@ open class PacketCache(val maxCacheSize: Int) {
         }
     }
 
+    fun addIfNew(signature: ByteArray, packet: Packet): Boolean {
+        val key = signature.toByteString()
+        if (cache.get(key) != null) return false
+        cache.put(key, packet)
+        return true
+    }
+
     fun removeFromCache(signature: ByteArray) {
         cache.remove(signature.toByteString())
     }

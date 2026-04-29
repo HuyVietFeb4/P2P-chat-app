@@ -24,7 +24,7 @@ class MeshMaintainer : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Default + Job())
     private var isRunning = false
     // probability to trigger anti entropy
-    private var AntiEntropyProbability = 1.0
+    private var AntiEntropyProbability = 0.0
     private lateinit var server: BleServer
     private lateinit var appContext: Context
     private lateinit var scanner: BleScanner
@@ -204,9 +204,14 @@ class MeshMaintainer : Service() {
 
     private fun initiateConnection(peer: PhysicalPeer) {
         val address = peer.device.address
+        if (MeshConnectionRegistry.isPending(address)) return
         MeshConnectionRegistry.markPending(address)
 
         val client = BleClientConnection(applicationContext)
+
+//        client.onDataReceived = { sender, bytes ->
+//            globalPacketListener?.onReceivePacket(bytes, sender.address)
+//        }
 
         client.onDisconnected = { addr ->
             MeshConnectionRegistry.removeOutbound(addr)

@@ -9,9 +9,9 @@ import java.nio.ByteOrder
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-val maxQSize = 5000
+val maxQSize = 400
 // For the purpose of storing the fragment for reassembly.
-// Type LruCache with key is hash value of timeStamp, type, totalFragments, senderID, recieverID and sign by app secret key
+// Type LruCache with key is hash value of timeStamp, type, totalFragments, senderID, receiverID and sign by app secret key
 object ReassemblyQueue {
     val queue = LruCache<ByteString, Array<ByteArray?>>(maxQSize)
     private val appKeySpec by lazy {

@@ -1,6 +1,7 @@
 package com.meshenger.backend.transport2.client
 
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
@@ -21,7 +22,7 @@ class BleScanner {
     val scanner = BluetoothLeScannerCompat.getScanner()
     private val handler = Handler(Looper.getMainLooper())
 
-    private val discoveredDevices = mutableListOf<PhysicalPeer>()
+    private val discoveredDevices = mutableListOf<BluetoothDevice>()
     private val inMeshDevices = mutableListOf<PhysicalPeer>()
     private val outMeshDevices = mutableListOf<PhysicalPeer>()
     val scanCallback = object : ScanCallback() {
@@ -31,7 +32,7 @@ class BleScanner {
                 val deviceName = device.name
                 val deviceAddress = device.address
                 val isExtended = !it.isLegacy
-                if (!discoveredDevices.contains(PhysicalPeer(device))) {
+                if (!discoveredDevices.contains(device)) {
                     val newPeer = PhysicalPeer(device)
                     Log.d("BleScanner", "Found ${if(isExtended) "Extended" else "Legacy"} Device: $deviceName ($deviceAddress). Address: ${result.device.address}")
                     if(isExtended) {
@@ -43,11 +44,12 @@ class BleScanner {
                             val isInMesh = parts.getOrNull(1)?.toBoolean() ?: false
                             Log.d("BleScanner", "MPAddress: ${mpAddress}")
                             Log.d("BleScanner", "isInMesh: ${isInMesh}")
+
                             newPeer.MPAddress = mpAddress
                             newPeer.isInMesh = isInMesh
                         }
                     }
-                    discoveredDevices.add(newPeer)
+                    discoveredDevices.add(device)
                     if(newPeer.isInMesh) {
                         inMeshDevices.add(newPeer)
                     } else {
@@ -145,9 +147,6 @@ class BleScanner {
         }
     }
 
-    fun getDiscoveredDevices() : List<PhysicalPeer> {
-        return discoveredDevices
-    }
     fun getInMeshDevices() : List<PhysicalPeer> {
         return inMeshDevices
     }

@@ -130,6 +130,18 @@ android {
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
+    packaging {
+        resources {
+            // Pick one of the files or just exclude it.
+            // These manifest files are usually not needed for Android apps.
+            excludes.add("/META-INF/versions/9/OSGI-INF/MANIFEST.MF")
+
+            // It's also good practice to exclude these BC-specific files
+            // to avoid signature errors during the merge
+            excludes.add("META-INF/BCKEY.SF")
+            excludes.add("META-INF/BCKEY.RSA")
+        }
+    }
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`

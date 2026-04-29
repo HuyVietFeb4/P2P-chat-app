@@ -22,4 +22,5 @@ dependencies {
     implementation project(":backend:network")
     implementation project(":backend:transport2")
     implementation project(":backend:security_native")
+    implementation "org.bouncycastle:bcprov-jdk18on:1.84"
 }

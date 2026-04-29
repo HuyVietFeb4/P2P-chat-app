@@ -51,7 +51,7 @@ object EpidemicFlooding : TransportPacketListener {
         val sha512HMAC = Mac.getInstance("HmacSHA512")
         sha512HMAC.init(directKeySpec)
 
-        val buffer = ByteBuffer.allocate(36 + packet.payload.size)
+        val buffer = ByteBuffer.allocate(44 + packet.payload.size)
         buffer.order(ByteOrder.BIG_ENDIAN)
         buffer.order(ByteOrder.BIG_ENDIAN)
         buffer.putShort(packet.header.version.toShort()) // version
@@ -62,7 +62,7 @@ object EpidemicFlooding : TransportPacketListener {
         buffer.putShort(packet.header.totalFragments.toShort())
         buffer.putLong(packet.header.timeStamp.toLong())
         buffer.putLong(packet.header.senderID.toLong())
-        buffer.putLong(packet.header.recieverID.toLong())
+        buffer.putLong(packet.header.receiverID.toLong())
 
         buffer.put(packet.payload)
         return MessageDigest.isEqual(sha512HMAC.doFinal(buffer.array()), packet.signature)
@@ -93,11 +93,29 @@ object EpidemicFlooding : TransportPacketListener {
             }
         }
     }
+    fun onBootstrapSend(payload: ByteArray, timeStamp: Long) {
+        epidemicScope.launch {
+            val type = MessageType.BOOTSTRAP.value
+            val senderID = MPAddress.getMyMPAddressULong()
+            val packetLst = PacketFactory.createPackets(type, senderID = senderID,
+                payload = payload, inputTimeStamp = timeStamp.toULong())
+
+            packetLst.forEach { packet ->
+                val packetEncoded = Packet.encode(packet) ?: return@forEach
+                UserPacketCache.addToCache(packet.signature, packet)
+
+                // Parallel flood to all neighbors
+                MeshConnectionRegistry.getOutboundMap().values.forEach {
+                    launch { it.sendPacketToServerSuspending(packetEncoded) }
+                }
+            }
+        }
+    }
     fun onTwoPartyMessageSend(msg: ByteArray, timeStamp: Long, receiverId: ULong, messageType: MessageType) {
         epidemicScope.launch {
             val type = messageType.value
             val receiverID = receiverId
-            val packetLst = PacketFactory.createPackets(type, senderID = MPAddress.getMyMPAddressULong(), recieverID = receiverID,
+            val packetLst = PacketFactory.createPackets(type, senderID = MPAddress.getMyMPAddressULong(), receiverID = receiverID,
                 payload = msg, inputTimeStamp = timeStamp.toULong())
 
             packetLst.forEach { packet ->
@@ -112,35 +130,40 @@ object EpidemicFlooding : TransportPacketListener {
         }
     }
 
-    override fun onRecievePacket(packet: ByteArray, sourceMac: String) {
+    override fun onReceivePacket(packet: ByteArray, sourceMac: String) {
         val decodedPacket = Packet.decode(packet) ?: return
-        var packetDropCondition = UserPacketCache.checkMembership(decodedPacket.signature)
-                || ProtocolPacketCache.checkMembership(decodedPacket.signature)
-                || decodedPacket.header.TTL <= 0u
-        when(decodedPacket.header.type) {
-            MessageType.USER_MESSAGE_ALL.value,
-            MessageType.BOOTSTRAP.value -> {
-                packetDropCondition = packetDropCondition || !verifyGlobalChatKey(decodedPacket)
-            }
-            MessageType.USER_MESSAGE_ONE_TO_ONE.value,
-            MessageType.NOISE_HANDSHAKE.value,
-            MessageType.ANTI_ENTROPY_REQUEST.value,
-            MessageType.ANTI_ENTROPY_RESPOND.value,-> {
-                // signature = getSignatureOneToOne(...)
-                packetDropCondition = packetDropCondition || !verifyDirectChatKey(decodedPacket)
-            }
+        val sig = decodedPacket.signature
 
-            else -> {
-                Log.e("EpidemicFlooding", "Unhandled message type: ${decodedPacket.header.type}")
-                return
-            }
+        // 1. ATOMIC CHECK & ADD (The "Guard")
+        // Check membership and add immediately. If it was already there, stop.
+        val isNew = when(decodedPacket.header.type) {
+            MessageType.ANTI_ENTROPY_REQUEST.value,
+            MessageType.ANTI_ENTROPY_RESPOND.value,
+            MessageType.NOISE_HANDSHAKE.value,
+            MessageType.BOOTSTRAP.value -> ProtocolPacketCache.addIfNew(sig, decodedPacket)
+            else -> UserPacketCache.addIfNew(sig, decodedPacket)
         }
-        // Quick Exit: Drop if seen before or TTL expired or the signature does not match (packetDropCondition is false)
-        if (packetDropCondition) {
+
+        if (!isNew) return // Already seen and being processed or finished. Stop the storm.
+
+        // 2. TTL Check
+        if (decodedPacket.header.TTL <= 0u) return
+
+        // 3. Signature Verification (Now it's safe to do this "slow" work)
+        val isValid = when(decodedPacket.header.type) {
+            MessageType.USER_MESSAGE_ALL.value, MessageType.BOOTSTRAP.value -> verifyGlobalChatKey(decodedPacket)
+            else -> verifyDirectChatKey(decodedPacket)
+        }
+
+        if (!isValid) {
+            // If it was fake, remove it from cache so we can receive a valid one later
+            UserPacketCache.removeFromCache(sig)
+            ProtocolPacketCache.removeFromCache(sig)
             return
         }
 
-        Log.d("EpidemicFlooding", "Received packet from: ${decodedPacket.header.senderID}")
+        Log.d("EpidemicFlooding", "Received packet from: ${decodedPacket.header.senderID} with type: ${decodedPacket.header.type}")
+        Log.d("EpidemicFlooding", "Received packet for: ${decodedPacket.header.receiverID}. My MPAddress: ${MPAddress.getMyMPAddressULong()}")
         // add to cache
         when(decodedPacket.header.type) {
             MessageType.ANTI_ENTROPY_REQUEST.value,
@@ -168,12 +191,14 @@ object EpidemicFlooding : TransportPacketListener {
 
 
         val myAddress = MPAddress.getMyMPAddressULong()
-        val isForMe = decodedPacket.header.recieverID == myAddress
-        val isBroadcast = decodedPacket.header.recieverID == SpecialRecipients.BROADCAST
+        val isForMe = decodedPacket.header.receiverID == myAddress
+        val isBroadcast = decodedPacket.header.receiverID == SpecialRecipients.BROADCAST
 
         // 1. Process local delivery if applicable
         if (isForMe || isBroadcast) {
+            Log.d("EpidemicFlooding", "My packet with ${decodedPacket.header.fragmentID} and total ${decodedPacket.header.totalFragments} arrived.")
             if(decodedPacket.header.totalFragments > 1.toUShort()) {
+                Log.d("Reassembly", "Fragment ${decodedPacket.header.fragmentID} with total ${decodedPacket.header.totalFragments} stored. Waiting for more...")
                 val completePayload = ReassemblyQueue.addToQueue(
                     ReassemblyQueue.getKeyFragment(decodedPacket),
                     decodedPacket.payload,
@@ -181,22 +206,24 @@ object EpidemicFlooding : TransportPacketListener {
                     decodedPacket.header.fragmentID.toInt()
                 )
                 if (completePayload != null) {
-                    handleLocalDelivery(decodedPacket, completePayload)
+                    handleLocalDelivery(decodedPacket, completePayload, sourceMac)
                 } else {
                     Log.d("Reassembly", "Fragment ${decodedPacket.header.fragmentID} stored. Waiting for more...")
                 }
             } else {
-                handleLocalDelivery(decodedPacket, decodedPacket.payload)
+                handleLocalDelivery(decodedPacket, decodedPacket.payload, sourceMac)
             }
         }
 
         // 2. Forwarding logic (Re-flood)
         // Only forward if it was a broadcast or if it wasn't for me personally
-        if (isBroadcast || !isForMe) {
-            val newHeader = decodedPacket.header.copy(TTL = (decodedPacket.header.TTL - 1u).toUShort())
-            val updatedPacket = decodedPacket.copy(header = newHeader)
-            Log.d("EpidemicFlooding", "Flooding packet to all neighbors. New TTL: ${newHeader.TTL}")
-            forwardPacket(updatedPacket, sourceMac)
+        if (isBroadcast || (!isForMe && decodedPacket.header.receiverID != SpecialRecipients.BROADCAST)) {
+            val newTTL = (decodedPacket.header.TTL.toInt() - 1)
+            if (newTTL > 0) {
+                val updatedPacket = decodedPacket.copy(header = decodedPacket.header.copy(TTL = newTTL.toUShort()))
+                Log.d("Epidemic Flooding", "Flooding packet to all neighbours with TTL: ${updatedPacket.header.TTL}")
+                forwardPacket(updatedPacket, sourceMac)
+            }
         }
     }
 
@@ -205,10 +232,12 @@ object EpidemicFlooding : TransportPacketListener {
             val type = MessageType.ANTI_ENTROPY_REQUEST.value
             val physicalPeerList = MeshConnectionRegistry.getPhysicalPeerList()
             val compactVector = summaryVector.toCompactedBinary()
+            Log.d("Epidemic Flooding", "Compact vector size: ${compactVector.size}")
             for(peer in physicalPeerList) {
                 val senderID = MPAddress.getMyMPAddressULong()
-                val recieverID = MPAddress.MPAddressByteArrayToULong(peer.MPAddress)
-                val packetLst = PacketFactory.createPackets(type, senderID = senderID, recieverID = recieverID,
+                val peerMPAddress = peer.MPAddress?: continue
+                val receiverID = MPAddress.MPAddressByteArrayToULong(peerMPAddress)
+                val packetLst = PacketFactory.createPackets(type, senderID = senderID, receiverID = receiverID,
                     payload = compactVector, inputTimeStamp = System.currentTimeMillis().toULong())
                 packetLst.forEach { packet ->
                     forwardPacket(packet)
@@ -220,7 +249,7 @@ object EpidemicFlooding : TransportPacketListener {
     /**
      * Handles passing the message up to the Session layer
      */
-    private fun handleLocalDelivery(packet: Packet, completePayload: ByteArray) {
+    private fun handleLocalDelivery(packet: Packet, completePayload: ByteArray, sourceMac: String) {
         when (packet.header.type) {
             MessageType.USER_MESSAGE_ALL.value -> {
                 messageListener?.onGlobalMessageReceived(
@@ -246,28 +275,35 @@ object EpidemicFlooding : TransportPacketListener {
                         // Send to the one who request
                         sentCount++
                         val type = MessageType.ANTI_ENTROPY_RESPOND.value
-                        val recieverID = packet.header.senderID
+                        val receiverID = packet.header.senderID
                         val senderID = MPAddress.getMyMPAddressULong()
                         val wrapPayload = Packet.encode(entry.value) ?: continue
-                        val packetLst = PacketFactory.createPackets(type, senderID = senderID, recieverID = recieverID,
+                        val packetLst = PacketFactory.createPackets(type, senderID = senderID, receiverID = receiverID,
                             payload = wrapPayload, inputTimeStamp = System.currentTimeMillis().toULong())
                         for(packet in packetLst) {
-                            forwardPacket(packet)
+                            forwardPacket(packet, sourceMac)
                         }
                     }
                 }
             }
             MessageType.ANTI_ENTROPY_RESPOND.value -> {
-                onRecievePacket(completePayload)
+                onReceivePacket(completePayload)
             }
             MessageType.NOISE_HANDSHAKE.value -> {
-                messageListener?.onRecieveMessageHandShake(
+                messageListener?.onReceiveMessageHandShake(
                     packet.header.senderID,
                     completePayload,
                 )
             }
             MessageType.USER_MESSAGE_ONE_TO_ONE.value -> {
                 messageListener?.onDirectMessageReceived(
+                    packet.header.senderID,
+                    completePayload,
+                    packet.header.timeStamp
+                )
+            }
+            MessageType.BOOTSTRAP.value -> {
+                messageListener?.onBootStrapReceived(
                     packet.header.senderID,
                     completePayload,
                     packet.header.timeStamp
@@ -302,5 +338,4 @@ object EpidemicFlooding : TransportPacketListener {
                 }
         }
     }
-
 }

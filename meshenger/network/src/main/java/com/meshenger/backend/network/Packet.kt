@@ -61,7 +61,7 @@ object SpecialRecipients {
  * - Total fragments: 2 bytes 
  * - Fragment ID: 2 bytes 
  * - Timestamp: 8 bytes
- * - RecieverID: 8 bytes
+ * - ReceiverID: 8 bytes
  * - SenderID: 8 bytes
  *
  * Payload sections: 0-396 bytes
@@ -75,7 +75,7 @@ data class Header(
     val totalFragments: UShort,
     val fragmentID: UShort,
     val timeStamp: ULong,
-    val recieverID: ULong,
+    val receiverID: ULong,
     val senderID: ULong,
 
 ): Parcelable
@@ -109,7 +109,7 @@ data class Packet(
         totalFragments: UShort,
         fragmentID: UShort,
         timeStamp: ULong,
-        recieverID: ULong,
+        receiverID: ULong,
         senderID: ULong,
         signature: ByteArray,
         payload: ByteArray
@@ -122,7 +122,7 @@ data class Packet(
             totalFragments = totalFragments,
             fragmentID = fragmentID,
             timeStamp = timeStamp,
-            recieverID = recieverID,
+            receiverID = receiverID,
             senderID = senderID,
         ),
         signature = signature,
@@ -175,7 +175,7 @@ data class Packet(
                 buffer.putShort(packet.header.totalFragments.toShort())
                 buffer.putShort(packet.header.fragmentID.toShort())
                 buffer.putLong(packet.header.timeStamp.toLong())
-                buffer.putLong(packet.header.recieverID.toLong())
+                buffer.putLong(packet.header.receiverID.toLong())
                 buffer.putLong(packet.header.senderID.toLong())
                 buffer.put(packet.signature)
                 val payload = PaddingUtil.pad(packet.payload, PacketLimitConfig.MAX_PAYLOAD_LENGTH)
@@ -234,9 +234,9 @@ object PacketFactory {
         totalFragments: UShort,
         timeStamp: ULong,
         senderID: ULong,
-        recieverID: ULong
+        receiverID: ULong
     ): ByteArray {
-        val buffer = ByteBuffer.allocate(36 + payload.size)
+        val buffer = ByteBuffer.allocate(44 + payload.size)
         buffer.order(ByteOrder.BIG_ENDIAN)
         buffer.putShort(version.toShort()) // version
         buffer.putShort(flags.toShort())
@@ -246,7 +246,7 @@ object PacketFactory {
         buffer.putShort(totalFragments.toShort())
         buffer.putLong(timeStamp.toLong())
         buffer.putLong(senderID.toLong())
-        buffer.putLong(recieverID.toLong())
+        buffer.putLong(receiverID.toLong())
         buffer.put(payload)
         return mac.doFinal(buffer.array())
     }
@@ -255,7 +255,7 @@ object PacketFactory {
         type: UInt,
         payload: ByteArray,
         senderID: ULong = MPAddress.getMyMPAddressULong(),
-        recieverID: ULong = SpecialRecipients.BROADCAST,
+        receiverID: ULong = SpecialRecipients.BROADCAST,
         inputTimeStamp: ULong = System.currentTimeMillis().toULong(),
         needAck: Boolean = false,
         isCompressed: Boolean = false,
@@ -296,7 +296,7 @@ object PacketFactory {
                     signature = getSignatureDirectPacket(
                         sha512HMAC,version, flags, type, fragment,
                         index.toUShort(), fragments.size.toUShort(), inputTimeStamp,
-                        senderID, recieverID
+                        senderID, receiverID
                     )
                 }
                 else -> {
@@ -308,7 +308,7 @@ object PacketFactory {
                 return emptyList()
             }
             val packet = Packet(version, flags, type, TTL, fragments.size.toUShort(), index.toUShort(), inputTimeStamp,
-                recieverID, senderID, signature,fragment)
+                receiverID, senderID, signature,fragment)
             packetList.add(packet)
         }
         return packetList

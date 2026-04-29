@@ -10,8 +10,8 @@ import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
-
-open class BloomFilter(val capacity: Int = 600, val errorRate: Double = 0.05) {
+val filterCapacity = 1000
+open class BloomFilter(val capacity: Int = filterCapacity, val errorRate: Double = 0.05) {
     protected val size: Int = (- (capacity * ln(errorRate)) / ln(2.0).pow(2.0)).toInt()
     protected val hashCount: Int = max(1, ( (size.toDouble() / capacity) * ln(2.0) ).toInt())
     protected var bitArray = BitSet(size)
@@ -54,7 +54,7 @@ open class BloomFilter(val capacity: Int = 600, val errorRate: Double = 0.05) {
     }
 }
 
-class KMBloomFilter(capacity: Int, errorRate: Double = 0.01) : BloomFilter(capacity, errorRate) {
+class KMBloomFilter(capacity: Int = filterCapacity, errorRate: Double = 0.01) : BloomFilter(capacity, errorRate) {
     override fun getHashes(signature: ByteArray): Sequence<Int> = sequence {
         val h1 = MessageDigest.getInstance("MD5").digest(signature).toPositiveBigInt()
         val h2 = MessageDigest.getInstance("SHA-1").digest(signature).toPositiveBigInt()
@@ -66,7 +66,7 @@ class KMBloomFilter(capacity: Int, errorRate: Double = 0.01) : BloomFilter(capac
     }
 }
 
-open class CompactRefinedBloomFilter(capacity: Int, errorRate: Double = 0.01) : BloomFilter(capacity, errorRate) {
+open class CompactRefinedBloomFilter(capacity: Int = filterCapacity, errorRate: Double = 0.01) : BloomFilter(capacity, errorRate) {
     fun toCompactedBinary(): ByteArray {
         val blockSize = size / hashCount
         val totalBits = blockSize * hashCount
@@ -129,7 +129,7 @@ open class CompactRefinedBloomFilter(capacity: Int, errorRate: Double = 0.01) : 
 }
 
 class KMCompactRefinedBloomFilter(
-    capacity: Int = 10000,
+    capacity: Int = filterCapacity,
     errorRate: Double = 0.01
 ) : CompactRefinedBloomFilter(capacity, errorRate) {
     override fun getHashes(signature: ByteArray): Sequence<Int> = sequence {

@@ -1,21 +1,28 @@
 package com.meshenger.backend.session
 
-import com.meshenger.backend.transport2.StaticKeyManager
+
+import org.bouncycastle.crypto.agreement.X25519Agreement
+import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator
+import org.bouncycastle.crypto.generators.X25519KeyPairGenerator
+import org.bouncycastle.crypto.params.Ed25519KeyGenerationParameters
+import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
+import org.bouncycastle.crypto.params.X25519KeyGenerationParameters
+import org.bouncycastle.crypto.params.X25519PrivateKeyParameters
+import org.bouncycastle.crypto.params.X25519PublicKeyParameters
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import javax.crypto.KeyAgreement
+import java.security.SecureRandom
 
 class HandshakeState(
     private val isInitiator: Boolean,
     private val prologue: ByteArray,
-    private val s: KeyPair,
+    private val s: Pair<ByteArray, ByteArray>,
     private val pattern: NoisePattern,
     private val rs: ByteArray? = null // Remote Static Public Key (required for KK/XK)
 ) {
     private val symmetricState = SymmetricState()
-    private var e: KeyPair? = null
+    private var e: Pair<ByteArray, ByteArray>? = null
     private var re: ByteArray? = null
     private var remoteStatic: ByteArray? = rs
     private var messageIndex = 0
@@ -32,7 +39,7 @@ class HandshakeState(
 
         // For KK, the initiator's static key is also known by the responder
         if (pattern == NoisePattern.KK) {
-            symmetricState.mixHash(StaticKeyManager.getRawPublicKey(s.public))
+            symmetricState.mixHash(getRawPublicKey(s))
         }
     }
 
@@ -75,13 +82,13 @@ class HandshakeState(
                 val pubE = getRawPublicKey(e!!)
                 symmetricState.mixHash(pubE)
                 output.write(pubE)
-                symmetricState.mixKey(diffieHellman(e!!, re!!)) // ee
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), re!!)) // ee
                 output.write(symmetricState.encryptAndHash(getRawPublicKey(s))) // s
-                symmetricState.mixKey(diffieHellman(s, re!!)) // es
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(s), re!!)) // es
             }
             2 -> { // -> s, se
                 output.write(symmetricState.encryptAndHash(getRawPublicKey(s))) // s
-                symmetricState.mixKey(diffieHellman(e!!, remoteStatic!!)) // se
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), remoteStatic!!)) // se
             }
         }
     }
@@ -92,15 +99,15 @@ class HandshakeState(
             val pubE = getRawPublicKey(e!!)
             symmetricState.mixHash(pubE)
             output.write(pubE)
-            symmetricState.mixKey(diffieHellman(e!!, remoteStatic!!)) // es
-            symmetricState.mixKey(diffieHellman(s, remoteStatic!!)) // ss
+            symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), remoteStatic!!)) // es
+            symmetricState.mixKey(diffieHellman(getRawPrivateKey(s), remoteStatic!!)) // ss
         } else if (messageIndex == 1) { // <- e, ee, se
             e = generateEphemeralKeyPair()
             val pubE = getRawPublicKey(e!!)
             symmetricState.mixHash(pubE)
             output.write(pubE)
-            symmetricState.mixKey(diffieHellman(e!!, re!!)) // ee
-            symmetricState.mixKey(diffieHellman(e!!, remoteStatic!!)) // se
+            symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), re!!)) // ee
+            symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), remoteStatic!!)) // se
         }
     }
 
@@ -110,16 +117,16 @@ class HandshakeState(
             val pubE = getRawPublicKey(e!!)
             symmetricState.mixHash(pubE)
             output.write(pubE)
-            symmetricState.mixKey(diffieHellman(e!!, remoteStatic!!)) // es
+            symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), remoteStatic!!)) // es
         } else if (messageIndex == 1) { // <- e, ee
             e = generateEphemeralKeyPair()
             val pubE = getRawPublicKey(e!!)
             symmetricState.mixHash(pubE)
             output.write(pubE)
-            symmetricState.mixKey(diffieHellman(e!!, re!!)) // ee
+            symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), re!!)) // ee
         } else if (messageIndex == 2) { // -> s, se
             output.write(symmetricState.encryptAndHash(getRawPublicKey(s))) // s
-            symmetricState.mixKey(diffieHellman(e!!, re!!)) // se
+            symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), re!!)) // se
         }
     }
 
@@ -141,12 +148,12 @@ class HandshakeState(
                 input.get(tempRe)
                 re = tempRe
                 symmetricState.mixHash(re!!)
-                symmetricState.mixKey(diffieHellman(e!!, re!!)) // ee
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), re!!)) // ee
 
                 val encryptedS = ByteArray(32 + 16)
                 input.get(encryptedS)
                 remoteStatic = symmetricState.decryptAndHash(encryptedS) // rs
-                symmetricState.mixKey(diffieHellman(e!!, remoteStatic!!)) // es
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), remoteStatic!!)) // es
 
                 val payloadCipher = ByteArray(input.remaining())
                 input.get(payloadCipher)
@@ -156,7 +163,7 @@ class HandshakeState(
                 val encryptedS = ByteArray(32 + 16)
                 input.get(encryptedS)
                 remoteStatic = symmetricState.decryptAndHash(encryptedS) // rs
-                symmetricState.mixKey(diffieHellman(e!!, remoteStatic!!)) // se
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), remoteStatic!!)) // se
 
                 val payloadCipher = ByteArray(input.remaining())
                 input.get(payloadCipher)
@@ -173,8 +180,8 @@ class HandshakeState(
                 input.get(tempRe)
                 re = tempRe
                 symmetricState.mixHash(re!!)
-                symmetricState.mixKey(diffieHellman(s, re!!)) // es
-                symmetricState.mixKey(diffieHellman(s, remoteStatic!!)) // ss
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(s), re!!)) // es
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(s), remoteStatic!!)) // ss
 
                 val payloadCipher = ByteArray(input.remaining())
                 input.get(payloadCipher)
@@ -185,8 +192,8 @@ class HandshakeState(
                 input.get(tempRe)
                 re = tempRe
                 symmetricState.mixHash(re!!)
-                symmetricState.mixKey(diffieHellman(e!!, re!!)) // ee
-                symmetricState.mixKey(diffieHellman(s, re!!)) // se
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), re!!)) // ee
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(s), re!!)) // se
 
                 val payloadCipher = ByteArray(input.remaining())
                 input.get(payloadCipher)
@@ -203,7 +210,7 @@ class HandshakeState(
                 input.get(tempRe)
                 re = tempRe
                 symmetricState.mixHash(re!!)
-                symmetricState.mixKey(diffieHellman(s, re!!)) // es
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(s), re!!)) // es
 
                 val payloadCipher = ByteArray(input.remaining())
                 input.get(payloadCipher)
@@ -214,7 +221,7 @@ class HandshakeState(
                 input.get(tempRe)
                 re = tempRe
                 symmetricState.mixHash(re!!)
-                symmetricState.mixKey(diffieHellman(e!!, re!!)) // ee
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), re!!)) // ee
 
                 val payloadCipher = ByteArray(input.remaining())
                 input.get(payloadCipher)
@@ -224,7 +231,7 @@ class HandshakeState(
                 val encryptedS = ByteArray(32 + 16)
                 input.get(encryptedS)
                 remoteStatic = symmetricState.decryptAndHash(encryptedS)
-                symmetricState.mixKey(diffieHellman(e!!, remoteStatic!!)) // se
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), remoteStatic!!)) // se
 
                 val payloadCipher = ByteArray(input.remaining())
                 input.get(payloadCipher)
@@ -235,21 +242,37 @@ class HandshakeState(
     }
 
     // Helper to get raw bytes from s.public
-    private fun getRawPublicKey(pair: KeyPair): ByteArray = StaticKeyManager.getRawPublicKey(pair.public)
+    private fun getRawPublicKey(keyPair: Pair<ByteArray, ByteArray>): ByteArray = keyPair.first
+    private fun getRawPrivateKey(keyPair: Pair<ByteArray, ByteArray>): ByteArray = keyPair.second
     // Helper to perform X25519 DH
 
-    private fun diffieHellman(local: KeyPair, remotePublic: ByteArray): ByteArray {
-        val agreement = KeyAgreement.getInstance("X25519")
-        agreement.init(local.private)
-        val remotePublicKey = StaticKeyManager.decodeRawAgreementPublicKey(remotePublic)
-        agreement.doPhase(remotePublicKey, true)
-        return agreement.generateSecret()
+    private fun diffieHellman(localPrivate: ByteArray, remotePublic: ByteArray): ByteArray {
+        val myPrivateKey = X25519PrivateKeyParameters(localPrivate, 0)
+        val theirPublicKey = X25519PublicKeyParameters(remotePublic, 0)
+
+        val agreement = X25519Agreement()
+        agreement.init(myPrivateKey)
+
+        // 1. Pre-allocate a 32-byte array for the secret
+        val sharedSecret = ByteArray(agreement.agreementSize)
+
+        // 2. Calculate the agreement.
+        // This writes into 'sharedSecret' starting at offset 0.
+        agreement.calculateAgreement(theirPublicKey, sharedSecret, 0)
+
+        // 3. Return the byte array shared secret key
+        return sharedSecret
     }
 
-    private fun generateEphemeralKeyPair(): KeyPair {
-        val kpg = KeyPairGenerator.getInstance("X25519")
-        val keyPair = kpg.generateKeyPair()
-        return keyPair
+    private fun generateEphemeralKeyPair(): Pair<ByteArray, ByteArray> {
+        val generator = X25519KeyPairGenerator()
+        val random = SecureRandom() // Use a strong random source
+        val params = X25519KeyGenerationParameters(random)
+        generator.init(params)
+        val keyPair = generator.generateKeyPair()
+        val publicKey = (keyPair.public as X25519PublicKeyParameters).getEncoded() // 32 bytes
+        val privateKey = (keyPair.private as X25519PrivateKeyParameters).getEncoded() // 32 bytes
+        return Pair(publicKey, privateKey)
     }
 
     val isFinished: Boolean get() = when(pattern) {

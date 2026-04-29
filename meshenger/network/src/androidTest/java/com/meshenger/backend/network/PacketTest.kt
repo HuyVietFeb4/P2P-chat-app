@@ -32,7 +32,7 @@ class PacketFactoryTest {
         val firstPacket = packets[0]
         assertEquals(type, firstPacket.header.type)
         assertEquals(senderId, firstPacket.header.senderID)
-        assertEquals(SpecialRecipients.BROADCAST, firstPacket.header.recieverID)
+        assertEquals(SpecialRecipients.BROADCAST, firstPacket.header.receiverID)
 
         // Verify Signature length (HMAC-SHA512 is 64 bytes)
         assertEquals(64, firstPacket.signature.size)
@@ -103,7 +103,7 @@ class PacketFactoryTest {
             totalFragments = 1u,
             fragmentID = 0u,
             timeStamp = System.currentTimeMillis().toULong(),
-            recieverID = SpecialRecipients.BROADCAST,
+            receiverID = SpecialRecipients.BROADCAST,
             senderID = 987654321uL
         )
         val dummySignature = ByteArray(64) { 0xA.toByte() }

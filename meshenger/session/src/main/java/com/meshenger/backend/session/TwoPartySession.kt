@@ -21,7 +21,7 @@ enum class NoisePattern {
 class TwoPartySession(
     private val isInitiator: Boolean,
     private val prologue: ByteArray,
-    private val staticKey: KeyPair,
+    private val staticKey: Pair<ByteArray, ByteArray>,
     private val peerId: ULong,
     private val userName: String,
     private val receiverPublicKey: PublicKey? = null,
@@ -54,10 +54,10 @@ class TwoPartySession(
         sendMessageHandShake(message = firstMessage)
     }
 
-    private fun sendMessageHandShake(recieverMPAddress: ULong = peers[0].MPAddress, message: ByteArray) {
+    private fun sendMessageHandShake(receiverMPAddress: ULong = peers[0].MPAddress, message: ByteArray) {
         val timeStamp = System.currentTimeMillis()
         val msgType = MessageType.NOISE_HANDSHAKE
-        EpidemicFlooding.onTwoPartyMessageSend(message, timeStamp, recieverMPAddress,msgType)
+        EpidemicFlooding.onTwoPartyMessageSend(message, timeStamp, receiverMPAddress,msgType)
     }
 
     private fun completeHandshake() {
@@ -88,23 +88,24 @@ class TwoPartySession(
             pendingMessages.add(message)
             return
         }
-
+        val currentNonce = cipher.getCurrentNonce().toLong()
         val ciphertext = cipher.encryptWithAd(ByteArray(0), message.toByteArray())
         val base64Payload = Base64.encodeToString(ciphertext, Base64.NO_WRAP)
         val timeStamp = System.currentTimeMillis()
         val jsonResult = buildJsonObject {
             put("PeerID", receiverMPAddress.toString())
             put("Payload", base64Payload)
-            put("Nonce", cipher.getCurrentNonce().toLong())
+            put("Plaintext", message)
+            put("Nonce", currentNonce)
             put("SessionType", "TwoPartyChat")
+            put("Action", "Send")
         }
-        messageBus.tryEmit(jsonResult)
+        _messageBus.tryEmit(jsonResult)
         EpidemicFlooding.onTwoPartyMessageSend(ciphertext, timeStamp, receiverMPAddress, MessageType.USER_MESSAGE_ONE_TO_ONE)
     }
 
-    override fun recieveMessageStr(senderMPAddress: ULong, encryptedData: ByteArray, nonceTimeStamp: ULong) {
+    override fun receiveMessageStr(senderMPAddress: ULong, encryptedData: ByteArray, nonceTimeStamp: ULong) {
         val cipher = receivingState ?: return // Drop messages if not secure yet
-        val currentNonce = cipher.getCurrentNonce()
         try {
             val currentNonce = cipher.getCurrentNonce().toLong()
             val plaintext = cipher.decryptWithAd(ByteArray(0), encryptedData)
@@ -115,21 +116,22 @@ class TwoPartySession(
                 put("Plaintext", String(plaintext, Charsets.UTF_8))
                 put("Nonce", currentNonce)
                 put("SessionType", "TwoPartyChat")
+                put("Action", "Receive")
             }
-            messageBus.tryEmit(jsonResult)
+            _messageBus.tryEmit(jsonResult)
         } catch (e: Exception) {
             Log.e("TwoPartySession", "Decryption failed (Tampered or Replay): ${e.message}")
         }
     }
 
     override fun onDirectMessageReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong) {
-        this.recieveMessageStr(senderID, payload, timeStamp)
+        this.receiveMessageStr(senderID, payload, timeStamp)
     }
 
     /**
      * Handles incoming handshake packets
      */
-    override fun onRecieveMessageHandShake(senderMPAddress: ULong, message: ByteArray) {
+    override fun onReceiveMessageHandShake(senderMPAddress: ULong, message: ByteArray) {
         val hs = handshakeState ?: return
         try {
             hs.readMessage(message)

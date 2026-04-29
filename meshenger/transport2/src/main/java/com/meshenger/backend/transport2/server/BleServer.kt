@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.content.Context
+import android.graphics.Mesh
 import android.util.Log
 import com.facebook.infer.annotation.FalseOnNull
 import com.meshenger.backend.transport2.BleLimitConstants
@@ -25,7 +26,7 @@ import kotlin.collections.set
 class BleServer(context: Context): BleServerManager(context), ServerObserver {
     private var appContext: Context = context
     private var writeChar: BluetoothGattCharacteristic? = null
-    private var notifyChar: BluetoothGattCharacteristic? = null
+//    private var notifyChar: BluetoothGattCharacteristic? = null
     private var isRunning: Boolean = false
     private var packetListener: TransportPacketListener? = null
     fun setListener(listener: TransportPacketListener) {
@@ -42,21 +43,21 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
             BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
             BluetoothGattCharacteristic.PERMISSION_WRITE
         )
-        notifyChar = characteristic(
-            BleUUIDConstants.CHARACTERISTIC_DATA_NOTIFY_UUID,
-            BluetoothGattCharacteristic.PROPERTY_NOTIFY or BluetoothGattCharacteristic.PROPERTY_READ,
-            BluetoothGattCharacteristic.PERMISSION_READ,
-            // Explicitly define the CCCD with both Read and Write permissions
-            cccd(),
-            description("Server to Client Push Pipe", false)
-        )
+//        notifyChar = characteristic(
+//            BleUUIDConstants.CHARACTERISTIC_DATA_NOTIFY_UUID,
+//            BluetoothGattCharacteristic.PROPERTY_NOTIFY or BluetoothGattCharacteristic.PROPERTY_READ,
+//            BluetoothGattCharacteristic.PERMISSION_READ,
+//            // Explicitly define the CCCD with both Read and Write permissions
+//            cccd(),
+//            description("Server to Client Push Pipe", false)
+//        )
 
         val chatService = BluetoothGattService(
             BleUUIDConstants.MESH_SERVICE_UUID,
             BluetoothGattService.SERVICE_TYPE_PRIMARY
         )
         chatService.addCharacteristic(writeChar)
-        chatService.addCharacteristic(notifyChar)
+//        chatService.addCharacteristic(notifyChar)
         Log.d("BleServer", "GATT Services built for MESH_SERVICE_UUID")
         setServerObserver(this)
         isRunning = true
@@ -75,7 +76,7 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
             server.onDataReceived = { sender, packet -> // entry point of receiving incoming packet
                 CoroutineScope(Dispatchers.Default).launch {
                     Log.d("BleServer", "Received packet from ${sender.address} (Inbound)")
-                    packetListener?.onRecievePacket(packet, sender.address)
+                    packetListener?.onReceivePacket(packet, sender.address)
                 }
             }
             server.useServer(this)
@@ -105,19 +106,22 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
                 MeshConnectionRegistry.unmarkPending(addr)
                 client.close()
             }
+            MeshConnectionRegistry.markPending(address)
+            if(!MeshConnectionRegistry.getOutboundMap().containsKey(address)) {
+                client.connect(device)
+                    .retry(2, 1000)
+                    .useAutoConnect(false)
+                    .done {
+                        Log.i("BleServer", "Connected to $address")
+                        MeshConnectionRegistry.addOutBound(address, client)
+                    }
+                    .fail { _, status ->
+                        Log.e("BleServer", "Failed $address: $status")
+                        MeshConnectionRegistry.unmarkPending(address)
+                    }
+                    .enqueue()
+            }
 
-            client.connect(device)
-                .retry(2, 1000)
-                .useAutoConnect(false)
-                .done {
-                    Log.i("BleServer", "Connected to $address")
-                    MeshConnectionRegistry.addOutBound(address, client)
-                }
-                .fail { _, status ->
-                    Log.e("BleServer", "Failed $address: $status")
-                    MeshConnectionRegistry.unmarkPending(address)
-                }
-                .enqueue()
         } else {
             Log.w("BleServer", "Rejecting connection from ${device.address}. Criteria not met.")
             cancelConnection(device)
@@ -151,7 +155,7 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
     fun getWriteChar(): BluetoothGattCharacteristic? {
         return this.writeChar
     }
-    fun getNotifyChar(): BluetoothGattCharacteristic? {
-        return this.notifyChar
-    }
+//    fun getNotifyChar(): BluetoothGattCharacteristic? {
+//        return this.notifyChar
+//    }
 }

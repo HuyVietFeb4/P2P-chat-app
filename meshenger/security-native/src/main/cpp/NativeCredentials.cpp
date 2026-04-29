@@ -76,7 +76,7 @@ Java_com_meshenger_backend_security_1native_NativeCredentials_getTwoPartyChatKey
 
     // The length is 39 bytes
     int key_len = 35;
-    char mask = 0xB9;
+    char mask = 0x2A;
 
     std::string encrypted = "";
     for (int i = 0; i < key_len; i++) {

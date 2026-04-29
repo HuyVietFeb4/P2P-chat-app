@@ -4,13 +4,16 @@ import android.util.Log
 import com.meshenger.backend.network.EpidemicFlooding
 import com.meshenger.backend.network.NetworkMessageListener
 import com.meshenger.backend.security_native.NativeCredentials
-import com.meshenger.backend.session.Session
+import com.meshenger.backend.transport2.MPAddress
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.nio.ByteBuffer
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import android.util.Base64
+import kotlinx.serialization.json.put
+
 
 object GlobalChatSession : Session(), NetworkMessageListener {
     private val TAG_LENGTH = 128
@@ -38,30 +41,63 @@ object GlobalChatSession : Session(), NetworkMessageListener {
         return cipher.doFinal(encryptedData)
     }
 
-    override fun sendMessageStr(recieverMPAddress: ULong, message: String) {
+    override fun sendMessageStr(receiverMPAddress: ULong, message: String) {
         val GlobalChatKey = getFixedKey(NativeCredentials.getGlobalChatKey())
         val timeStamp =  System.currentTimeMillis()
         val encryptMsg = globalChatEncrypt(GlobalChatKey, message.encodeToByteArray(), timeStamp)
+        val jsonResult = buildJsonObject {
+            put("PeerID", receiverMPAddress.toString())
+            put("Payload", Base64.encodeToString(encryptMsg, Base64.NO_WRAP))
+            put("Message", message)
+            put("Nonce", timeStamp)
+            put("SessionType", "GlobalChat")
+            put("Action", "Send")
+        }
+        _messageBus.tryEmit(jsonResult)
         EpidemicFlooding.onGlobalChatMessageSend(encryptMsg, timeStamp)
     }
 
-    override fun recieveMessageStr(senderMPAddress: ULong, encryptedData: ByteArray, nonceTimeStamp: ULong) {
+    override fun receiveMessageStr(senderMPAddress: ULong, encryptedData: ByteArray, nonceTimeStamp: ULong) {
         val GlobalChatKey = getFixedKey(NativeCredentials.getGlobalChatKey())
-        val decryptMsg = globalChatDecrypt(GlobalChatKey, encryptedData, nonceTimeStamp.toLong())
+        try {
+            val decryptMsg = globalChatDecrypt(GlobalChatKey, encryptedData, nonceTimeStamp.toLong())
+            val plainText = String(decryptMsg, Charsets.UTF_8)
+            Log.d("GlobalChatSession", "${senderMPAddress} said: ${plainText}")
+            val jsonResult = buildJsonObject {
+                put("PeerID", senderMPAddress.toString())
+                put("Payload", Base64.encodeToString(encryptedData, Base64.NO_WRAP))
+                put("Message", plainText)
+                put("Nonce", nonceTimeStamp.toLong())
+                put("SessionType", "GlobalChat")
+                put("Action", "Receive")
+            }
 
-        // Save message operation
-        // Push to UI
-        val jsonResult = buildJsonObject {
-            put("Sender Address", senderMPAddress.toString())
-            put("Message", String(decryptMsg, Charsets.UTF_8))
-            put("SessionType", "GlobalChat")
+            _messageBus.tryEmit(jsonResult)
+        } catch (e: Exception) {
+            Log.e("GlobalChatSession", "Failed to decrypt global message: ${e.message}")
         }
-        Log.d("GlobalChatSession", "${senderMPAddress} said: ${String(decryptMsg, Charsets.UTF_8)}")
-        messageBus.tryEmit(jsonResult)
     }
 
     override fun onGlobalMessageReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong) {
         // This effectively calls your existing logic
-        this.recieveMessageStr(senderID, payload, timeStamp)
+        this.receiveMessageStr(senderID, payload, timeStamp)
+    }
+
+    fun sendBootstrap(userName: String) {
+        val GlobalChatKey = getFixedKey(NativeCredentials.getGlobalChatKey())
+        val payLoad = "$userName|${MPAddress.getMyMPAddressString()}"
+        val timeStamp =  System.currentTimeMillis()
+        val encryptMsg = globalChatEncrypt(GlobalChatKey, payLoad.encodeToByteArray(), timeStamp)
+        EpidemicFlooding.onBootstrapSend(encryptMsg, System.currentTimeMillis())
+    }
+
+    override fun onBootStrapReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong) {
+        val GlobalChatKey = getFixedKey(NativeCredentials.getGlobalChatKey())
+        val decryptMsg = globalChatDecrypt(GlobalChatKey, payload, timeStamp.toLong())
+        val decoded = String(decryptMsg, Charsets.UTF_8)
+        val parts = decoded.split("|")
+        val userName = parts[0]
+        val peerMpAddres = parts[1].toULong()
+        PeerInMeshRegistry.addOrUpdatePeer(Peer(userName, peerMpAddres))
     }
 }

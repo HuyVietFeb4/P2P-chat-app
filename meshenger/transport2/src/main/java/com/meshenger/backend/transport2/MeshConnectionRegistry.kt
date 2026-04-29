@@ -16,7 +16,6 @@ object MeshConnectionRegistry {
     private val pendingConnections = ConcurrentHashMap.newKeySet<String>() // Track "in-flight" attempts
 
     private val physicalPeerList = CopyOnWriteArrayList<PhysicalPeer>()
-
     fun getAllPeers(): Set<String> = inboundMap.keys + outboundMap.keys
     fun getCountConnections(): Int = inboundMap.size + outboundMap.size
     fun isPending(address: String): Boolean = pendingConnections.contains(address)
@@ -38,12 +37,6 @@ object MeshConnectionRegistry {
 
     fun getInbound(address: String) = inboundMap[address]
     fun getOutbound(address: String) = outboundMap[address]
-
-    fun inMeshDevices(device: BluetoothDevice) {
-        if (physicalPeerList.none { it.device.address == device.address }) {
-            physicalPeerList.add(PhysicalPeer(device))
-        }
-    }
     fun addPhysicalPeer(peer: PhysicalPeer) {
         if (physicalPeerList.none { it.device.address == peer.device.address }) {
             physicalPeerList.add(peer)

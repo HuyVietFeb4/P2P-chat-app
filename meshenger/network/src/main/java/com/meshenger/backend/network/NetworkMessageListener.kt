@@ -3,10 +3,10 @@ package com.meshenger.backend.network
 interface NetworkMessageListener {
     // Basic Chat
     fun onGlobalMessageReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong) {}
-
+    fun onBootStrapReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong) {}
     // Direct Messaging
     fun onDirectMessageReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong) {}
-    fun onRecieveMessageHandShake(senderMPAddress: ULong, message: ByteArray) {}
+    fun onReceiveMessageHandShake(senderMPAddress: ULong, message: ByteArray) {}
     // Group Management
     fun onGroupActionReceived(groupID: ULong, actionType: UInt, payload: ByteArray) {}
 
