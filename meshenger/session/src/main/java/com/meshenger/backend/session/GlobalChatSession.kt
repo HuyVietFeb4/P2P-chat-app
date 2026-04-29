@@ -46,7 +46,7 @@ object GlobalChatSession : Session(), NetworkMessageListener {
         val timeStamp =  System.currentTimeMillis()
         val encryptMsg = globalChatEncrypt(GlobalChatKey, message.encodeToByteArray(), timeStamp)
         val jsonResult = buildJsonObject {
-            put("PeerID", receiverMPAddress.toString())
+            put("PeerID", receiverMPAddress.toLong())
             put("Payload", Base64.encodeToString(encryptMsg, Base64.NO_WRAP))
             put("Message", message)
             put("Nonce", timeStamp)
@@ -64,7 +64,7 @@ object GlobalChatSession : Session(), NetworkMessageListener {
             val plainText = String(decryptMsg, Charsets.UTF_8)
             Log.d("GlobalChatSession", "${senderMPAddress} said: ${plainText}")
             val jsonResult = buildJsonObject {
-                put("PeerID", senderMPAddress.toString())
+                put("PeerID", senderMPAddress.toLong())
                 put("Payload", Base64.encodeToString(encryptedData, Base64.NO_WRAP))
                 put("Message", plainText)
                 put("Nonce", nonceTimeStamp.toLong())

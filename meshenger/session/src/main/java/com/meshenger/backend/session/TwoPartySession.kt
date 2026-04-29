@@ -24,7 +24,7 @@ class TwoPartySession(
     private val staticKey: Pair<ByteArray, ByteArray>,
     private val peerId: ULong,
     private val userName: String,
-    private val receiverPublicKey: PublicKey? = null,
+    private val receiverPublicKey: ByteArray? = null,
     private val chosenPattern: NoisePattern = NoisePattern.XX
 ) : Session(), NetworkMessageListener {
 
@@ -33,7 +33,7 @@ class TwoPartySession(
         prologue,
         staticKey,
         chosenPattern,
-        receiverPublicKey?.let { StaticKeyManager.getRawPublicKey(it) }
+        receiverPublicKey
     )
     private var sendingState: CipherState? = null
     private var receivingState: CipherState? = null
@@ -93,7 +93,7 @@ class TwoPartySession(
         val base64Payload = Base64.encodeToString(ciphertext, Base64.NO_WRAP)
         val timeStamp = System.currentTimeMillis()
         val jsonResult = buildJsonObject {
-            put("PeerID", receiverMPAddress.toString())
+            put("PeerID", receiverMPAddress.toLong())
             put("Payload", base64Payload)
             put("Plaintext", message)
             put("Nonce", currentNonce)
@@ -111,7 +111,7 @@ class TwoPartySession(
             val plaintext = cipher.decryptWithAd(ByteArray(0), encryptedData)
             val base64Payload = Base64.encodeToString(encryptedData, Base64.NO_WRAP)
             val jsonResult = buildJsonObject {
-                put("PeerID", senderMPAddress.toString())
+                put("PeerID", senderMPAddress.toLong())
                 put("Payload", base64Payload)
                 put("Plaintext", String(plaintext, Charsets.UTF_8))
                 put("Nonce", currentNonce)
