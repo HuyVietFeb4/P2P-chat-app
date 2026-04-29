@@ -1,36 +1,37 @@
-import React from "react";
-import { View, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { useLocalSearchParams } from 'expo-router';
-import Header from "./component/Header";
+import React from "react";
+import { KeyboardAvoidingView, StyleSheet, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBehavior } from '../hook/useBehavior';
 import Body from "./component/Body";
-import TextInput from "./component/TextInput";
+import Header from "./component/Header";
+import Input from "./component/TextInput";
 
 export default function ChatRoom() {
     const { id, name, avatarUrl } = useLocalSearchParams();
+    const insets = useSafeAreaInsets();
+    const behavior = useBehavior();
 
     return (
-        /* KeyboardAvoidingView replaces the standard wrapper View. 
-           It automatically shrinks or pads the screen when the keyboard appears. */
-        <KeyboardAvoidingView 
-            style={styles.container}
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20} // Adjust if you have a top navigation bar
-        >
-            {/* 1. Reusable Header - Using the passed name and avatar */}
-            <Header
-                title={(name as string) || "Chat"}
-                avatarUrl={avatarUrl as string}
-            />
-            
-            {/* 2. Chat Body: flex: 1 tells it to fill all space between Header and Input */}
-            <View style={styles.bodyContainer}>
-                <Body peerId={id as string} />
-            </View>
-            
-            {/* 3. Text Input Area: Naturally sits at the bottom */}
-            <TextInput peerId={id as string} />
-            
-        </KeyboardAvoidingView>
+        <SafeAreaView style={{flex: 1, backgroundColor: "white"}}>
+            <KeyboardAvoidingView
+                behavior={behavior}
+                keyboardVerticalOffset={insets.bottom}
+                style={styles.container}
+            >
+                {/* 1. Reusable Header - Using the passed name and avatar */}
+                <Header title="abc" avatarUrl="abc" status={true} />
+                
+                {/* 2. Chat Body: flex: 1 tells it to fill all space between Header and Input */}
+                <View style={styles.bodyContainer}>
+                    <Body peerId={id as string} />
+                </View>
+                
+                {/* 3. Text Input Area: Naturally sits at the bottom */}
+                <Input peerId={id as string} />
+                
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 
@@ -40,6 +41,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#F0F6FF', // The light blue background from your XML
     },
     bodyContainer: {
-        flex: 1,
+        flexGrow: 1,
     }
 });

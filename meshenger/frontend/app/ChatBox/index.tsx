@@ -1,11 +1,11 @@
 import React, { useRef, useState } from "react";
-import { View, FlatList, useWindowDimensions, StyleSheet, Pressable, NativeModules } from "react-native";
-import Header from "../common components/Header";
+import { FlatList, NativeModules, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import Footer from "../common components/Footer";
+import Header from "../common components/Header";
 import AllChat from "./component/AllChat";
-import IndividualChat from "./component/IndividualChat";
-import GroupChat from "./component/GroupChat";
 import EmergencyChat from "./component/EmergencyChat";
+import GroupChat from "./component/GroupChat";
+import IndividualChat from "./component/IndividualChat";
 import ScanPopUp from "./component/ScanPopUp";
 
 const { BleModule } = NativeModules;
@@ -40,7 +40,6 @@ export default function ChatBox() {
     return (
         <View style={styles.container}>
             <Header activeIndex={activeIndex} onTabPress={handleTabPress} openPopUp={openPopUp} setOpenPopUp={() => setOpenPopUp(true)} />
-
             <FlatList
                 ref={flatListRef}
                 data={screens}

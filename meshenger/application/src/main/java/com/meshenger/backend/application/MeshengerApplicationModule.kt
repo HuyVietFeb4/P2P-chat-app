@@ -1,12 +1,7 @@
 package com.meshenger.backend.application
 
-import com.facebook.react.bridge.Arguments
-import com.facebook.react.bridge.Promise
-import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactContextBaseJavaModule
-import com.facebook.react.bridge.ReactMethod
-import com.facebook.react.bridge.WritableArray
-import com.facebook.react.bridge.WritableMap
+import com.facebook.react.bridge.*
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.meshenger.backend.application.db.MeshengerDbHelper
 import com.meshenger.backend.application.messaging.MessagingStore
 import com.meshenger.backend.application.user.UserProfile
@@ -24,9 +19,24 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         // Initialize persistent stores (messages + local profile).
         MessagingStore.init(dbHelper)
         UserStore.init(dbHelper)
+
+        // Lắng nghe sự thay đổi trạng thái từ MessagingStore để báo cho React Native (Phần 4 + 5)
+        MessagingStore.onStatusChanged = { messageId, status ->
+            val event = Arguments.createMap().apply {
+                putString("id", messageId)
+                putString("status", status.name)
+            }
+            sendEvent("onMessageStatusChanged", event)
+        }
     }
 
     override fun getName(): String = "MeshengerApplicationModule"
+
+    private fun sendEvent(eventName: String, params: WritableMap?) {
+        reactApplicationContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            .emit(eventName, params)
+    }
 
     @ReactMethod
     fun addPeer(id: String, displayName: String, avatarUrl: String?, promise: Promise) {
@@ -53,10 +63,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun myQR(promise: Promise) {
         try {
-            // Use dbHelper to query the user_profile table for the row with id = "local-device"
             val profile = dbHelper.getUserProfile("local-device")
             if (profile != null) {
-                // Retrieve the display_name and return it as the QR data
                 promise.resolve(profile.displayName)
             } else {
                 promise.reject("NOT_FOUND", "Local profile not found")
@@ -84,6 +92,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 putString("peerId", message.peerId)
                 putString("text", message.text)
                 putBoolean("fromMe", true)
+                putString("status", message.status.name)
                 putDouble("timestamp", message.timestamp.toDouble())
             }
             promise.resolve(result)
@@ -96,13 +105,15 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     fun pushIncomingMessage(peerId: String, text: String, promise: Promise) {
         try {
             val message = MessagingStore.addIncomingMessage(peerId, text)
-            val result: WritableMap = Arguments.createMap().apply {
+            val result = Arguments.createMap().apply {
                 putString("id", message.id)
                 putString("peerId", message.peerId)
                 putString("text", message.text)
-                putBoolean("fromMe", message.fromMe)
+                putBoolean("fromMe", false)
+                putString("status", message.status.name)
                 putDouble("timestamp", message.timestamp.toDouble())
             }
+            sendEvent("onNewMessage", result)
             promise.resolve(result)
         } catch (e: Exception) {
             promise.reject("PUSH_INCOMING_FAILED", e.message)
@@ -113,12 +124,13 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     fun getConversation(peerId: String, promise: Promise) {
         try {
             val messages = MessagingStore.getConversation(peerId)
-            val array: WritableArray = Arguments.createArray()
+            val array = Arguments.createArray()
             for (msg in messages) {
-                val map: WritableMap = Arguments.createMap().apply {
+                val map = Arguments.createMap().apply {
                     putString("id", msg.id)
                     putString("text", msg.text)
                     putBoolean("fromMe", msg.fromMe)
+                    putString("status", msg.status.name)
                     putDouble("timestamp", msg.timestamp.toDouble())
                 }
                 array.pushMap(map)

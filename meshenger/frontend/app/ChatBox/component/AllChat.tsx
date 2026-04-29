@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  Image, 
-  TouchableOpacity, 
-  StyleSheet, 
-  SafeAreaView,
-  NativeModules,
-  ActivityIndicator
-} from 'react-native';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  NativeModules,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 const { MeshengerApplicationModule } = NativeModules;
 const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
@@ -18,7 +18,7 @@ const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
 export default function ChatList() {
   const router = useRouter();
   const [chatData, setChatData] = useState([]);
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

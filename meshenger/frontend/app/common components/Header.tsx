@@ -1,19 +1,21 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { usePathname } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { LayoutGrid, Search, ShieldAlert, UserPlus, UserRound, Users } from "lucide-react-native";
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions, TouchableOpacity } from "react-native";
-import ScanPopUp from "./ScanPopUp";
+import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface HeaderProps {
-    activeIndex: number,
-    onTabPress: (index: number) => void,
+    activeIndex?: number,
+    onTabPress?: (index: number) => void,
     openPopUp: boolean,
     setOpenPopUp: () => void
 }
 
 export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopUp }: HeaderProps) {
     const {width, height} = useWindowDimensions();
+    const pathname = usePathname();
 
     const tabs = [
         { label: 'All', icon: LayoutGrid },
@@ -23,14 +25,16 @@ export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopU
     ];
 
     return (
-        <>
-            <LinearGradient
-                colors={['#0F4C81', '#5F2EEA']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 0}}
-                style={{width: width, height: height * 0.2}}
-            >
-                <View style={[styles.headerContainer, {width: width * 0.95}]}>
+        <LinearGradient
+            colors={['#0F4C81', '#5F2EEA']}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 0}}
+            style={{width: width, paddingTop: 10}}
+        >
+            <StatusBar translucent backgroundColor="transparent" style="light" />
+
+            <SafeAreaView edges={['top']}>
+                <View style={[styles.headerContainer, {width: width * 0.90}]}>
                     <View style={styles.actionContainer}> 
                         <View style={styles.appTitleContainer}>
                             <Image
@@ -52,37 +56,40 @@ export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopU
                             />
                         </View>
                     </View>
-                    <View style={styles.filterContainer}>
-                        {tabs.map((tab, index) => {
-                            const Icon = tab.icon;
-                            const isActive = activeIndex === index;
-                            return (
-                                <TouchableOpacity
-                                    key={tab.label}
-                                    style={[
-                                        styles.filterFieldContainer,
-                                        isActive && styles.activeFilterField
-                                    ]}
-                                    onPress={() => onTabPress(index)}
-                                >
-                                    <Icon
-                                        size={14}
-                                        color={isActive ? '#fff' : '#5F2EEA'}
-                                    />
-                                    <Text style={[
-                                        styles.filterText,
-                                        isActive && styles.activeFilterText
+                    {
+                        pathname === "/ChatBox" &&
+                        <View style={styles.filterContainer}>
+                            {tabs.map((tab, index) => {
+                                const Icon = tab.icon;
+                                const isActive = activeIndex === index;
+                                return (
+                                    <TouchableOpacity
+                                        key={tab.label}
+                                        style={[
+                                            styles.filterFieldContainer,
+                                            isActive && styles.activeFilterField
                                         ]}
+                                        onPress={() => onTabPress?.(index)}
                                     >
-                                        {tab.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
+                                        <Icon
+                                            size={14}
+                                            color={isActive ? '#fff' : '#5F2EEA'}
+                                        />
+                                        <Text style={[
+                                            styles.filterText,
+                                            isActive && styles.activeFilterText
+                                            ]}
+                                        >
+                                            {tab.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    }
                 </View>
-            </LinearGradient>
-        </>
+            </SafeAreaView>
+        </LinearGradient>
     );
 }
 
@@ -112,13 +119,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 25
+        marginBottom: 20
     },
 
     headerContainer: {
         alignSelf: 'center',
-        marginTop: 'auto',
-        paddingBottom: 5
+        paddingBottom: 10,
     },
 
     filterText: {
