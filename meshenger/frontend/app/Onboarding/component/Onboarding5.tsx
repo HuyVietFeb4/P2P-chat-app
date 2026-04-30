@@ -129,7 +129,7 @@ export default function Onboarding5() {
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
-            {error && <Message />}
+            <Message visible={!!error} message={error} title="Username error!" />
         </View>
     );
 }

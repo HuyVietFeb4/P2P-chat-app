@@ -1,18 +1,44 @@
 import { ScanQrCode } from "lucide-react-native";
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions, NativeModules, NativeEventEmitter } from "react-native";
 import QRCode from "react-native-qrcode-svg";
+import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-type MyQRProps = {
-    username: string;
-};
+const { MeshengerApplicationModule } = NativeModules;
+const emitter = new NativeEventEmitter(MeshengerApplicationModule);
 
-export default function MyQR({ username }: MyQRProps) {
+export default function MyQR() {
     const { width, height } = useWindowDimensions();
+    const [key, setKey] = useState<string>("");
+    const [mpAddress, setMPAddress] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
+
+    useEffect(() => {
+        const sub = emitter.addListener("getIdentifyKey", (data) => {
+            console.log("RECEIVED:", data);
+            setKey(data.id);
+            setMPAddress(data.mpAddress);
+        });
+
+        MeshengerApplicationModule.getIdentifyKey();
+
+        const loadUsername = async () => {
+            const username = await AsyncStorage.getItem("firstLaunch");
+            setUsername(username || "Unknown User");
+        };
+
+        loadUsername();
+
+        return () => {
+            sub.remove();
+        };
+    }, []);
 
     // The data carried by the QR code
     const userQRData = {
-        id: "local-device",
-        username: username
+        id: key,
+        username: username,
+        mpAddress: mpAddress
     };
 
     return (

@@ -1,6 +1,4 @@
 package com.meshenger
-import android.content.Intent
-import com.meshenger.backend.transport2.MeshMaintainer
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
@@ -23,13 +21,6 @@ class MainActivity : ReactActivity() {
     SplashScreenManager.registerOnActivity(this)
     // @generated end expo-splashscreen
     super.onCreate(null)
-     // Start the service
-    val intent = Intent(this, MeshMaintainer::class.java)
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-      startForegroundService(intent)
-    } else {
-      startService(intent)
-    }
   }
 
   /**
