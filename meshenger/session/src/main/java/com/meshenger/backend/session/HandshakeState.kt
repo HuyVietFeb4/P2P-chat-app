@@ -33,13 +33,24 @@ class HandshakeState(
         symmetricState.mixHash(prologue)
 
         // For KK and XK, the remote static key is known beforehand
-        if ((pattern == NoisePattern.KK || pattern == NoisePattern.XK) && remoteStatic != null) {
-            symmetricState.mixHash(remoteStatic!!)
+        if (pattern == NoisePattern.XK) {
+            if (isInitiator) {
+                // Initiator knows Responder's key
+                symmetricState.mixHash(rs!!)
+            } else {
+                // Responder knows their own key is pre-known by the other side
+                symmetricState.mixHash(getRawPublicKey(s))
+            }
         }
 
-        // For KK, the initiator's static key is also known by the responder
         if (pattern == NoisePattern.KK) {
-            symmetricState.mixHash(getRawPublicKey(s))
+            // ALWAYS mix Initiator's static key first
+            val initiatorStatic = if (isInitiator) getRawPublicKey(s) else rs!!
+            symmetricState.mixHash(initiatorStatic)
+
+            // ALWAYS mix Responder's static key second
+            val responderStatic = if (isInitiator) rs!! else getRawPublicKey(s)
+            symmetricState.mixHash(responderStatic)
         }
     }
 
@@ -88,7 +99,7 @@ class HandshakeState(
             }
             2 -> { // -> s, se
                 output.write(symmetricState.encryptAndHash(getRawPublicKey(s))) // s
-                symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), remoteStatic!!)) // se
+                symmetricState.mixKey(diffieHellman(getRawPrivateKey(s), re!!)) // se
             }
         }
     }
@@ -126,7 +137,7 @@ class HandshakeState(
             symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), re!!)) // ee
         } else if (messageIndex == 2) { // -> s, se
             output.write(symmetricState.encryptAndHash(getRawPublicKey(s))) // s
-            symmetricState.mixKey(diffieHellman(getRawPrivateKey(e!!), re!!)) // se
+            symmetricState.mixKey(diffieHellman(getRawPrivateKey(s), re!!)) // se
         }
     }
 
@@ -283,4 +294,8 @@ class HandshakeState(
         return symmetricState.split()
     }
     val step: Int get() = messageIndex
+
+    fun getRemoteStaticKey(): ByteArray? {
+        return this.remoteStatic
+    }
 }

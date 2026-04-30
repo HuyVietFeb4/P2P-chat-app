@@ -88,6 +88,17 @@ object StaticKeyManager {
         return newPair
     }
 
+    fun generateX25519RandomKeyPair(): Pair<ByteArray, ByteArray> {
+        val generator = X25519KeyPairGenerator()
+        val random = SecureRandom() // Use a strong random source
+        val params = X25519KeyGenerationParameters(random)
+        generator.init(params)
+        val keyPair = generator.generateKeyPair()
+        val publicKey = (keyPair.public as X25519PublicKeyParameters).getEncoded() // 32 bytes
+        val privateKey = (keyPair.private as X25519PrivateKeyParameters).getEncoded() // 32 bytes
+        return Pair(publicKey, privateKey)
+    }
+
     /**
      * Encrypts raw private key bytes.
      * @return Pair of (Ciphertext, Initialization Vector) to be stored in SQLite.
