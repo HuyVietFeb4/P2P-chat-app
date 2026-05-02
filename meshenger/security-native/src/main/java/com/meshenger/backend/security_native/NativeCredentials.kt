@@ -12,4 +12,6 @@ object NativeCredentials {
      * Note: Context is not passed as per your request.
      */
     external fun getAppSecretKey(): String
+    external fun getGlobalChatKey(): String
+    external fun getTwoPartyChatKey(): String
 }

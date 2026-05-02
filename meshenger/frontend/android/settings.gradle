@@ -39,13 +39,16 @@ include ':app'
 include ':backend:application'
 include ':backend:session'
 include ':backend:network'
-include ':backend:transport'
+// include ':backend:transport'
 include ':backend:security_native'
+include ':backend:transport2'
+
 
 project(':backend:application').projectDir = new File(rootDir, '../../application')
 project(':backend:session').projectDir = new File(rootDir, '../../session')
 project(':backend:network').projectDir = new File(rootDir, '../../network')
-project(':backend:transport').projectDir = new File(rootDir, '../../transport')
+// project(':backend:transport').projectDir = new File(rootDir, '../../transport')
+project(':backend:transport2').projectDir = new File(rootDir, '../../transport2')
 project(':backend:security_native').projectDir = new File(rootDir, '../../security-native')
 
 

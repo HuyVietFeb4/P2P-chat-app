@@ -11,13 +11,31 @@ Java_com_meshenger_backend_security_1native_NativeCredentials_getAppSecretKey(
         JNIEnv* env,
         jobject thiz,
         jobject context) {
+            
+    unsigned char hidden_key[] = {
+            0x4D, 0x65, 0x73, 0x68, 0x65, 0x6E, 0x67, 0x65, 0x72, 0x5F, 
+            0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x5F, 0x41, 0x70, 0x70, 
+            0x5F, 0x4B, 0x65, 0x79
+    };
 
-    // LAYER 1: Tamper Detection
-    //    if (!verifyAppSignature(env, context)) {
-    //        return env->NewStringUTF("INVALID_SIGNATURE");
-    //    }
+    // The length is 29 bytes
+    int key_len = 24;
+    char mask = 0x74;
 
-    // LAYER 2: XOR Obfuscation
+    std::string encrypted = "";
+    for (int i = 0; i < key_len; i++) {
+        encrypted += (char)(hidden_key[i] ^ mask);
+    }
+
+    return env->NewStringUTF(encrypted.c_str());
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_meshenger_backend_security_1native_NativeCredentials_getGlobalChatKey(
+        JNIEnv* env,
+        jobject thiz,
+        jobject context) {
+            
     unsigned char hidden_key[] = {
             0x4D, 0x65, 0x73, 0x68, 0x65, 0x6E, 0x67, 0x65, 0x72, 0x5F,
             0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x5F, 0x41, 0x6C, 0x6C,
@@ -27,6 +45,38 @@ Java_com_meshenger_backend_security_1native_NativeCredentials_getAppSecretKey(
     // The length is 29 bytes
     int key_len = 29;
     char mask = 0x42;
+
+    std::string encrypted = "";
+    for (int i = 0; i < key_len; i++) {
+        encrypted += (char)(hidden_key[i] ^ mask);
+    }
+
+    return env->NewStringUTF(encrypted.c_str());
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_meshenger_backend_security_1native_NativeCredentials_getTwoPartyChatKey(
+        JNIEnv* env,
+        jobject thiz,
+        jobject context) {
+            
+    unsigned char hidden_key[] = {
+    0x4D, 0x65, 0x73, 0x68, 0x65, 0x6E, 0x67, 0x65, 0x72, // Meshenger
+    0x5F,                                           // _
+    0x54, 0x77, 0x6F,                               // Two
+    0x5F,                                           // _
+    0x50, 0x61, 0x72, 0x74, 0x79,                   // Party
+    0x5F,                                           // _
+    0x43, 0x68, 0x61, 0x74,                         // Chat
+    0x5F,                                           // _
+    0x53, 0x65, 0x63, 0x72, 0x65, 0x74,             // Secret
+    0x5F,                                           // _
+    0x4B, 0x65, 0x79                                // Key
+};
+
+    // The length is 39 bytes
+    int key_len = 35;
+    char mask = 0x2A;
 
     std::string encrypted = "";
     for (int i = 0; i < key_len; i++) {
