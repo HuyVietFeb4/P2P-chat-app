@@ -1,4 +1,5 @@
 package com.meshenger
+import android.content.Intent
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
