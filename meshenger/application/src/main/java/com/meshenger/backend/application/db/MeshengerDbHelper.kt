@@ -111,6 +111,77 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         db.insertWithOnConflict("users", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
+    fun getUserProfile(userId: String): UserProfile? {
+        val db = readableDatabase
+        db.rawQuery("SELECT userId, publicKeyHash, userName FROM users WHERE userId = ?", arrayOf(userId)).use { c ->
+            if (!c.moveToFirst()) return null
+            return UserProfile(
+                id = c.getString(0),
+                publicKeyHash = c.getString(1),
+                userName = c.getString(2)
+            )
+        }
+    }
+
+    fun getAllUserProfiles(): List<UserProfile> {
+        val db = readableDatabase
+        val out = mutableListOf<UserProfile>()
+        db.rawQuery("SELECT userId, publicKeyHash, userName FROM users ORDER BY userName", null).use { c ->
+            while (c.moveToNext()) {
+                out.add(
+                    UserProfile(
+                        id = c.getString(0),
+                        publicKeyHash = c.getString(1),
+                        userName = c.getString(2)
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    private fun rowExists(table: String, column: String, id: String): Boolean {
+        readableDatabase.rawQuery("SELECT 1 FROM $table WHERE $column = ? LIMIT 1", arrayOf(id)).use {
+            return it.moveToFirst()
+        }
+    }
+
+    /**
+     * Ensures [peerId] exists in users and a 1:1 chat + session row exist for DB message FKs.
+     */
+    fun ensureDirectChatForPeer(peerId: String, peerUserName: String) {
+        upsertUserProfile(UserProfile(peerId, publicKeyHash = "-", userName = peerUserName))
+        val chatId = directChatId(peerId)
+        val sessionId = directSessionId(peerId)
+        if (!rowExists("chats", "chatId", chatId)) {
+            insertChat(chatId, peerUserName, "DIRECT", System.currentTimeMillis())
+        }
+        if (!rowExists("sessions", "sessionId", sessionId)) {
+            insertSession(sessionId, chatId, "placeholder-key")
+        }
+    }
+
+    fun directChatId(peerId: String) = "direct-$peerId"
+
+    fun directSessionId(peerId: String) = "session-$peerId"
+
+    fun ensureGlobalChat(globalChatId: String, globalSessionId: String, keyId: String) {
+        if (!rowExists("chats", "chatId", globalChatId)) {
+            insertChat(globalChatId, "Global Chat", "GLOBAL", System.currentTimeMillis())
+        }
+        if (!rowExists("sessions", "sessionId", globalSessionId)) {
+            insertSession(globalSessionId, globalChatId, keyId)
+        }
+    }
+
+    fun getSessionKeyId(sessionId: String): String? {
+        val db = readableDatabase
+        db.rawQuery("SELECT chachaKey FROM sessions WHERE sessionId = ?", arrayOf(sessionId)).use { c ->
+            if (!c.moveToFirst()) return null
+            return c.getString(0)
+        }
+    }
+
     fun insertChat(chatId: String, name: String?, chatType: String, createdAt: Long) {
         val db = writableDatabase
         val values = ContentValues().apply {
