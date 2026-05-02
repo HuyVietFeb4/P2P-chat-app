@@ -2,7 +2,6 @@ package com.meshenger.backend.session
 
 import android.util.Log
 import com.meshenger.backend.network.EpidemicFlooding
-import com.meshenger.backend.network.NetworkMessageListener
 import com.meshenger.backend.security_native.NativeCredentials
 import com.meshenger.backend.transport2.MPAddress
 import kotlinx.serialization.json.buildJsonObject
@@ -12,15 +11,17 @@ import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import android.util.Base64
+import com.meshenger.backend.network.GlobalMessageListener
+import com.meshenger.backend.network.ListenerRegistry
 import kotlinx.serialization.json.put
 
 
-object GlobalChatSession : Session(), NetworkMessageListener {
+object GlobalChatSession : Session(), GlobalMessageListener {
     private val TAG_LENGTH = 128
     private val ALGORITHM = "AES/GCM/NoPadding"
     init {
         // Register this session as the listener for the network layer
-        EpidemicFlooding.setListener(this)
+        ListenerRegistry.setGlobalListener(this)
     }
     // Only for UI testing, will be deleted later
     private fun globalChatEncrypt(secretKey: ByteArray, message: ByteArray, timeStamp: Long): ByteArray {

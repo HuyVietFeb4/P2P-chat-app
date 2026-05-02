@@ -1,17 +1,16 @@
-// Noise__25519_ChaChaPoly_SHA256
+// Noise_{XX,KK,XK}_25519_ChaChaPoly_SHA256
 package com.meshenger.backend.session
 
 import android.util.Log
-import com.google.crypto.tink.subtle.Hkdf
 import com.meshenger.backend.network.EpidemicFlooding
 import com.meshenger.backend.network.MessageType
-import com.meshenger.backend.network.NetworkMessageListener
-import com.meshenger.backend.transport2.StaticKeyManager
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.security.KeyPair
-import java.security.PublicKey
 import android.util.Base64
+import com.meshenger.backend.network.ListenerRegistry
+import com.meshenger.backend.network.PacketSigner
+import com.meshenger.backend.network.TwoPartyMessageListener
+import java.security.PublicKey
 
 enum class NoisePattern {
     XX, // -> e | <- e, ee, s, es | -> s, se
@@ -25,8 +24,9 @@ class TwoPartySession(
     private val peerId: ULong,
     private val userName: String,
     private val receiverPublicKey: ByteArray? = null,
-    private val chosenPattern: NoisePattern = NoisePattern.XX
-) : Session(), NetworkMessageListener {
+    private val chosenPattern: NoisePattern = NoisePattern.XX,
+    private var remotePublicIdentityKey: PublicKey? = null
+) : Session(), TwoPartyMessageListener, AutoCloseable {
 
     private var handshakeState: HandshakeState? = HandshakeState(
         isInitiator,
@@ -43,10 +43,15 @@ class TwoPartySession(
 
     init {
         peers.add(Peer(userName, peerId))
-        EpidemicFlooding.setListener(this)
+        ListenerRegistry.registerTwoPartyListener(peerId, this)
         if (isInitiator) {
             startHandshake()
         }
+    }
+    override fun close() {
+        // Unregister from the singleton to prevent memory leaks
+        ListenerRegistry.unregisterTwoPartyListener(peerId)
+        Log.d("TwoPartySession", "Session with $userName closed and unregistered.")
     }
 
     private fun startHandshake() {
@@ -80,7 +85,9 @@ class TwoPartySession(
 
         Log.d("TwoPartySession", "Secure tunnel established with $userName")
     }
-
+    fun initRemoteIdentityKey(key: PublicKey) {
+        remotePublicIdentityKey = key
+    }
     override fun sendMessageStr(receiverMPAddress: ULong, message: String) {
         val cipher = sendingState
         if (cipher == null) {
@@ -124,20 +131,25 @@ class TwoPartySession(
         }
     }
 
-    override fun onDirectMessageReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong) {
-        this.receiveMessageStr(senderID, payload, timeStamp)
+    override fun onDirectMessageReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong, signature: ByteArray, signedData: ByteArray) {
+        val currentKey = remotePublicIdentityKey
+        if(currentKey != null && PacketSigner.verifyTwoPartySession(signedData, signature, currentKey)) {
+            this.receiveMessageStr(senderID, payload, timeStamp)
+        } // else: drop
+
     }
 
     /**
      * Handles incoming handshake packets
      */
-    override fun onReceiveMessageHandShake(senderMPAddress: ULong, message: ByteArray) {
+    override fun onReceiveMessageHandShake(senderID: ULong, message: ByteArray) {
+        if(senderID != peers[0].MPAddress) return
         val hs = handshakeState ?: return
         try {
             hs.readMessage(message)
             if (!hs.isFinished && ((isInitiator && hs.step % 2 == 0) || (!isInitiator && hs.step % 2 != 0))) {
                 val response = hs.writeMessage(ByteArray(0))
-                sendMessageHandShake(senderMPAddress, response)
+                sendMessageHandShake(senderID, response)
             }
             if (hs.isFinished) completeHandshake()
         } catch (e: Exception) {
