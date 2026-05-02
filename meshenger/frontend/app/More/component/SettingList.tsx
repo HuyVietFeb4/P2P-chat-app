@@ -2,15 +2,18 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Bell, BookA, ChevronRight, Pencil, SunMoon, UserLock } from "lucide-react-native";
 import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function SettingList() {
+    const { isDarkMode, toggleDarkMode, colors } = useTheme();
+
     return  (
         <ScrollView 
-            style={{flex: 1}}
+            style={{flex: 1, backgroundColor: colors.background}}
             contentContainerStyle={{paddingBottom: 50}}
         >
             <View style={styles.profileInfo}>
-                <Text style={styles.moreText}>Profile Info</Text>
+                <Text style={[styles.moreText, { color: colors.sectionTitle }]}>Profile Info</Text>
                 <LinearGradient 
                     colors={['#00C6FF', '#0072FF']}
                     start={{x: 0, y: 0}}
@@ -32,9 +35,9 @@ export default function SettingList() {
 
             {/* Messages */}
             <View style={styles.profileInfo}>
-                <Text style={styles.moreText}>Messages</Text>
+                <Text style={[styles.moreText, { color: colors.sectionTitle }]}>Messages</Text>
 
-                <View style={styles.fieldContainer}>
+                <View style={[styles.fieldContainer, { backgroundColor: colors.settingItemBg, borderColor: colors.border }]}>
                     <View style={styles.profileWrapper}>
                         <View style={styles.profileContainer}>
                             <LinearGradient 
@@ -46,9 +49,9 @@ export default function SettingList() {
                                 <UserLock size={15} color="#fff"/>
                             </LinearGradient>
 
-                            <Text style={[styles.profile, {color: "#72727A"}]}>Blocked Users</Text>
+                            <Text style={[styles.profile, {color: colors.text}]}>Blocked Users</Text>
                         </View>
-                        <ChevronRight color="#72727A" size={16} />
+                        <ChevronRight color={colors.subText} size={16} />
                     </View>
 
                     <View style={styles.profileWrapper}>
@@ -62,9 +65,9 @@ export default function SettingList() {
                                 <UserLock size={15} color="#fff"/>
                             </LinearGradient>
 
-                            <Text style={[styles.profile, {color: "#72727A"}]}>Messages Pending</Text>
+                            <Text style={[styles.profile, {color: colors.text}]}>Messages Pending</Text>
                         </View>
-                        <ChevronRight color="#72727A" size={16} />
+                        <ChevronRight color={colors.subText} size={16} />
                     </View>
 
                     <View style={styles.profileWrapper}>
@@ -78,18 +81,18 @@ export default function SettingList() {
                                 <UserLock size={15} color="#fff"/>
                             </LinearGradient>
 
-                            <Text style={[styles.profile, {color: "#72727A"}]}>Messages Backup</Text>
+                            <Text style={[styles.profile, {color: colors.text}]}>Messages Backup</Text>
                         </View>
-                        <ChevronRight color="#72727A" size={16} />
+                        <ChevronRight color={colors.subText} size={16} />
                     </View>
                 </View>
             </View>
 
             {/* Setting */}
             <View style={styles.profileInfo}>
-                <Text style={styles.moreText}>Settings</Text>
+                <Text style={[styles.moreText, { color: colors.sectionTitle }]}>Settings</Text>
 
-                <View style={styles.fieldContainer}>
+                <View style={[styles.fieldContainer, { backgroundColor: colors.settingItemBg, borderColor: colors.border }]}>
                     <View style={styles.profileWrapper}>
                         <View style={styles.profileContainer}>
                             <LinearGradient 
@@ -101,9 +104,9 @@ export default function SettingList() {
                                 <BookA size={15} color="#fff"/>
                             </LinearGradient>
 
-                            <Text style={[styles.profile, {color: "#72727A"}]}>Language</Text>
+                            <Text style={[styles.profile, {color: colors.text}]}>Language</Text>
                         </View>
-                        <ChevronRight color="#72727A" size={16} />
+                        <ChevronRight color={colors.subText} size={16} />
                     </View>
 
                     <View style={styles.profileWrapper}>
@@ -117,11 +120,13 @@ export default function SettingList() {
                                 <SunMoon size={15} color="#fff"/>
                             </LinearGradient>
 
-                            <Text style={[styles.profile, {color: "#72727A"}]}>Dark Mode</Text>
+                            <Text style={[styles.profile, {color: colors.text}]}>Dark Mode</Text>
                         </View>
                         <Switch 
-                            trackColor={{ false: "#ccc", true: "#4CAF50" }}
+                            trackColor={{ false: "#ccc", true: colors.primary }}
                             thumbColor="#fff"
+                            value={isDarkMode}
+                            onValueChange={toggleDarkMode}
                         />
                     </View>
 
@@ -136,10 +141,10 @@ export default function SettingList() {
                                 <Bell size={15} color="#fff"/>
                             </LinearGradient>
 
-                            <Text style={[styles.profile, {color: "#72727A"}]}>Notification</Text>
+                            <Text style={[styles.profile, {color: colors.text}]}>Notification</Text>
                         </View>
                         <Switch 
-                            trackColor={{ false: "#ccc", true: "#4CAF50" }}
+                            trackColor={{ false: "#ccc", true: colors.primary }}
                             thumbColor="#fff"
                         />
                     </View>

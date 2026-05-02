@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { LayoutGrid, Search, ShieldAlert, UserPlus, UserRound, Users } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "../context/ThemeContext";
 
 interface HeaderProps {
     activeIndex?: number,
@@ -16,6 +17,7 @@ interface HeaderProps {
 export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopUp }: HeaderProps) {
     const {width, height} = useWindowDimensions();
     const pathname = usePathname();
+    const { colors, isDarkMode } = useTheme();
 
     const tabs = [
         { label: 'All', icon: LayoutGrid },
@@ -58,7 +60,7 @@ export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopU
                     </View>
                     {
                         pathname === "/ChatBox" &&
-                        <View style={styles.filterContainer}>
+                        <View style={[styles.filterContainer, isDarkMode && { backgroundColor: 'rgba(233, 230, 255, 0.2)' }]}>
                             {tabs.map((tab, index) => {
                                 const Icon = tab.icon;
                                 const isActive = activeIndex === index;
@@ -73,10 +75,11 @@ export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopU
                                     >
                                         <Icon
                                             size={14}
-                                            color={isActive ? '#fff' : '#5F2EEA'}
+                                            color={isActive ? '#fff' : (isDarkMode ? '#ffffff' : '#5F2EEA')}
                                         />
                                         <Text style={[
                                             styles.filterText,
+                                            { color: isDarkMode ? '#ffffff' : '#5F2EEA' },
                                             isActive && styles.activeFilterText
                                             ]}
                                         >
@@ -129,7 +132,6 @@ const styles = StyleSheet.create({
 
     filterText: {
         fontSize: 10,
-        color: '#5F2EEA',
     },
 
     activeFilterText: {

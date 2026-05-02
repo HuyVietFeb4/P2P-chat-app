@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { FlatList, NativeModules, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import Footer from "../common components/Footer";
 import Header from "../common components/Header";
+import { useTheme } from "../context/ThemeContext";
 import AllChat from "./component/AllChat";
 import EmergencyChat from "./component/EmergencyChat";
 import GroupChat from "./component/GroupChat";
@@ -14,6 +15,7 @@ export default function ChatBox() {
     const { width, height } = useWindowDimensions();
     const flatListRef = useRef<FlatList>(null);
     const [activeIndex, setActiveIndex] = useState(0);
+    const { colors } = useTheme();
 
     const screens = [
         { id: 'all', component: <AllChat /> },
@@ -38,7 +40,7 @@ export default function ChatBox() {
     }).current;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Header activeIndex={activeIndex} onTabPress={handleTabPress} openPopUp={openPopUp} setOpenPopUp={() => setOpenPopUp(true)} />
             <FlatList
                 ref={flatListRef}
@@ -74,6 +76,5 @@ export default function ChatBox() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff'
     }
 });

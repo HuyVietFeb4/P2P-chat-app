@@ -3,6 +3,7 @@ import { Menu, MessageCircleMore, MessageSquareMore } from 'lucide-react-native'
 import { StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Shadow } from 'react-native-shadow-2';
+import { useTheme } from '../context/ThemeContext';
 
 const NAV_ITEMS = [
   { key: '/ChatBox', label: 'Chats', Icon: MessageCircleMore },
@@ -10,15 +11,12 @@ const NAV_ITEMS = [
   { key: '/More', label: 'More', Icon: Menu },
 ];
 
-const ACTIVE_COLOR = '#6C47FF';
-const INACTIVE_COLOR = '#9CA3AF';
-const BG_COLOR = '#FFFFFF';
-
 export default function Footer() {
   const { width } = useWindowDimensions();
   const router = useRouter();
   const pathName = usePathname();
   const insets = useSafeAreaInsets();
+  const { colors, isDarkMode } = useTheme();
 
   const handleNavigate = (key: string) => {
     if (pathName !== key) {
@@ -26,16 +24,20 @@ export default function Footer() {
     }
   };
 
+  const ACTIVE_COLOR = colors.primary;
+  const INACTIVE_COLOR = colors.subText;
+  const BG_COLOR = colors.footerBg;
+
   return (
     <Shadow
       distance={24}
-      startColor={'rgba(0,0,0,0.08)'}
+      startColor={isDarkMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)'}
       offset={[0, -2]}
       sides={{ top: true }}
     >
       <SafeAreaView
         edges={['bottom']}
-        style={[styles.container, { width, paddingBottom: insets.bottom }]}
+        style={[styles.container, { width, paddingBottom: insets.bottom, backgroundColor: BG_COLOR }]}
       >
         <View style={styles.navRow}>
           {NAV_ITEMS.map(({ key, label, Icon }) => {
@@ -48,10 +50,10 @@ export default function Footer() {
                 activeOpacity={0.7}
               >
                 {/* Active pill indicator */}
-                {isActive && <View style={styles.activePill} />}
+                {isActive && <View style={[styles.activePill, { backgroundColor: ACTIVE_COLOR }]} />}
 
                 {/* Icon with subtle background when active */}
-                <View style={[styles.iconWrap, isActive && styles.iconWrapActive]}>
+                <View style={[styles.iconWrap, isActive && { backgroundColor: colors.iconBg }]}>
                   <Icon
                     size={20}
                     color={isActive ? ACTIVE_COLOR : INACTIVE_COLOR}
@@ -60,7 +62,7 @@ export default function Footer() {
                 </View>
 
                 {/* Label */}
-                <Text style={[styles.label, isActive && styles.labelActive]}>
+                <Text style={[styles.label, { color: INACTIVE_COLOR }, isActive && { color: ACTIVE_COLOR, fontWeight: '700' }]}>
                   {label}
                 </Text>
               </TouchableOpacity>
@@ -74,7 +76,6 @@ export default function Footer() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: BG_COLOR,
     paddingTop: 10,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -98,7 +99,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 3,
     borderRadius: 99,
-    backgroundColor: ACTIVE_COLOR,
   },
   iconWrap: {
     width: 44,
@@ -107,17 +107,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapActive: {
-    backgroundColor: '#EDE9FF',
-  },
   label: {
     fontSize: 11,
     fontWeight: '500',
-    color: INACTIVE_COLOR,
     letterSpacing: 0.2,
-  },
-  labelActive: {
-    color: ACTIVE_COLOR,
-    fontWeight: '700',
   },
 });
