@@ -2,7 +2,6 @@ package com.meshenger.backend.transport2
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import android.util.Log
 import org.bouncycastle.crypto.generators.X25519KeyPairGenerator
 import org.bouncycastle.crypto.params.X25519KeyGenerationParameters
 import org.bouncycastle.crypto.params.X25519PrivateKeyParameters
@@ -14,7 +13,6 @@ import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.SecureRandom
-import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -23,8 +21,6 @@ import javax.crypto.spec.GCMParameterSpec
 
 // To do: to init the static public and private's key
 object StaticKeyManager {
-    // temporary attribute, will be deleted
-    private var agreementKeyPair: Pair<ByteArray, ByteArray>? = null
     private val PROVIDER = "AndroidKeyStore"
     private val keyStore = KeyStore.getInstance(PROVIDER).apply { load(null) }
     private const val STATIC_IDENTITY_ALIAS = "static_identity_ed25519"
@@ -51,31 +47,11 @@ object StaticKeyManager {
         kpg.initialize(spec)
         return kpg.generateKeyPair()
     }
-
-//    fun getOrCreateAgreementKey(): KeyPair {
-//        if (keyStore.containsAlias(STATIC_AGREEMENT_ALIAS)) {
-//            val privateKey = keyStore.getKey(STATIC_AGREEMENT_ALIAS, null) as PrivateKey
-//            val publicKey = keyStore.getCertificate(STATIC_AGREEMENT_ALIAS).publicKey
-//            return KeyPair(publicKey, privateKey)
-//        }
-//
-//        val kpg = KeyPairGenerator.getInstance(X25519_ALGO, PROVIDER)
-//        val spec = KeyGenParameterSpec.Builder(
-//            STATIC_AGREEMENT_ALIAS,
-//            KeyProperties.PURPOSE_AGREE_KEY
-//        ).build()
-//
-//        kpg.initialize(spec)
-//        return kpg.generateKeyPair()
-//    }
-
     /**
      * Create a pair of X25519 keys
      * @return Pair of (public key, private key) to be stored in SQLite.
      */
     fun generateX25519KeyPair(): Pair<ByteArray, ByteArray> {
-        val existingKey = agreementKeyPair
-        if (existingKey != null) return existingKey
         val generator = X25519KeyPairGenerator()
         val random = SecureRandom() // Use a strong random source
         val params = X25519KeyGenerationParameters(random)
@@ -83,9 +59,7 @@ object StaticKeyManager {
         val keyPair = generator.generateKeyPair()
         val publicKey = (keyPair.public as X25519PublicKeyParameters).getEncoded() // 32 bytes
         val privateKey = (keyPair.private as X25519PrivateKeyParameters).getEncoded() // 32 bytes
-        agreementKeyPair = Pair(publicKey, privateKey)
-        val newPair = Pair(publicKey, privateKey)
-        return newPair
+        return Pair(publicKey, privateKey)
     }
 
     fun generateX25519RandomKeyPair(): Pair<ByteArray, ByteArray> {
@@ -161,14 +135,6 @@ object StaticKeyManager {
         return kf.generatePublic(spec)
     }
 
-//    fun decodeRawAgreementPublicKey(rawKey: ByteArray): PublicKey {
-//        val x509Header = byteArrayOf(
-//            0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, 0x03, 0x21, 0x00
-//        )
-//        val spec = X509EncodedKeySpec(x509Header + rawKey)
-//        return KeyFactory.getInstance(X25519_ALGO).generatePublic(spec)
-//    }
-
     fun getRawPublicKey(publicKey: PublicKey): ByteArray {
         val encoded = publicKey.encoded // This returns the X.509 format
 
@@ -177,25 +143,6 @@ object StaticKeyManager {
             encoded.takeLast(32).toByteArray()
         } else {
             throw IllegalArgumentException("Key encoding is too short")
-        }
-    }
-
-    fun signData(data: ByteArray, privateKey: PrivateKey): ByteArray {
-        val s = Signature.getInstance("Ed25519")
-        s.initSign(privateKey)
-        s.update(data)
-        return s.sign()
-    }
-
-    fun verifyData(data: ByteArray, signature:ByteArray, publicKey: PublicKey): Boolean {
-        return try {
-            val s = Signature.getInstance("Ed25519")
-            s.initVerify(publicKey)
-            s.update(data)
-            s.verify(signature)
-        } catch (e: Exception) {
-            Log.e("StaticKeyManagement", "Error verify data with signature: ${e.message}")
-            false
         }
     }
 }

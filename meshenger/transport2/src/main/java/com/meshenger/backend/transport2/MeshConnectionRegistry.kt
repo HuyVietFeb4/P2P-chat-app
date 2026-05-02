@@ -1,11 +1,9 @@
 package com.meshenger.backend.transport2
 
 import android.bluetooth.BluetoothDevice
-import com.meshenger.backend.transport2.PhysicalPeer
 import com.meshenger.backend.transport2.client.BleClientConnection
 import com.meshenger.backend.transport2.server.BleServerConnection
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.collections.mutableMapOf
 
 import java.util.concurrent.CopyOnWriteArrayList
 object MeshConnectionRegistry {

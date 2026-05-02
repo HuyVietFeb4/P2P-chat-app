@@ -4,7 +4,7 @@ import android.app.Service
 import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
-import android.graphics.MeshSpecification
+import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.meshenger.backend.transport2.client.BleClientConnection
@@ -17,12 +17,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.PI
 import kotlin.random.Random
 
 class MeshMaintainer : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Default + Job())
-    private var isRunning = false
     // probability to trigger anti entropy
     private var AntiEntropyProbability = 0.0
     private lateinit var server: BleServer
@@ -236,10 +234,25 @@ class MeshMaintainer : Service() {
 
     companion object {
         private var globalPacketListener: TransportPacketListener? = null
-
+        private var isRunning = false
         // This is the "Plug" where the Network layer connects
         fun setGlobalPacketListener(listener: TransportPacketListener) {
             globalPacketListener = listener
+        }
+
+        // Start up function for the UI to invoke after finish initialize
+        fun startMeshService(context: Context) {
+            // Optional: Local flag check to avoid redundant Intent overhead
+            if (isRunning) return
+
+            val intent = Intent(context, MeshMaintainer::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+
+            isRunning = true
         }
     }
     override fun onBind(intent: Intent?) = null
