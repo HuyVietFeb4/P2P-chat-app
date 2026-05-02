@@ -34,7 +34,7 @@ class BleServerConnection(context: Context): BleManager(context), ConnectionObse
         }
     }
     override fun initialize() {
-        requestMtu(256).enqueue()
+        requestMtu(517).enqueue()
         setWriteCallback(writeChar)
             .with { device, data ->
                 val bytes = data.value ?: byteArrayOf()
@@ -78,7 +78,6 @@ class BleServerConnection(context: Context): BleManager(context), ConnectionObse
             else -> "GATT Error Code: $reason"
         }
         Log.e("BleServerConnection", "Disconnected from ${device.address}. Reason: $reasonString")
-
     }
 
     override fun log(priority: Int, message: String) {

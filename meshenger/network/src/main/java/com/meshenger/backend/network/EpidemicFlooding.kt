@@ -1,7 +1,6 @@
 package com.meshenger.backend.network
 
 import android.util.Log
-import com.meshenger.backend.security_native.NativeCredentials
 import com.meshenger.backend.transport2.MPAddress
 import com.meshenger.backend.transport2.MeshConnectionRegistry
 import com.meshenger.backend.transport2.TransportPacketListener
@@ -9,11 +8,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.security.MessageDigest
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
+import java.util.concurrent.ConcurrentHashMap
+
 
 object EpidemicFlooding : TransportPacketListener {
     private val epidemicJob = SupervisorJob()
@@ -21,60 +17,12 @@ object EpidemicFlooding : TransportPacketListener {
     // 2. Define the scope
     // Dispatchers.IO is best for networking/BLE as it doesn't block the UI
     private val epidemicScope = CoroutineScope(Dispatchers.IO + epidemicJob)
-    private var messageListener: NetworkMessageListener? = null
-    private val globalKeySpec by lazy {
-        SecretKeySpec(NativeCredentials.getGlobalChatKey().encodeToByteArray(), "HmacSHA512")
-    }
-    private val directKeySpec by lazy {
-        SecretKeySpec(NativeCredentials.getTwoPartyChatKey().encodeToByteArray(), "HmacSHA512")
-    }
     private val summaryVector: KMCompactRefinedBloomFilter = KMCompactRefinedBloomFilter()
-    private fun verifyGlobalChatKey(packet: Packet): Boolean {
-        val sha512HMAC = Mac.getInstance("HmacSHA512")
-        sha512HMAC.init(globalKeySpec)
-
-        val buffer = ByteBuffer.allocate(36 + packet.payload.size)
-        buffer.order(ByteOrder.BIG_ENDIAN)
-        buffer.putShort(packet.header.version.toShort()) // version
-        buffer.putShort(packet.header.flags.toShort())
-        buffer.putInt(packet.header.type.toInt())
-        buffer.putShort(packet.payload.size.toShort())
-        buffer.putShort(packet.header.fragmentID.toShort())
-        buffer.putShort(packet.header.totalFragments.toShort())
-        buffer.putLong(packet.header.timeStamp.toLong())
-        buffer.putLong(packet.header.senderID.toLong())
-
-        buffer.put(packet.payload)
-        return MessageDigest.isEqual(sha512HMAC.doFinal(buffer.array()), packet.signature)
-    }
-    private fun verifyDirectChatKey(packet: Packet): Boolean {
-        val sha512HMAC = Mac.getInstance("HmacSHA512")
-        sha512HMAC.init(directKeySpec)
-
-        val buffer = ByteBuffer.allocate(44 + packet.payload.size)
-        buffer.order(ByteOrder.BIG_ENDIAN)
-        buffer.order(ByteOrder.BIG_ENDIAN)
-        buffer.putShort(packet.header.version.toShort()) // version
-        buffer.putShort(packet.header.flags.toShort())
-        buffer.putInt(packet.header.type.toInt())
-        buffer.putShort(packet.payload.size.toShort())
-        buffer.putShort(packet.header.fragmentID.toShort())
-        buffer.putShort(packet.header.totalFragments.toShort())
-        buffer.putLong(packet.header.timeStamp.toLong())
-        buffer.putLong(packet.header.senderID.toLong())
-        buffer.putLong(packet.header.receiverID.toLong())
-
-        buffer.put(packet.payload)
-        return MessageDigest.isEqual(sha512HMAC.doFinal(buffer.array()), packet.signature)
-    }
     // Optional: Clean up when the mesh stops
     fun stopMesh() {
         epidemicJob.cancel()
     }
 
-    fun setListener(listener: NetworkMessageListener) {
-        this.messageListener = listener
-    }
     fun onGlobalChatMessageSend(msg: ByteArray, timeStamp: Long) {
         epidemicScope.launch {
             val type = MessageType.USER_MESSAGE_ALL.value
@@ -149,10 +97,21 @@ object EpidemicFlooding : TransportPacketListener {
         // 2. TTL Check
         if (decodedPacket.header.TTL <= 0u) return
 
-        // 3. Signature Verification (Now it's safe to do this "slow" work)
+        // 3. Signature Verification
         val isValid = when(decodedPacket.header.type) {
-            MessageType.USER_MESSAGE_ALL.value, MessageType.BOOTSTRAP.value -> verifyGlobalChatKey(decodedPacket)
-            else -> verifyDirectChatKey(decodedPacket)
+            MessageType.USER_MESSAGE_ALL.value -> PacketSigner.verifyGlobalChatKey(decodedPacket)
+
+            MessageType.BOOTSTRAP.value -> PacketSigner.verifyGlobalProtocolKey(decodedPacket)
+
+            MessageType.ANTI_ENTROPY_REQUEST.value,
+            MessageType.ANTI_ENTROPY_RESPOND.value,
+            MessageType.NOISE_HANDSHAKE.value -> PacketSigner.verifyDirectProtocolKey(decodedPacket)
+
+            MessageType.USER_MESSAGE_ONE_TO_ONE.value -> true // Automatic push to session for upper layer verification
+            else -> {
+                Log.d("EpidemicFlooding", "Unsupported packet type: ${decodedPacket.header.type}")
+                false
+            }
         }
 
         if (!isValid) {
@@ -228,7 +187,7 @@ object EpidemicFlooding : TransportPacketListener {
     }
 
     override fun onTriggerAntiEntropy() {
-        epidemicScope.launch {
+//        epidemicScope.launch {
             val type = MessageType.ANTI_ENTROPY_REQUEST.value
             val physicalPeerList = MeshConnectionRegistry.getPhysicalPeerList()
             val compactVector = summaryVector.toCompactedBinary()
@@ -243,16 +202,16 @@ object EpidemicFlooding : TransportPacketListener {
                     forwardPacket(packet)
                 }
             }
-        }
+//        }
     }
-
     /**
      * Handles passing the message up to the Session layer
      */
     private fun handleLocalDelivery(packet: Packet, completePayload: ByteArray, sourceMac: String) {
+        val targetListener = ListenerRegistry.getTwoPartyListener(packet.header.senderID)
         when (packet.header.type) {
             MessageType.USER_MESSAGE_ALL.value -> {
-                messageListener?.onGlobalMessageReceived(
+                ListenerRegistry.getGlobalListener()?.onGlobalMessageReceived(
                     packet.header.senderID,
                     completePayload,
                     packet.header.timeStamp
@@ -290,20 +249,24 @@ object EpidemicFlooding : TransportPacketListener {
                 onReceivePacket(completePayload)
             }
             MessageType.NOISE_HANDSHAKE.value -> {
-                messageListener?.onReceiveMessageHandShake(
+                targetListener?.onReceiveMessageHandShake(
                     packet.header.senderID,
                     completePayload,
                 )
             }
             MessageType.USER_MESSAGE_ONE_TO_ONE.value -> {
-                messageListener?.onDirectMessageReceived(
-                    packet.header.senderID,
-                    completePayload,
-                    packet.header.timeStamp
+                val signedData = PacketSigner.reassembleSignedData(packet)
+
+                targetListener?.onDirectMessageReceived(
+                    senderID = packet.header.senderID,
+                    payload = completePayload,
+                    timeStamp = packet.header.timeStamp,
+                    signature = packet.signature,
+                    signedData = signedData
                 )
             }
             MessageType.BOOTSTRAP.value -> {
-                messageListener?.onBootStrapReceived(
+                ListenerRegistry.getGlobalListener()?.onBootStrapReceived(
                     packet.header.senderID,
                     completePayload,
                     packet.header.timeStamp

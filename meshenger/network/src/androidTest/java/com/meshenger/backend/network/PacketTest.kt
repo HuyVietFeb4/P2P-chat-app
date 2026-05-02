@@ -43,30 +43,31 @@ class PacketFactoryTest {
         val payload = "Secret Message".encodeToByteArray()
         val senderId = 999uL
         val type = MessageType.USER_MESSAGE_ALL.value
-
+        val timeStamp = System.currentTimeMillis().toULong()
         val packets = PacketFactory.createPackets(
             type = type,
             senderID = senderId,
-            payload = payload
+            payload = payload,
+            inputTimeStamp = timeStamp
         )
 
         val packet = packets[0]
 
         // Manually recreate the HMAC to verify the factory did it correctly
-        val secretKey = NativeCredentials.getAppSecretKey()
+        val secretKey = NativeCredentials.getGlobalChatKey()
         val hmac = Mac.getInstance("HmacSHA512")
         hmac.init(SecretKeySpec(secretKey.encodeToByteArray(), "HmacSHA512"))
 
         // Note: You must match the exact buffer layout used in createBroadcastPackets
-        val buffer = java.nio.ByteBuffer.allocate(38 + payload.size).order(java.nio.ByteOrder.BIG_ENDIAN)
-        buffer.putShort(1u.toShort()) // version
+        val buffer = java.nio.ByteBuffer.allocate(36 + payload.size).order(java.nio.ByteOrder.BIG_ENDIAN)
+        buffer.putShort(1u.toShort())            // version
         buffer.putShort(packet.header.flags.toShort())
-        buffer.putInt(type.toInt())
-        buffer.putShort(packet.header.TTL.toShort())
-        buffer.putShort(packet.header.totalFragments.toShort())
-        buffer.putShort(packet.header.fragmentID.toShort())
-        buffer.putLong(packet.header.timeStamp.toLong())
-        buffer.putLong(senderId.toLong())
+        buffer.putInt(type.toInt())             // type
+        buffer.putShort(packet.payload.size.toShort()) // payload.size (MISSING IN YOUR TEST)
+        buffer.putShort(0.toShort())            // fragmentID (index 0)
+        buffer.putShort(1.toShort())            // totalFragments
+        buffer.putLong(timeStamp.toLong())      // timeStamp
+        buffer.putLong(senderId.toLong())       // senderID
         buffer.put(payload)
 
         val expectedSignature = hmac.doFinal(buffer.array())

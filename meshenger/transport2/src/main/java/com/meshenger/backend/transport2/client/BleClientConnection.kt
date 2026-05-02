@@ -31,13 +31,6 @@ class BleClientConnection(context: Context): BleManager(context), ConnectionObse
             .done { Log.d("BleClientConnection", "MTU Negotiated") }
             .fail { _, status -> Log.w("BleClientConnection", "MTU Failed: $status") }
             .enqueue()
-        // For test
-//        setWriteCallback(writeChar)
-//            .with { device, data ->
-//                val bytes = data.value ?: byteArrayOf()
-//                Log.d("BleClientConnection", "Data received from ${device.address} via Dual-Write")
-//                onDataReceived?.invoke(device, bytes)
-//            }
     }
     override fun onServicesInvalidated() {
         writeChar = null

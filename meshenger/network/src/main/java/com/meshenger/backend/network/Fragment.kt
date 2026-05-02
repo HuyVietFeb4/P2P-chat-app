@@ -15,13 +15,7 @@ object FragmentUtil {
         }
         return fragmentLst
     }
-//    fun reassembly(fragments: List<ByteArray>): ByteArray {
-//        val buffer = ByteArrayOutputStream()
-//        for (fragment in fragments) {
-//            buffer.write(fragment)
-//        }
-//        return buffer.encodeToByteArray()
-//    }
+    
     fun reassembly(fragments: List<ByteArray>): ByteArray {
         // 1. Calculate total size once to avoid multiple re-allocations
         val totalSize = fragments.sumOf { it.size }

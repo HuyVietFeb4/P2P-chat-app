@@ -34,6 +34,30 @@ object MPAddress {
             length          // Output Length
         )
     }
+    fun calculateCurrentMPAddress(
+        identityPublicKey: ByteArray,
+        epochHours: Int = 2,
+        length: Int = 8
+    ): ByteArray {
+        val epochSeconds = epochHours * 3600
+        val currentTimeStamp = System.currentTimeMillis() / 1000
+        val epochIndex = currentTimeStamp / epochSeconds
+
+        val epochBytes = ByteBuffer.allocate(8).putLong(epochIndex).array()
+        val stream = ByteArrayOutputStream()
+        stream.write(INFO_PREFIX)
+        stream.write(epochBytes)
+        stream.write(NativeCredentials.getAppSecretKey().encodeToByteArray())
+
+        val info = stream.toByteArray()
+        return Hkdf.computeHkdf(
+            "HmacSHA256",
+            identityPublicKey, // IKM
+            SALT,           // Salt
+            info,           // Info
+            length          // Output Length
+        )
+    }
 
     fun getMyMPAddressULong(): ULong {
         val MPAddressByteArray = this.getMyMPAddress()

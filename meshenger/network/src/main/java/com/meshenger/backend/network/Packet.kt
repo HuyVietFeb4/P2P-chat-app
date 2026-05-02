@@ -8,9 +8,7 @@ import android.util.Log
 
 import com.meshenger.backend.security_native.NativeCredentials
 import com.meshenger.backend.transport2.MPAddress
-import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import kotlin.math.sign
 
 enum class MessageType(val value: UInt) {
     BOOTSTRAP(0x0000u),
@@ -198,58 +196,6 @@ object PacketFactory {
     private val directKeySpec by lazy {
         SecretKeySpec(NativeCredentials.getTwoPartyChatKey().encodeToByteArray(), "HmacSHA512")
     }
-    private fun getSignatureAllChat(
-            mac: Mac,
-            version: UShort,
-            flags: UShort,
-            type: UInt,
-            payload: ByteArray,
-            fragmentID: UShort,
-            totalFragments: UShort,
-            timeStamp: ULong,
-            senderID: ULong
-    ): ByteArray {
-        val buffer = ByteBuffer.allocate(36 + payload.size)
-        buffer.order(ByteOrder.BIG_ENDIAN)
-        buffer.putShort(version.toShort()) // version
-        buffer.putShort(flags.toShort())
-        buffer.putInt(type.toInt())
-        buffer.putShort(payload.size.toShort())
-        buffer.putShort(fragmentID.toShort())
-        buffer.putShort(totalFragments.toShort())
-        buffer.putLong(timeStamp.toLong())
-        buffer.putLong(senderID.toLong())
-
-        buffer.put(payload)
-        return mac.doFinal(buffer.array())
-    }
-
-    private fun getSignatureDirectPacket(
-        mac: Mac,
-        version: UShort,
-        flags: UShort,
-        type: UInt,
-        payload: ByteArray,
-        fragmentID: UShort,
-        totalFragments: UShort,
-        timeStamp: ULong,
-        senderID: ULong,
-        receiverID: ULong
-    ): ByteArray {
-        val buffer = ByteBuffer.allocate(44 + payload.size)
-        buffer.order(ByteOrder.BIG_ENDIAN)
-        buffer.putShort(version.toShort()) // version
-        buffer.putShort(flags.toShort())
-        buffer.putInt(type.toInt())
-        buffer.putShort(payload.size.toShort())
-        buffer.putShort(fragmentID.toShort())
-        buffer.putShort(totalFragments.toShort())
-        buffer.putLong(timeStamp.toLong())
-        buffer.putLong(senderID.toLong())
-        buffer.putLong(receiverID.toLong())
-        buffer.put(payload)
-        return mac.doFinal(buffer.array())
-    }
 
     fun createPackets( // For all type of packet
         type: UInt,
@@ -272,29 +218,36 @@ object PacketFactory {
             flags = flags or Packet.IS_COMPRESSED
         }
         // For signing in broadcast mode
-        val sha512HMAC = Mac.getInstance("HmacSHA512")
         for ((index, fragment) in fragments.withIndex()) {
             // Signature:
                 // If for all chat: using native hiding secret key to hmac payload and other field
             // The payload must be encrypted from session layer above
             var signature: ByteArray? = null
             when (type) {
-                MessageType.USER_MESSAGE_ALL.value,
+                MessageType.USER_MESSAGE_ALL.value -> {
+                    signature = PacketSigner.getSignatureGlobalChat(version, flags, type, fragment,
+                        index.toUShort(), fragments.size.toUShort(), inputTimeStamp, senderID
+                    )
+                }
                 MessageType.BOOTSTRAP.value -> {
-                    sha512HMAC.init(globalKeySpec)
-                    signature = getSignatureAllChat(
-                        sha512HMAC,version, flags, type, fragment,
+                    signature = PacketSigner.getSignatureGlobalProtocol(
+                        version, flags, type, fragment,
                         index.toUShort(), fragments.size.toUShort(), inputTimeStamp, senderID
                     )
                 }
 
                 MessageType.ANTI_ENTROPY_REQUEST.value,
                 MessageType.ANTI_ENTROPY_RESPOND.value,
-                MessageType.USER_MESSAGE_ONE_TO_ONE.value,
                 MessageType.NOISE_HANDSHAKE.value -> {
-                    sha512HMAC.init(directKeySpec)
-                    signature = getSignatureDirectPacket(
-                        sha512HMAC,version, flags, type, fragment,
+                    signature = PacketSigner.getSignatureDirectProtocol(
+                        version, flags, type, fragment,
+                        index.toUShort(), fragments.size.toUShort(), inputTimeStamp,
+                        senderID, receiverID
+                    )
+                }
+                MessageType.USER_MESSAGE_ONE_TO_ONE.value -> {
+                    signature = PacketSigner.signTwoPartySession(
+                        version, flags, type, fragment,
                         index.toUShort(), fragments.size.toUShort(), inputTimeStamp,
                         senderID, receiverID
                     )
