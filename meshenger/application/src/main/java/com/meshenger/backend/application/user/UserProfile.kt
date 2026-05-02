@@ -1,8 +1,10 @@
 package com.meshenger.backend.application.user
 
+/**
+ * Updated UserProfile model based on the new schema.
+ */
 data class UserProfile(
     val id: String,
-    val displayName: String,
-    val avatarUrl: String?
+    val publicKeyHash: String,
+    val userName: String
 )
-

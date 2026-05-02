@@ -6,11 +6,15 @@ enum class MessageStatus {
     FAILED
 }
 
+/**
+ * Model for a single chat message based on the updated schema.
+ */
 data class Message(
     val id: String,
-    val peerId: String,
-    val text: String,
-    val fromMe: Boolean,
+    val sessionId: String,
+    val senderId: String,
     val timestamp: Long = System.currentTimeMillis(),
-    val status: MessageStatus = MessageStatus.SENT
+    val nonce: String,
+    val status: MessageStatus,
+    val encryptedPayload: String
 )
