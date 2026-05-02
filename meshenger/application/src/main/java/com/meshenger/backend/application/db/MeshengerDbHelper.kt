@@ -1,7 +1,6 @@
 package com.meshenger.backend.application.db
 
 import android.content.Context
-import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.content.ContentValues
@@ -9,190 +8,265 @@ import com.meshenger.backend.application.messaging.Message
 import com.meshenger.backend.application.messaging.MessageStatus
 import com.meshenger.backend.application.user.UserProfile
 
-/**
- * Small SQLite helper to persist messages and local user profile.
- */
-class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(
-    context,
-    DATABASE_NAME,
-    null,
-    DATABASE_VERSION
-) {
+class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS user_profile (
-              id TEXT PRIMARY KEY,
-              display_name TEXT NOT NULL,
-              avatar_url TEXT NULL
-            );
-            """.trimIndent()
-        )
+        // Enable Foreign Keys
+        db.execSQL("PRAGMA foreign_keys = ON;")
 
-        db.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS messages (
-              id TEXT PRIMARY KEY,
-              peer_id TEXT NOT NULL,
-              text TEXT NOT NULL,
-              from_me INTEGER NOT NULL,
-              timestamp INTEGER NOT NULL,
-              status TEXT NOT NULL DEFAULT 'SENT'
+        // 1. Table User
+        db.execSQL("""
+            CREATE TABLE users (
+                userId TEXT PRIMARY KEY,
+                publicKeyHash TEXT NOT NULL,
+                userName TEXT NOT NULL
             );
-            """.trimIndent()
-        )
+        """)
 
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_peer_id ON messages(peer_id);")
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);")
+        // 2. Table Chat
+        db.execSQL("""
+            CREATE TABLE chats (
+                chatId TEXT PRIMARY KEY,
+                name TEXT,
+                chatType TEXT NOT NULL,
+                createdAt INTEGER NOT NULL
+            );
+        """)
+
+        // 3. Table Session
+        db.execSQL("""
+            CREATE TABLE sessions (
+                sessionId TEXT PRIMARY KEY,
+                chatId TEXT NOT NULL,
+                chachaKey TEXT NOT NULL,
+                FOREIGN KEY(chatId) REFERENCES chats(chatId) ON DELETE CASCADE
+            );
+        """)
+
+        // 4. Table Message
+        db.execSQL("""
+            CREATE TABLE messages (
+                messageId TEXT PRIMARY KEY,
+                sessionId TEXT NOT NULL,
+                senderId TEXT NOT NULL,
+                timeStamp INTEGER NOT NULL,
+                nonce TEXT NOT NULL,
+                messageStatus TEXT NOT NULL,
+                encryptedPayload TEXT NOT NULL,
+                FOREIGN KEY(sessionId) REFERENCES sessions(sessionId) ON DELETE CASCADE,
+                FOREIGN KEY(senderId) REFERENCES users(userId)
+            );
+        """)
+
+        // 5. Table User Participation
+        db.execSQL("""
+            CREATE TABLE user_participation (
+                chatId TEXT NOT NULL,
+                userId TEXT NOT NULL,
+                role TEXT NOT NULL,
+                joinAt INTEGER NOT NULL,
+                isLeft INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY(chatId, userId),
+                FOREIGN KEY(chatId) REFERENCES chats(chatId) ON DELETE CASCADE,
+                FOREIGN KEY(userId) REFERENCES users(userId)
+            );
+        """)
+
+        // 6. Table Message Delivery
+        db.execSQL("""
+            CREATE TABLE message_delivery (
+                messageId TEXT NOT NULL,
+                receiverId TEXT NOT NULL,
+                PRIMARY KEY(messageId, receiverId),
+                FOREIGN KEY(messageId) REFERENCES messages(messageId) ON DELETE CASCADE,
+                FOREIGN KEY(receiverId) REFERENCES users(userId)
+            );
+        """)
+    }
+
+    override fun onOpen(db: SQLiteDatabase) {
+        super.onOpen(db)
+        db.execSQL("PRAGMA foreign_keys = ON;")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        if (oldVersion < newVersion) {
-            // Simple approach for prototype: drop and recreate
-            db.execSQL("DROP TABLE IF EXISTS messages;")
-            db.execSQL("DROP TABLE IF EXISTS user_profile;")
-            onCreate(db)
-        }
+        db.execSQL("DROP TABLE IF EXISTS message_delivery")
+        db.execSQL("DROP TABLE IF EXISTS user_participation")
+        db.execSQL("DROP TABLE IF EXISTS messages")
+        db.execSQL("DROP TABLE IF EXISTS sessions")
+        db.execSQL("DROP TABLE IF EXISTS chats")
+        db.execSQL("DROP TABLE IF EXISTS users")
+        onCreate(db)
     }
 
-    fun upsertUserProfile(profile: UserProfile) {
+    // --- Helper Methods ---
+
+    fun upsertUserProfile(user: UserProfile) {
         val db = writableDatabase
         val values = ContentValues().apply {
-            put(COL_USER_ID, profile.id)
-            put(COL_USER_DISPLAY_NAME, profile.displayName)
-            put(COL_USER_AVATAR_URL, profile.avatarUrl)
+            put("userId", user.id)
+            put("publicKeyHash", user.publicKeyHash)
+            put("userName", user.userName)
         }
-        db.insertWithOnConflict(
-            TABLE_USER_PROFILE,
-            null,
-            values,
-            SQLiteDatabase.CONFLICT_REPLACE
-        )
+        db.insertWithOnConflict("users", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
     fun getUserProfile(userId: String): UserProfile? {
         val db = readableDatabase
-        val cursor = db.query(
-            TABLE_USER_PROFILE,
-            arrayOf(COL_USER_ID, COL_USER_DISPLAY_NAME, COL_USER_AVATAR_URL),
-            "${COL_USER_ID} = ?",
-            arrayOf(userId),
-            null,
-            null,
-            null
-        )
-
-        cursor.use {
-            if (!it.moveToFirst()) return null
-            val id = it.getString(it.getColumnIndexOrThrow(COL_USER_ID))
-            val displayName = it.getString(it.getColumnIndexOrThrow(COL_USER_DISPLAY_NAME))
-            val avatarUrl = it.getString(it.getColumnIndexOrThrow(COL_USER_AVATAR_URL))
-            return UserProfile(id = id, displayName = displayName, avatarUrl = avatarUrl)
+        db.rawQuery("SELECT userId, publicKeyHash, userName FROM users WHERE userId = ?", arrayOf(userId)).use { c ->
+            if (!c.moveToFirst()) return null
+            return UserProfile(
+                id = c.getString(0),
+                publicKeyHash = c.getString(1),
+                userName = c.getString(2)
+            )
         }
     }
 
     fun getAllUserProfiles(): List<UserProfile> {
         val db = readableDatabase
-        val cursor = db.query(
-            TABLE_USER_PROFILE,
-            arrayOf(COL_USER_ID, COL_USER_DISPLAY_NAME, COL_USER_AVATAR_URL),
-            null,
-            null,
-            null,
-            null,
-            null
-        )
-
-        cursor.use {
-            val profiles = mutableListOf<UserProfile>()
-            while (it.moveToNext()) {
-                val id = it.getString(it.getColumnIndexOrThrow(COL_USER_ID))
-                val displayName = it.getString(it.getColumnIndexOrThrow(COL_USER_DISPLAY_NAME))
-                val avatarUrl = it.getString(it.getColumnIndexOrThrow(COL_USER_AVATAR_URL))
-                profiles.add(UserProfile(id = id, displayName = displayName, avatarUrl = avatarUrl))
+        val out = mutableListOf<UserProfile>()
+        db.rawQuery("SELECT userId, publicKeyHash, userName FROM users ORDER BY userName", null).use { c ->
+            while (c.moveToNext()) {
+                out.add(
+                    UserProfile(
+                        id = c.getString(0),
+                        publicKeyHash = c.getString(1),
+                        userName = c.getString(2)
+                    )
+                )
             }
-            return profiles
+        }
+        return out
+    }
+
+    private fun rowExists(table: String, column: String, id: String): Boolean {
+        readableDatabase.rawQuery("SELECT 1 FROM $table WHERE $column = ? LIMIT 1", arrayOf(id)).use {
+            return it.moveToFirst()
         }
     }
 
-    fun insertMessage(message: Message) {
+    /**
+     * Ensures [peerId] exists in users and a 1:1 chat + session row exist for DB message FKs.
+     */
+    fun ensureDirectChatForPeer(peerId: String, peerUserName: String) {
+        upsertUserProfile(UserProfile(peerId, publicKeyHash = "-", userName = peerUserName))
+        val chatId = directChatId(peerId)
+        val sessionId = directSessionId(peerId)
+        if (!rowExists("chats", "chatId", chatId)) {
+            insertChat(chatId, peerUserName, "DIRECT", System.currentTimeMillis())
+        }
+        if (!rowExists("sessions", "sessionId", sessionId)) {
+            insertSession(sessionId, chatId, "placeholder-key")
+        }
+    }
+
+    fun directChatId(peerId: String) = "direct-$peerId"
+
+    fun directSessionId(peerId: String) = "session-$peerId"
+
+    fun ensureGlobalChat(globalChatId: String, globalSessionId: String, keyId: String) {
+        if (!rowExists("chats", "chatId", globalChatId)) {
+            insertChat(globalChatId, "Global Chat", "GLOBAL", System.currentTimeMillis())
+        }
+        if (!rowExists("sessions", "sessionId", globalSessionId)) {
+            insertSession(globalSessionId, globalChatId, keyId)
+        }
+    }
+
+    fun getSessionKeyId(sessionId: String): String? {
+        val db = readableDatabase
+        db.rawQuery("SELECT chachaKey FROM sessions WHERE sessionId = ?", arrayOf(sessionId)).use { c ->
+            if (!c.moveToFirst()) return null
+            return c.getString(0)
+        }
+    }
+
+    fun insertChat(chatId: String, name: String?, chatType: String, createdAt: Long) {
         val db = writableDatabase
         val values = ContentValues().apply {
-            put(COL_MSG_ID, message.id)
-            put(COL_MSG_PEER_ID, message.peerId)
-            put(COL_MSG_TEXT, message.text)
-            put(COL_MSG_FROM_ME, if (message.fromMe) 1 else 0)
-            put(COL_MSG_TIMESTAMP, message.timestamp)
-            put(COL_MSG_STATUS, message.status.name)
+            put("chatId", chatId)
+            put("name", name)
+            put("chatType", chatType)
+            put("createdAt", createdAt)
         }
-        db.insertWithOnConflict(
-            TABLE_MESSAGES,
-            null,
-            values,
-            SQLiteDatabase.CONFLICT_REPLACE
-        )
+        db.insert("chats", null, values)
+    }
+
+    fun insertSession(sessionId: String, chatId: String, chachaKey: String) {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("sessionId", sessionId)
+            put("chatId", chatId)
+            put("chachaKey", chachaKey)
+        }
+        db.insert("sessions", null, values)
+    }
+
+    fun insertMessage(message: Message, receiverIds: List<String>) {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val values = ContentValues().apply {
+                put("messageId", message.id)
+                put("sessionId", message.sessionId)
+                put("senderId", message.senderId)
+                put("timeStamp", message.timestamp)
+                put("nonce", message.nonce)
+                put("messageStatus", message.status.name)
+                put("encryptedPayload", message.encryptedPayload)
+            }
+            db.insert("messages", null, values)
+
+            for (receiverId in receiverIds) {
+                val deliveryValues = ContentValues().apply {
+                    put("messageId", message.id)
+                    put("receiverId", receiverId)
+                }
+                db.insert("message_delivery", null, deliveryValues)
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
     }
 
     fun updateMessageStatus(messageId: String, status: String) {
         val db = writableDatabase
         val values = ContentValues().apply {
-            put(COL_MSG_STATUS, status)
+            put("messageStatus", status)
         }
-        db.update(TABLE_MESSAGES, values, "$COL_MSG_ID = ?", arrayOf(messageId))
+        db.update("messages", values, "messageId = ?", arrayOf(messageId))
     }
 
-    fun getConversation(peerId: String): List<Message> {
+    fun getConversation(chatId: String): List<Message> {
         val db = readableDatabase
-        val cursor: Cursor = db.query(
-            TABLE_MESSAGES,
-            arrayOf(COL_MSG_ID, COL_MSG_PEER_ID, COL_MSG_TEXT, COL_MSG_FROM_ME, COL_MSG_TIMESTAMP, COL_MSG_STATUS),
-            "${COL_MSG_PEER_ID} = ?",
-            arrayOf(peerId),
-            null,
-            null,
-            "${COL_MSG_TIMESTAMP} ASC"
-        )
-
+        val query = """
+            SELECT m.* FROM messages m
+            JOIN sessions s ON m.sessionId = s.sessionId
+            WHERE s.chatId = ?
+            ORDER BY m.timeStamp ASC
+        """
+        val cursor = db.rawQuery(query, arrayOf(chatId))
+        val messages = mutableListOf<Message>()
         cursor.use {
-            val out = ArrayList<Message>()
             while (it.moveToNext()) {
-                val id = it.getString(it.getColumnIndexOrThrow(COL_MSG_ID))
-                val pId = it.getString(it.getColumnIndexOrThrow(COL_MSG_PEER_ID))
-                val text = it.getString(it.getColumnIndexOrThrow(COL_MSG_TEXT))
-                val fromMeInt = it.getInt(it.getColumnIndexOrThrow(COL_MSG_FROM_ME))
-                val timestamp = it.getLong(it.getColumnIndexOrThrow(COL_MSG_TIMESTAMP))
-                val statusStr = it.getString(it.getColumnIndexOrThrow(COL_MSG_STATUS))
-                
-                out.add(
-                    Message(
-                        id = id,
-                        peerId = pId,
-                        text = text,
-                        fromMe = fromMeInt != 0,
-                        timestamp = timestamp,
-                        status = MessageStatus.valueOf(statusStr)
-                    )
-                )
+                messages.add(Message(
+                    id = it.getString(it.getColumnIndexOrThrow("messageId")),
+                    sessionId = it.getString(it.getColumnIndexOrThrow("sessionId")),
+                    senderId = it.getString(it.getColumnIndexOrThrow("senderId")),
+                    timestamp = it.getLong(it.getColumnIndexOrThrow("timeStamp")),
+                    nonce = it.getString(it.getColumnIndexOrThrow("nonce")),
+                    status = MessageStatus.valueOf(it.getString(it.getColumnIndexOrThrow("messageStatus"))),
+                    encryptedPayload = it.getString(it.getColumnIndexOrThrow("encryptedPayload"))
+                ))
             }
-            return out
         }
+        return messages
     }
 
     companion object {
         private const val DATABASE_NAME = "meshenger.db"
-        private const val DATABASE_VERSION = 2
-
-        private const val TABLE_USER_PROFILE = "user_profile"
-        private const val COL_USER_ID = "id"
-        private const val COL_USER_DISPLAY_NAME = "display_name"
-        private const val COL_USER_AVATAR_URL = "avatar_url"
-
-        private const val TABLE_MESSAGES = "messages"
-        private const val COL_MSG_ID = "id"
-        private const val COL_MSG_PEER_ID = "peer_id"
-        private const val COL_MSG_TEXT = "text"
-        private const val COL_MSG_FROM_ME = "from_me"
-        private const val COL_MSG_TIMESTAMP = "timestamp"
-        private const val COL_MSG_STATUS = "status"
+        private const val DATABASE_VERSION = 4 // Increment to trigger upgrade
     }
 }

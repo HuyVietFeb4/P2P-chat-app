@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 
 const { MeshengerApplicationModule } = NativeModules;
 const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
@@ -20,6 +21,7 @@ export default function ChatList() {
   const [chatData, setChatData] = useState([]);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { colors, isDarkMode } = useTheme();
 
   useEffect(() => {
     loadPeers();
@@ -68,19 +70,23 @@ export default function ChatList() {
 
     return (
       <TouchableOpacity 
-        style={[styles.chatBox, isSelected && styles.selectedChatBox]} 
+        style={[
+            styles.chatBox,
+            { backgroundColor: isDarkMode ? colors.card : '#ffffff' },
+            isSelected && { backgroundColor: isDarkMode ? '#35373C' : '#e6f2ff', borderColor: isDarkMode ? colors.primary : '#b3d9ff', borderWidth: 1 }
+        ]}
         onPress={() => handleSelectChat(item.id, item.name, item.avatarUrl)}
         activeOpacity={0.7}
       >
         <Image
           source={item.avatarUrl ? { uri: item.avatarUrl } : DEFAULT_AVATAR}
-          style={styles.avatar}
+          style={[styles.avatar, { backgroundColor: isDarkMode ? '#35373C' : '#f0f0f0' }]}
         />
         
         <View style={styles.textContainer}>
-          <Text style={styles.nameText}>{item.name}</Text>
+          <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
           <Text 
-            style={[styles.messageText, hasUnread && styles.messageTextUnread]} 
+            style={[styles.messageText, { color: colors.subText }, hasUnread && { color: colors.text, fontWeight: '600' }]}
             numberOfLines={1}
           >
             {item.lastMessage}
@@ -88,11 +94,11 @@ export default function ChatList() {
         </View>
 
         <View style={styles.rightContainer}>
-          <Text style={[styles.timeText, hasUnread && styles.timeTextUnread]}>
+          <Text style={[styles.timeText, { color: colors.subText }, hasUnread && { color: colors.primary, fontWeight: '600' }]}>
             {item.timestamp}
           </Text>
           {hasUnread && (
-            <View style={styles.unreadBadge}>
+            <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
               <Text style={styles.unreadText}>
                 {item.unreadCount > 99 ? '99+' : item.unreadCount}
               </Text>
@@ -106,14 +112,14 @@ export default function ChatList() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" color="#007aff" />
+      <View style={[styles.container, { justifyContent: 'center', backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>      
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         data={chatData}
         keyExtractor={(item) => item.id}
@@ -121,8 +127,8 @@ export default function ChatList() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No peers added yet.</Text>
-            <Text style={styles.emptySubText}>Scan a QR code to add a peer.</Text>
+            <Text style={[styles.emptyText, { color: colors.subText }]}>No peers added yet.</Text>
+            <Text style={[styles.emptySubText, { color: colors.subText, opacity: 0.7 }]}>Scan a QR code to add a peer.</Text>
           </View>
         }
         onRefresh={loadPeers}
@@ -135,7 +141,6 @@ export default function ChatList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   listContent: {
     paddingVertical: 10,
@@ -144,7 +149,6 @@ const styles = StyleSheet.create({
   chatBox: {
     flexDirection: 'row',
     padding: 15,
-    backgroundColor: '#ffffff',
     marginHorizontal: 10,
     marginVertical: 5,
     borderRadius: 12,
@@ -155,17 +159,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  selectedChatBox: {
-    backgroundColor: '#e6f2ff',
-    borderColor: '#b3d9ff',
-    borderWidth: 1,
-  },
   avatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
     marginRight: 15,
-    backgroundColor: '#f0f0f0',
   },
   textContainer: {
     flex: 1,
@@ -175,16 +173,10 @@ const styles = StyleSheet.create({
   nameText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#222',
     marginBottom: 4,
   },
   messageText: {
     fontSize: 14,
-    color: '#666',
-  },
-  messageTextUnread: {
-    color: '#333',
-    fontWeight: '600',
   },
   rightContainer: {
     alignItems: 'flex-end',
@@ -193,14 +185,8 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    color: '#888',
-  },
-  timeTextUnread: {
-    color: '#007bff',
-    fontWeight: '600',
   },
   unreadBadge: {
-    backgroundColor: '#ff3b30',
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -222,11 +208,9 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#888',
   },
   emptySubText: {
     fontSize: 14,
-    color: '#aaa',
     marginTop: 8,
   },
 });

@@ -1,11 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function EmergencyChat() {
+  const { colors, isDarkMode } = useTheme();
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Emergency Chats</Text>
-      <Text style={styles.subText}>Coming Soon...</Text>
+    <View style={[styles.container, { backgroundColor: isDarkMode ? colors.background : '#fff5f5' }]}>
+      <Text style={[styles.text, { color: isDarkMode ? '#ff8a80' : '#c53030' }]}>Emergency Chats</Text>
+      <Text style={[styles.subText, { color: colors.subText }]}>Coming Soon...</Text>
     </View>
   );
 }
@@ -15,16 +18,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff5f5',
   },
   text: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#c53030',
   },
   subText: {
     fontSize: 16,
-    color: '#888',
     marginTop: 10,
   },
 });

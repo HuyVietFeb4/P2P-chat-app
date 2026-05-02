@@ -3,18 +3,17 @@ package com.meshenger.backend.application.user
 import com.meshenger.backend.application.db.MeshengerDbHelper
 
 /**
- * Simple in-memory user/peer store for the application layer.
- * This is a placeholder; in a real app it should be backed by persistent storage.
+ * Local profile is persisted in [users]. Peer list comes from the same table (excluding local id).
  */
 object UserStore {
 
     private const val LOCAL_ID = "local-device"
+    private const val PLACEHOLDER_HASH = "-"
 
-    // Fallback for when DB is not initialized (or during very early app lifecycle).
     private var profile: UserProfile = UserProfile(
         id = LOCAL_ID,
-        displayName = "Local User",
-        avatarUrl = null
+        publicKeyHash = PLACEHOLDER_HASH,
+        userName = "Local User"
     )
 
     private val favoritePeers: MutableSet<String> = mutableSetOf()
@@ -25,10 +24,8 @@ object UserStore {
 
     fun init(dbHelper: MeshengerDbHelper) {
         db = dbHelper
-        // Load once; later reads use cached value.
         val loaded = dbHelper.getUserProfile(LOCAL_ID)
         profile = loaded ?: profile
-        // Ensure default row exists.
         if (loaded == null) {
             dbHelper.upsertUserProfile(profile)
         }
@@ -38,31 +35,25 @@ object UserStore {
 
     fun getAllPeers(): List<UserProfile> {
         val allUsers = db?.getAllUserProfiles() ?: emptyList()
-        // Filter out the local user to only return actual peers.
         return allUsers.filter { it.id != LOCAL_ID }
     }
 
-    fun updateProfile(displayName: String, avatarUrl: String?): UserProfile {
-        profile = profile.copy(displayName = displayName, avatarUrl = avatarUrl)
+    fun updateProfile(userName: String, publicKeyHash: String? = null): UserProfile {
+        profile = profile.copy(
+            userName = userName,
+            publicKeyHash = publicKeyHash ?: profile.publicKeyHash
+        )
         db?.upsertUserProfile(profile)
         return profile
     }
 
     fun setFavorite(peerId: String, isFavorite: Boolean) {
         if (peerId.isBlank()) return
-        if (isFavorite) {
-            favoritePeers.add(peerId)
-        } else {
-            favoritePeers.remove(peerId)
-        }
+        if (isFavorite) favoritePeers.add(peerId) else favoritePeers.remove(peerId)
     }
 
     fun setBlocked(peerId: String, isBlocked: Boolean) {
         if (peerId.isBlank()) return
-        if (isBlocked) {
-            blockedPeers.add(peerId)
-        } else {
-            blockedPeers.remove(peerId)
-        }
+        if (isBlocked) blockedPeers.add(peerId) else blockedPeers.remove(peerId)
     }
 }

@@ -4,9 +4,11 @@ import com.meshenger.backend.application.db.MeshengerDbHelper
 import java.util.UUID
 
 /**
- * Messaging store for chat messages per peer.
+ * Persists chat rows using [Message] (ciphertext in [Message.encryptedPayload] only).
  */
 object MessagingStore {
+    private const val LOCAL_SENDER_ID = "local-device"
+
     private var db: MeshengerDbHelper? = null
 
     var onStatusChanged: ((id: String, status: MessageStatus) -> Unit)? = null
@@ -15,46 +17,78 @@ object MessagingStore {
         db = dbHelper
     }
 
-    fun sendMessage(peerId: String, text: String, fromMe: Boolean = true): Message {
-        val status = if (fromMe) MessageStatus.PENDING else MessageStatus.SENT
-
+    /**
+     * Outgoing message from this device. [encryptedPayload] is opaque ciphertext (e.g. Base64).
+     */
+    fun sendMessage(
+        peerId: String,
+        encryptedPayload: String,
+        nonce: String,
+    ): Message {
+        val helper = db ?: throw IllegalStateException("MessagingStore not initialized")
+        if (peerId.isBlank() || encryptedPayload.isBlank()) {
+            throw IllegalArgumentException("peerId and encryptedPayload must be non-blank")
+        }
+        helper.ensureDirectChatForPeer(peerId, peerUserName = peerId)
+        val sessionId = helper.directSessionId(peerId)
         val message = Message(
             id = UUID.randomUUID().toString(),
-            peerId = peerId,
-            text = text,
-            fromMe = fromMe,
-            status = status
+            sessionId = sessionId,
+            senderId = LOCAL_SENDER_ID,
+            timestamp = System.currentTimeMillis(),
+            nonce = nonce,
+            status = MessageStatus.PENDING,
+            encryptedPayload = encryptedPayload
         )
+        helper.insertMessage(message, receiverIds = listOf(peerId))
 
-        db?.insertMessage(message)
-
-        // Simulate Queue
-        if (fromMe) {
-            Thread {
-                try {
-                    Thread.sleep(2000)
-                    updateMessageStatus(message.id, MessageStatus.SENT)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }.start()
-        }
+        Thread {
+            try {
+                Thread.sleep(2000)
+                updateMessageStatus(message.id, MessageStatus.SENT)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }.start()
 
         return message
     }
 
-    fun getConversation(peerId: String): List<Message> {
-        return db?.getConversation(peerId) ?: emptyList()
+    /**
+     * Incoming message from [senderId] in the conversation keyed by [peerId] (chat counterparty).
+     */
+    fun addIncomingMessage(
+        peerId: String,
+        senderId: String,
+        encryptedPayload: String,
+        nonce: String,
+    ): Message {
+        val helper = db ?: throw IllegalStateException("MessagingStore not initialized")
+        if (peerId.isBlank() || senderId.isBlank() || encryptedPayload.isBlank()) {
+            throw IllegalArgumentException("peerId, senderId and encryptedPayload must be non-blank")
+        }
+        helper.ensureDirectChatForPeer(peerId, peerUserName = senderId)
+        val sessionId = helper.directSessionId(peerId)
+        val message = Message(
+            id = UUID.randomUUID().toString(),
+            sessionId = sessionId,
+            senderId = senderId,
+            timestamp = System.currentTimeMillis(),
+            nonce = nonce,
+            status = MessageStatus.SENT,
+            encryptedPayload = encryptedPayload
+        )
+        helper.insertMessage(message, receiverIds = listOf(LOCAL_SENDER_ID))
+        return message
     }
 
-    fun addIncomingMessage(peerId: String, text: String): Message {
-        return sendMessage(peerId, text, fromMe = false)
+    fun getConversation(peerId: String): List<Message> {
+        val helper = db ?: return emptyList()
+        return helper.getConversation(helper.directChatId(peerId))
     }
 
     private fun updateMessageStatus(id: String, status: MessageStatus) {
         db?.updateMessageStatus(id, status.name)
-
-        //CALL INVOKE
         onStatusChanged?.invoke(id, status)
     }
 }

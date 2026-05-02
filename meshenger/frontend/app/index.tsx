@@ -19,7 +19,7 @@ export default function App() {
                 router.replace("/Onboarding");
             } else {
                 // Subsequent launches: go straight to the ChatBox
-                router.replace("/Chat");
+                router.replace("/ChatBox");
             }
             // Hide the splash screen once routing is determined
             await SplashScreen.hideAsync();
@@ -27,31 +27,32 @@ export default function App() {
 
         checkFirstLaunch();
     }, []);
+  }
     
 //     return null;
 // }
 
 
 // TESTING ONLY, WILL BE DELETED LATER
-import React from "react";
-import { StyleSheet, View } from "react-native";
-import SimpleSendStrTest from "./BackendTest/SimpleSendStrTest";
+// import React from "react";
+// import { StyleSheet, View } from "react-native";
+// import SimpleSendStrTest from "./BackendTest/SimpleSendStrTest";
 
-export default function Index() {
-  return (
-    <View style={ styles.container }>
-      {/* test screens first */}
-      {/* <OnboardingScreen /> */}
-      <SimpleSendStrTest />
-    </View>
-  );
-}
+// export default function Index() {
+//   return (
+//     <View style={ styles.container }>
+//       {/* test screens first */}
+//       {/* <OnboardingScreen /> */}
+//       <SimpleSendStrTest />
+//     </View>
+//   );
+// }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E6F9FF'
-  }
-});
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     width: '100%',
+//     height: '100%',
+//     backgroundColor: '#E6F9FF'
+//   }
+// });

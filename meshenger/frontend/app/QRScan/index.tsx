@@ -6,31 +6,12 @@ import Header from "./component/Header"
 import MyQR from "./component/MyQR"
 import QRCamera from "./component/QRCamera"
 
-const { MeshengerApplicationModule } = NativeModules;
 
 export default function QRScan() {
     const [activeTab, setActiveTab] = useState<"my-qr" | "album" | "scan-qr">("scan-qr");
     const [image, setImage] = useState<string | null>(null);
     const [permission, requestPermission] = ImagePicker.useMediaLibraryPermissions();
     const [username, setUsername] = useState<string>("Loading...");
-
-    useEffect(() => {
-        const fetchUsername = async () => {
-            try {
-                // Fetch the display_name from the database via native module
-                const name = await MeshengerApplicationModule.myQR();
-                setUsername(name);
-            } catch (error) {
-                console.error("Failed to fetch QR data:", error);
-                setUsername("Unknown User");
-            }
-        };
-
-        fetchUsername();
-    }, []);
-
-
-
 
     const pickImage = async () => {
         if (!permission?.granted) {
@@ -67,7 +48,7 @@ export default function QRScan() {
             }
 
             {
-                activeTab === "my-qr" && <MyQR username={username} />
+                activeTab === "my-qr" && <MyQR />
             }
 
             <Footer setActiveTab={setActiveTab} openAlbum={pickImage}/>
