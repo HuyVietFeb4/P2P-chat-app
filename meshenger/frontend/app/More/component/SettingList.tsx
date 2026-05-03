@@ -1,10 +1,13 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Bell, BookA, ChevronRight, Pencil, SunMoon, UserLock } from "lucide-react-native";
-import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Switch, Text, View, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
 import { useTheme } from "../../context/ThemeContext";
 
 export default function SettingList() {
+    const router = useRouter();
+
     const { isDarkMode, toggleDarkMode, colors } = useTheme();
 
     return  (
@@ -93,9 +96,9 @@ export default function SettingList() {
                 <Text style={[styles.moreText, { color: colors.sectionTitle }]}>Settings</Text>
 
                 <View style={[styles.fieldContainer, { backgroundColor: colors.settingItemBg, borderColor: colors.border }]}>
-                    <View style={styles.profileWrapper}>
+                    <TouchableOpacity style={styles.profileWrapper} onPress={() => router.push("/Language")}>
                         <View style={styles.profileContainer}>
-                            <LinearGradient 
+                            <LinearGradient
                                 style={styles.menuIcon}
                                 colors={['#5B8CFF', '#7C7DFF']}
                                 start={{x: 0, y: 0}}
@@ -106,12 +109,12 @@ export default function SettingList() {
 
                             <Text style={[styles.profile, {color: colors.text}]}>Language</Text>
                         </View>
-                        <ChevronRight color={colors.subText} size={16} />
-                    </View>
+                        <ChevronRight color="#72727A" size={16} />
+                    </TouchableOpacity>
 
                     <View style={styles.profileWrapper}>
                         <View style={styles.profileContainer}>
-                            <LinearGradient 
+                            <LinearGradient
                                 style={styles.menuIcon}
                                 colors={['#5B8CFF', '#7C7DFF']}
                                 start={{x: 0, y: 0}}
@@ -122,7 +125,7 @@ export default function SettingList() {
 
                             <Text style={[styles.profile, {color: colors.text}]}>Dark Mode</Text>
                         </View>
-                        <Switch 
+                        <Switch
                             trackColor={{ false: "#ccc", true: colors.primary }}
                             thumbColor="#fff"
                             value={isDarkMode}
@@ -132,7 +135,7 @@ export default function SettingList() {
 
                     <View style={styles.profileWrapper}>
                         <View style={styles.profileContainer}>
-                            <LinearGradient 
+                            <LinearGradient
                                 style={styles.menuIcon}
                                 colors={['#5B8CFF', '#7C7DFF']}
                                 start={{x: 0, y: 0}}
@@ -143,7 +146,7 @@ export default function SettingList() {
 
                             <Text style={[styles.profile, {color: colors.text}]}>Notification</Text>
                         </View>
-                        <Switch 
+                        <Switch
                             trackColor={{ false: "#ccc", true: colors.primary }}
                             thumbColor="#fff"
                         />

@@ -1,7 +1,7 @@
 import { Ban, BellOff, Search, Trash2, UserMinus } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 
-const NORMAL_COLOR = "#4A90E2";
 const DANGER_COLOR = "#E24B4A";
 
 type Props = {
@@ -9,19 +9,21 @@ type Props = {
 }
 
 export default function ActionPopUp({setOnClose} : Props) {
+    const { colors } = useTheme();
+
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.card }]}>
             <View style={styles.option}>
-                <Search size={15} color={NORMAL_COLOR} strokeWidth={1.8} />
-                <Text style={styles.text}>Search Messages</Text>
+                <Search size={15} color={colors.primary} strokeWidth={1.8} />
+                <Text style={[styles.text, { color: colors.text }]}>Search Messages</Text>
             </View>
 
             <View style={styles.option}>
-                <BellOff size={15} color={NORMAL_COLOR} strokeWidth={1.8} />
-                <Text style={styles.text}>Mute Notifications</Text>
+                <BellOff size={15} color={colors.primary} strokeWidth={1.8} />
+                <Text style={[styles.text, { color: colors.text }]}>Mute Notifications</Text>
             </View>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <View style={styles.option}>
                 <Trash2 size={15} color={DANGER_COLOR} strokeWidth={1.8} />
@@ -43,7 +45,6 @@ export default function ActionPopUp({setOnClose} : Props) {
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: '#FFFFFF',
         borderRadius: 12,
         paddingVertical: 6,
         paddingHorizontal: 4,
@@ -57,7 +58,6 @@ const styles = StyleSheet.create({
 
     text: {
         fontSize: 14,
-        color: NORMAL_COLOR,
     },
 
     dangerText: {
@@ -74,7 +74,6 @@ const styles = StyleSheet.create({
 
     divider: {
         height: 0.5,
-        backgroundColor: '#E0E0E0',
         marginVertical: 4,
         marginHorizontal: 10,
     },

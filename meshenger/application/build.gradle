@@ -17,6 +17,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation project(':backend:session')
     implementation project(':backend:network')
+    implementation project(':backend:transport2')
     implementation project(':backend:security_native')
 //    implementation project(':backend:transport')
     androidTestImplementation "androidx.test:runner:1.5.2"

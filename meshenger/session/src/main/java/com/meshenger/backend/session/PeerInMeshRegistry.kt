@@ -54,4 +54,8 @@ object PeerInMeshRegistry {
         lastSeenMap[address] = System.currentTimeMillis()
     }
 
+    fun getAllPeers(): Collection<Peer> {
+        return peerMap.values
+    }
+
 }

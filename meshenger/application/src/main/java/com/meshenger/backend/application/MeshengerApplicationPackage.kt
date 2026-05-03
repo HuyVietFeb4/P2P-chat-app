@@ -9,6 +9,7 @@ import com.facebook.react.uimanager.ViewManager
  * Registers the Application layer native module with React Native.
  */
 class MeshengerApplicationPackage : ReactPackage {
+    @Suppress("DEPRECATION")
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
         return listOf(MeshengerApplicationModule(reactContext))
     }
