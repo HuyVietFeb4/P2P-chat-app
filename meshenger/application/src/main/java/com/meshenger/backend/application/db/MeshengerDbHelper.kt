@@ -82,6 +82,17 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 FOREIGN KEY(receiverId) REFERENCES users(userId)
             );
         """)
+
+        db.execSQL("""
+            CREATE TABLE peer_remote_keys (
+                peerUserId TEXT NOT NULL,
+                keyType TEXT NOT NULL,
+                keystoreAlias TEXT NOT NULL,
+                ciphertextBlob TEXT NOT NULL,
+                ivBlob TEXT NOT NULL,
+                PRIMARY KEY(peerUserId, keyType)
+            );
+        """)
     }
 
     override fun onOpen(db: SQLiteDatabase) {
@@ -90,13 +101,31 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS message_delivery")
-        db.execSQL("DROP TABLE IF EXISTS user_participation")
-        db.execSQL("DROP TABLE IF EXISTS messages")
-        db.execSQL("DROP TABLE IF EXISTS sessions")
-        db.execSQL("DROP TABLE IF EXISTS chats")
-        db.execSQL("DROP TABLE IF EXISTS users")
-        onCreate(db)
+        if (oldVersion < 4) {
+            db.execSQL("DROP TABLE IF EXISTS peer_remote_keys")
+            db.execSQL("DROP TABLE IF EXISTS message_delivery")
+            db.execSQL("DROP TABLE IF EXISTS user_participation")
+            db.execSQL("DROP TABLE IF EXISTS messages")
+            db.execSQL("DROP TABLE IF EXISTS sessions")
+            db.execSQL("DROP TABLE IF EXISTS chats")
+            db.execSQL("DROP TABLE IF EXISTS users")
+            onCreate(db)
+            return
+        }
+        if (oldVersion < 5) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS peer_remote_keys (
+                    peerUserId TEXT NOT NULL,
+                    keyType TEXT NOT NULL,
+                    keystoreAlias TEXT NOT NULL,
+                    ciphertextBlob TEXT NOT NULL,
+                    ivBlob TEXT NOT NULL,
+                    PRIMARY KEY(peerUserId, keyType)
+                );
+                """.trimIndent(),
+            )
+        }
     }
 
     // --- Helper Methods ---
@@ -265,8 +294,55 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         return messages
     }
 
+    data class PeerRemoteKeyRow(
+        val peerUserId: String,
+        val keyType: String,
+        val keystoreAlias: String,
+        val ciphertextBlob: String,
+        val ivBlob: String,
+    )
+
+    fun upsertPeerRemoteKey(
+        peerUserId: String,
+        keyType: String,
+        keystoreAlias: String,
+        ciphertextBlob: String,
+        ivBlob: String,
+    ) {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("peerUserId", peerUserId)
+            put("keyType", keyType)
+            put("keystoreAlias", keystoreAlias)
+            put("ciphertextBlob", ciphertextBlob)
+            put("ivBlob", ivBlob)
+        }
+        db.insertWithOnConflict("peer_remote_keys", null, values, SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
+    fun getPeerRemoteKey(peerUserId: String, keyType: String): PeerRemoteKeyRow? {
+        val db = readableDatabase
+        db.rawQuery(
+            "SELECT peerUserId, keyType, keystoreAlias, ciphertextBlob, ivBlob FROM peer_remote_keys WHERE peerUserId = ? AND keyType = ?",
+            arrayOf(peerUserId, keyType),
+        ).use { c ->
+            if (!c.moveToFirst()) return null
+            return PeerRemoteKeyRow(
+                peerUserId = c.getString(0),
+                keyType = c.getString(1),
+                keystoreAlias = c.getString(2),
+                ciphertextBlob = c.getString(3),
+                ivBlob = c.getString(4),
+            )
+        }
+    }
+
+    fun deletePeerRemoteKey(peerUserId: String, keyType: String) {
+        writableDatabase.delete("peer_remote_keys", "peerUserId = ? AND keyType = ?", arrayOf(peerUserId, keyType))
+    }
+
     companion object {
         private const val DATABASE_NAME = "meshenger.db"
-        private const val DATABASE_VERSION = 4 // Increment to trigger upgrade
+        private const val DATABASE_VERSION = 5
     }
 }

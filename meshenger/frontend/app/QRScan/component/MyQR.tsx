@@ -1,44 +1,49 @@
 import { ScanQrCode } from "lucide-react-native";
-import { StyleSheet, Text, View, useWindowDimensions, NativeModules, NativeEventEmitter } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions, NativeModules } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { MeshengerApplicationModule } = NativeModules;
-const emitter = new NativeEventEmitter(MeshengerApplicationModule);
 
 export default function MyQR() {
     const { width, height } = useWindowDimensions();
-    const [key, setKey] = useState<string>("");
+    const [id, setId] = useState<string>("");
     const [mpAddress, setMPAddress] = useState<string>("");
     const [username, setUsername] = useState<string>("");
+    const [xkey, setXKey] = useState<string>("");
+    const [edkey, setEDKey] = useState<string>("");
 
     useEffect(() => {
-        const sub = emitter.addListener("getIdentifyKey", (data) => {
-            console.log("RECEIVED:", data);
-            setKey(data.id);
-            setMPAddress(data.mpAddress);
-        });
+        const loadData = async () => {
+            try {
+                // 1. Get Profile (ID and Username)
+                const profile = await MeshengerApplicationModule.getMyProfile();
+                setUsername(profile.displayName);
+                setId(profile.id);
 
-        MeshengerApplicationModule.getIdentifyKey();
+                // 2. Get MP Address
+                const mp = await MeshengerApplicationModule.getMyMPAddress();
+                setMPAddress(mp);
 
-        const loadUsername = async () => {
-            const username = await AsyncStorage.getItem("firstLaunch");
-            setUsername(username || "Unknown User");
+                // 3. Get Public Keys (X25519 and Ed25519)
+                const keys = await MeshengerApplicationModule.loadRemotePeerRawKey("local-device", "ALL");
+                setXKey(keys["X25519_RAW"] || "");
+                setEDKey(keys["ED25519_RAW"] || "");
+            } catch (e) {
+                console.error("Failed to load QR data:", e);
+            }
         };
 
-        loadUsername();
-
-        return () => {
-            sub.remove();
-        };
+        loadData();
     }, []);
 
     // The data carried by the QR code
     const userQRData = {
-        id: key,
-        username: username,
-        mpAddress: mpAddress
+        id,
+        xkey,
+        edkey,
+        username,
+        mpAddress
     };
 
     return (
@@ -52,10 +57,16 @@ export default function MyQR() {
 
                 <View style={styles.qrWrapper}>
                     <View style={styles.qrBox}>
-                        <QRCode
-                            value={JSON.stringify(userQRData)}
-                            size={width * 0.4}
-                        />
+                        {id ? (
+                            <QRCode
+                                value={JSON.stringify(userQRData)}
+                                size={width * 0.4}
+                            />
+                        ) : (
+                            <View style={{ width: width * 0.4, height: width * 0.4, justifyContent: 'center', alignItems: 'center' }}>
+                                <Text>Loading...</Text>
+                            </View>
+                        )}
                     </View>
                     <View style={[styles.corner, styles.tl]} />
                     <View style={[styles.corner, styles.tr]} />

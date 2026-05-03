@@ -15,6 +15,11 @@ export const Colors = {
     iconBg: '#EDE9FF',
     sectionTitle: '#6B7280',
     settingItemBg: '#F9FAFB',
+    chatBackground: '#F0F6FF',
+    myBubble: '#5D8BF4',
+    peerBubble: '#FFFFFF',
+    myMessageText: '#FFFFFF',
+    peerMessageText: '#333333',
   },
   dark: {
     background: '#313338', // Discord-like gray background
@@ -28,6 +33,11 @@ export const Colors = {
     iconBg: '#35373C',
     sectionTitle: '#949BA4',
     settingItemBg: '#2B2D31',
+    chatBackground: '#1E1F22',
+    myBubble: '#5865F2',
+    peerBubble: '#313338',
+    myMessageText: '#F2F3F5',
+    peerMessageText: '#DBDEE1',
   },
 };
 

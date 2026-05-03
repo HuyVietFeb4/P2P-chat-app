@@ -1,16 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Image, NativeModules, StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 
 const { MeshengerApplicationModule } = NativeModules;
 
 export default function Body({ peerId }: { peerId: string }) {
     const [messages, setMessages] = useState<any[]>([]);
+    const { colors } = useTheme();
 
     useEffect(() => {
         const fetchMessages = async () => {
             try {
-                const history = await MeshengerApplicationModule.getConversation(peerId);
+                let history;
+                if (peerId === 'global-broadcast') {
+                    history = await MeshengerApplicationModule.getGlobalConversation();
+                } else {
+                    history = await MeshengerApplicationModule.getConversation(peerId);
+                }
                 setMessages(history);
             } catch (error) {
                 console.error("Failed to fetch messages:", error);
@@ -42,18 +49,18 @@ export default function Body({ peerId }: { peerId: string }) {
                         style={styles.messageAvatar}
                     />
                 )}
-                <View style={[styles.bubble, isMe ? styles.myBubble : styles.peerBubble]}>
-                    <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.peerMessageText]}>
+                <View style={[styles.bubble, isMe ? { backgroundColor: colors.myBubble, borderBottomRightRadius: 5 } : { backgroundColor: colors.peerBubble, borderBottomLeftRadius: 5, borderWidth: 1, borderColor: colors.border }]}>
+                    <Text style={[styles.messageText, { color: isMe ? colors.myMessageText : colors.peerMessageText }]}>
                         {item.text}
                     </Text>
                     <View style={styles.footer}>
-                        <Text style={[styles.timeText, isMe ? styles.myTimeText : styles.peerTimeText]}>
+                        <Text style={[styles.timeText, { color: isMe ? 'rgba(255, 255, 255, 0.7)' : colors.subText }]}>
                             {formatTime(item.timestamp)}
                         </Text>
                         {isMe && (
                             <View style={styles.statusContainer}>
-                                <Ionicons name="checkmark-done" size={14} color="#FFFFFF" style={{marginLeft: 4}} />
-                                <Text style={styles.sentText}>Sent</Text>
+                                <Ionicons name="checkmark-done" size={14} color="white" style={{marginLeft: 4}} />
+                                <Text style={[styles.sentText, { color: 'white' }]}>Sent</Text>
                             </View>
                         )}
                     </View>
@@ -102,25 +109,9 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         position: 'relative',
     },
-    myBubble: {
-        backgroundColor: '#5D8BF4',
-        borderBottomRightRadius: 5,
-    },
-    peerBubble: {
-        backgroundColor: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: '#E8E8E8',
-        borderBottomLeftRadius: 5,
-    },
     messageText: {
         fontSize: 15,
         lineHeight: 20,
-    },
-    myMessageText: {
-        color: '#FFFFFF',
-    },
-    peerMessageText: {
-        color: '#333333',
     },
     footer: {
         flexDirection: 'row',
@@ -131,19 +122,12 @@ const styles = StyleSheet.create({
     timeText: {
         fontSize: 10,
     },
-    myTimeText: {
-        color: '#E0E0E0',
-    },
-    peerTimeText: {
-        color: '#999999',
-    },
     statusContainer: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     sentText: {
         fontSize: 10,
-        color: '#FFFFFF',
         marginLeft: 2,
     },
 });
