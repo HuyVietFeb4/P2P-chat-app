@@ -1,7 +1,9 @@
 import { Image } from "expo-image";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useCommPermission } from "@/app/hook/useCommPermission";
 
 export default function Onboarding1() {
+    useCommPermission();
     const { width, height } = useWindowDimensions();
     return (
         <View style = {{ flex: 1}}>

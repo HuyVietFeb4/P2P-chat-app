@@ -24,12 +24,12 @@ class MainActivity : ReactActivity() {
     // @generated end expo-splashscreen
     super.onCreate(null)
     // Start service
-      val intent = Intent(this, MeshMaintainer::class.java)
-      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-          startForegroundService(intent)
-      } else {
-          startService(intent)
-      }
+//      val intent = Intent(this, MeshMaintainer::class.java)
+//      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+//          startForegroundService(intent)
+//      } else {
+//          startService(intent)
+//      }
   }
 
   /**

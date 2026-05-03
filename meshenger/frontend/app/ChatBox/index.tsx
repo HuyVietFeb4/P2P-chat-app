@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { FlatList, NativeModules, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import Footer from "../common components/Footer";
 import Header from "../common components/Header";
@@ -8,14 +8,19 @@ import EmergencyChat from "./component/EmergencyChat";
 import GroupChat from "./component/GroupChat";
 import IndividualChat from "./component/IndividualChat";
 import ScanPopUp from "./component/ScanPopUp";
+import BluetoothPopup from "../common components/BluetoothPopUp";
+import { useBluetooth } from "../hook/useBluetooth";
+import { useCommPermission } from "../hook/useCommPermission";
 
 const { BleModule } = NativeModules;
 export default function ChatBox() {
+    useCommPermission();
     const [openPopUp, setOpenPopUp] = useState<boolean>(false);
     const { width, height } = useWindowDimensions();
     const flatListRef = useRef<FlatList>(null);
     const [activeIndex, setActiveIndex] = useState(0);
     const { colors } = useTheme();
+    const { showPopup, openBluetoothSettings, dismissPopup } = useBluetooth();
 
     const screens = [
         { id: 'all', component: <AllChat /> },
@@ -60,7 +65,7 @@ export default function ChatBox() {
 
             <Footer />
 
-             {
+            {
                 openPopUp ? (
                     <>
                         <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpenPopUp(false)}>
@@ -69,6 +74,13 @@ export default function ChatBox() {
                     </>
                 ) : null
             }
+
+            {showPopup && (
+                <BluetoothPopup
+                    visible={true}
+                    onDismiss={dismissPopup}
+                />
+            )}
         </View>
     );
 }

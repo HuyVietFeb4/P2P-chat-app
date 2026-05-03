@@ -4,6 +4,7 @@ import android.app.Service
 import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -36,14 +37,51 @@ class MeshMaintainer : Service() {
             server.setListener(it)
         }
     }
+    private fun createNotification(): android.app.Notification {
+        val channelId = "Mesh_channel"
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if(!isRunning) {
-            if(!BleAdvertiser.isAdvertisingActive()) BleAdvertiser.onBackgroundAdvertise()
-            setupForeground()
-            startMeshMaintainerLoop()
-            isRunning = true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
+                channelId,
+                "Meshenger Mesh Service",
+                android.app.NotificationManager.IMPORTANCE_LOW
+            )
+            notificationManager.createNotificationChannel(channel)
         }
+
+        return NotificationCompat.Builder(this, channelId)
+            .setContentTitle("Meshenger Active")
+            .setContentText("Mesh network is running...")
+            .setSmallIcon(android.R.drawable.stat_notify_sync)
+            .setOngoing(true) // Makes it harder to dismiss
+            .build()
+    }
+    private fun startMeshLogic() {
+        startMeshMaintainerLoop()
+    }
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // 1. Setup the notification channel and build the notification
+        val notification = createNotification()
+
+        // 2. Call startForeground IMMEDIATELY
+        // For Android 14+ (SDK 34/36), you MUST specify the foregroundServiceType
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+
+        // 3. Start the loop
+        if (!isRunning) {
+            isRunning = true
+            startMeshMaintainerLoop()
+        }
+
         return START_STICKY
     }
 
@@ -233,6 +271,7 @@ class MeshMaintainer : Service() {
     }
 
     companion object {
+        private const val NOTIFICATION_ID = 1 // Define the ID here
         private var globalPacketListener: TransportPacketListener? = null
         private var isRunning = false
         // This is the "Plug" where the Network layer connects
@@ -242,17 +281,20 @@ class MeshMaintainer : Service() {
 
         // Start up function for the UI to invoke after finish initialize
         fun startMeshService(context: Context) {
-            // Optional: Local flag check to avoid redundant Intent overhead
             if (isRunning) return
 
+            // 1. Initialize static components
+//            BleAdvertiser.init(context)
+
+            // 2. Prepare the intent
             val intent = Intent(context, MeshMaintainer::class.java)
+
+            // 3. Start based on Android Version
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
                 context.startService(intent)
             }
-
-            isRunning = true
         }
     }
     override fun onBind(intent: Intent?) = null

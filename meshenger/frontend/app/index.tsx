@@ -2,32 +2,48 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { useCommPermission } from "./hook/useCommPermission";
+import { BackHandler, NativeModules } from "react-native";
 
 // Prevent the splash screen from hiding automatically
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
     const router = useRouter();
+    const { MainModule } = NativeModules;
+
+    const { granted } = useCommPermission(); // ✅ đặt ở đây
 
     useEffect(() => {
+        if (granted === null) return; // ⛔ chưa xong permission → giữ splash
+
         const checkFirstLaunch = async (): Promise<void> => {
-            // Check if the app has been launched before
+            if (!granted) {
+                // ❌ không có permission → thoát
+                await SplashScreen.hideAsync();
+                BackHandler.exitApp();
+                return;
+            }
+
+            MainModule.ensureServiceStarted();
+            
             const value = await AsyncStorage.getItem("firstLaunch");
 
             if (value === null) {
-                // First time launch: set flag and go to Onboarding
+                await AsyncStorage.setItem("firstLaunch", "false"); // 🔥 fix bug
                 router.replace("/Onboarding");
             } else {
-                // Subsequent launches: go straight to the ChatBox
                 router.replace("/ChatBox");
             }
-            // Hide the splash screen once routing is determined
+
             await SplashScreen.hideAsync();
         };
 
         checkFirstLaunch();
-    }, []);
-  }
+    }, [granted]);
+
+    return null;
+}
     
 //     return null;
 // }
