@@ -7,10 +7,10 @@ import com.meshenger.backend.application.db.MeshengerDbHelper
 import com.meshenger.backend.application.messaging.Message
 import com.meshenger.backend.application.messaging.MessageStatus
 import com.meshenger.backend.application.messaging.MessagingStore
-import com.meshenger.backend.application.security.SessionKeyVault
+//import com.meshenger.backend.application.security.SessionKeyVault
 import com.meshenger.backend.application.user.UserProfile
 import com.meshenger.backend.application.user.UserStore
-import com.meshenger.backend.security_native.NativeCredentials
+//import com.meshenger.backend.security_native.NativeCredentials
 import com.meshenger.backend.session.GlobalChatSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +31,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     private val dbHelper = MeshengerDbHelper(reactContext.applicationContext)
-    private val keyVault = SessionKeyVault(reactContext.applicationContext)
+//    private val keyVault = SessionKeyVault(reactContext.applicationContext)
     private val moduleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private companion object {
@@ -46,8 +46,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     init {
         MessagingStore.init(dbHelper)
         UserStore.init(dbHelper)
-        ensureGlobalChatStorage()
-        observeGlobalChatBus()
+//        ensureGlobalChatStorage()
+//        observeGlobalChatBus()
 
         MessagingStore.onStatusChanged = { messageId, status ->
             val event = Arguments.createMap().apply {
@@ -66,66 +66,66 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             .emit(eventName, params)
     }
 
-    private fun ensureGlobalChatStorage() {
-        val globalKeyId = buildGlobalKeyId()
-        dbHelper.upsertUserProfile(UserProfile(LOCAL_ID, "-", "Local User"))
-        dbHelper.upsertUserProfile(UserProfile(GLOBAL_BROADCAST_ID, "-", "Global Chat"))
-        dbHelper.ensureGlobalChat(GLOBAL_CHAT_ID, GLOBAL_SESSION_ID, globalKeyId)
-        if (keyVault.getSessionKey(globalKeyId) == null) {
-            keyVault.putSessionKey(globalKeyId, getFixedKey(NativeCredentials.getGlobalChatKey()))
-        }
-    }
+//    private fun ensureGlobalChatStorage() {
+//        val globalKeyId = buildGlobalKeyId()
+//        dbHelper.upsertUserProfile(UserProfile(LOCAL_ID, "-", "Local User"))
+//        dbHelper.upsertUserProfile(UserProfile(GLOBAL_BROADCAST_ID, "-", "Global Chat"))
+//        dbHelper.ensureGlobalChat(GLOBAL_CHAT_ID, GLOBAL_SESSION_ID, globalKeyId)
+//        if (keyVault.getSessionKey(globalKeyId) == null) {
+//            keyVault.putSessionKey(globalKeyId, getFixedKey(NativeCredentials.getGlobalChatKey()))
+//        }
+//    }
 
-    private fun observeGlobalChatBus() {
-        moduleScope.launch {
-            val keyId = dbHelper.getSessionKeyId(GLOBAL_SESSION_ID)
-            val sessionKey = keyId?.let { keyVault.getSessionKey(it) }
-            GlobalChatSession.getMessageBus().collect { json ->
-                val payload = json["Payload"]?.toString()?.trim('"').orEmpty()
-                if (payload.isEmpty()) return@collect
-
-                val action = json["Action"]?.toString()?.trim('"').orEmpty()
-                val peerId = json["PeerID"]?.toString()?.trim('"').orEmpty()
-                val nonce = json["Nonce"]?.toString()?.trim('"').orEmpty()
-                val plaintext = json["Message"]?.toString()?.trim('"').orEmpty()
-                val senderId = if (action == "Send") LOCAL_ID else "mp:$peerId"
-                val receiverIds = if (action == "Send") listOf(GLOBAL_BROADCAST_ID) else listOf(LOCAL_ID)
-
-                if (action != "Send") {
-                    dbHelper.upsertUserProfile(
-                        UserProfile(
-                            id = senderId,
-                            publicKeyHash = "-",
-                            userName = senderId
-                        )
-                    )
-                }
-
-                val msg = Message(
-                    id = UUID.randomUUID().toString(),
-                    sessionId = GLOBAL_SESSION_ID,
-                    senderId = senderId,
-                    nonce = nonce,
-                    status = if (action == "Send") MessageStatus.PENDING else MessageStatus.SENT,
-                    encryptedPayload = payload
-                )
-                dbHelper.insertMessage(msg, receiverIds)
-
-                val uiMap = messageToWritableMap(
-                    msg = msg,
-                    fromMe = senderId == LOCAL_ID,
-                    sessionKey = sessionKey,
-                    plaintextOverride = plaintext
-                ).apply {
-                    putString("chatId", GLOBAL_CHAT_ID)
-                    putString("sessionType", "GlobalChat")
-                    putString("action", action)
-                }
-                sendEvent("onNewMessage", uiMap)
-                Log.d("MeshengerApplication", "Persisted global bus event action=$action sender=$senderId")
-            }
-        }
-    }
+//    private fun observeGlobalChatBus() {
+//        moduleScope.launch {
+//            val keyId = dbHelper.getSessionKeyId(GLOBAL_SESSION_ID)
+//            val sessionKey = keyId?.let { keyVault.getSessionKey(it) }
+//            GlobalChatSession.getMessageBus().collect { json ->
+//                val payload = json["Payload"]?.toString()?.trim('"').orEmpty()
+//                if (payload.isEmpty()) return@collect
+//
+//                val action = json["Action"]?.toString()?.trim('"').orEmpty()
+//                val peerId = json["PeerID"]?.toString()?.trim('"').orEmpty()
+//                val nonce = json["Nonce"]?.toString()?.trim('"').orEmpty()
+//                val plaintext = json["Message"]?.toString()?.trim('"').orEmpty()
+//                val senderId = if (action == "Send") LOCAL_ID else "mp:$peerId"
+//                val receiverIds = if (action == "Send") listOf(GLOBAL_BROADCAST_ID) else listOf(LOCAL_ID)
+//
+//                if (action != "Send") {
+//                    dbHelper.upsertUserProfile(
+//                        UserProfile(
+//                            id = senderId,
+//                            publicKeyHash = "-",
+//                            userName = senderId
+//                        )
+//                    )
+//                }
+//
+//                val msg = Message(
+//                    id = UUID.randomUUID().toString(),
+//                    sessionId = GLOBAL_SESSION_ID,
+//                    senderId = senderId,
+//                    nonce = nonce,
+//                    status = if (action == "Send") MessageStatus.PENDING else MessageStatus.SENT,
+//                    encryptedPayload = payload
+//                )
+//                dbHelper.insertMessage(msg, receiverIds)
+//
+//                val uiMap = messageToWritableMap(
+//                    msg = msg,
+//                    fromMe = senderId == LOCAL_ID,
+//                    sessionKey = sessionKey,
+//                    plaintextOverride = plaintext
+//                ).apply {
+//                    putString("chatId", GLOBAL_CHAT_ID)
+//                    putString("sessionType", "GlobalChat")
+//                    putString("action", action)
+//                }
+//                sendEvent("onNewMessage", uiMap)
+//                Log.d("MeshengerApplication", "Persisted global bus event action=$action sender=$senderId")
+//            }
+//        }
+//    }
 
     @ReactMethod
     fun addPeer(id: String, displayName: String, avatarUrl: String?, promise: Promise) {
@@ -221,36 +221,36 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         }
     }
 
-    @ReactMethod
-    fun getGlobalConversation(promise: Promise) {
-        try {
-            val messages = dbHelper.getConversation(GLOBAL_CHAT_ID)
-            val keyId = dbHelper.getSessionKeyId(GLOBAL_SESSION_ID)
-            val sessionKey = keyId?.let { keyVault.getSessionKey(it) }
-            val array = Arguments.createArray()
-            for (msg in messages) {
-                val fromMe = msg.senderId == LOCAL_ID
-                array.pushMap(messageToWritableMap(msg, fromMe, sessionKey))
-            }
-            promise.resolve(array)
-        } catch (e: Exception) {
-            promise.reject("GET_GLOBAL_CONVERSATION_FAILED", e.message)
-        }
-    }
+//    @ReactMethod
+//    fun getGlobalConversation(promise: Promise) {
+//        try {
+//            val messages = dbHelper.getConversation(GLOBAL_CHAT_ID)
+//            val keyId = dbHelper.getSessionKeyId(GLOBAL_SESSION_ID)
+//            val sessionKey = keyId?.let { keyVault.getSessionKey(it) }
+//            val array = Arguments.createArray()
+//            for (msg in messages) {
+//                val fromMe = msg.senderId == LOCAL_ID
+//                array.pushMap(messageToWritableMap(msg, fromMe, sessionKey))
+//            }
+//            promise.resolve(array)
+//        } catch (e: Exception) {
+//            promise.reject("GET_GLOBAL_CONVERSATION_FAILED", e.message)
+//        }
+//    }
 
-    @ReactMethod
-    fun globalChatSendMessageStr(message: String, promise: Promise) {
-        try {
-            if (message.isBlank()) {
-                promise.reject("INVALID_INPUT", "message cannot be empty")
-                return
-            }
-            GlobalChatSession.sendMessageStr(message = message)
-            promise.resolve(null)
-        } catch (e: Exception) {
-            promise.reject("GLOBAL_SEND_FAILED", e.message)
-        }
-    }
+//    @ReactMethod
+//    fun globalChatSendMessageStr(message: String, promise: Promise) {
+//        try {
+//            if (message.isBlank()) {
+//                promise.reject("INVALID_INPUT", "message cannot be empty")
+//                return
+//            }
+//            GlobalChatSession.sendMessageStr(message = message)
+//            promise.resolve(null)
+//        } catch (e: Exception) {
+//            promise.reject("GLOBAL_SEND_FAILED", e.message)
+//        }
+//    }
 
     private fun buildGlobalKeyId(): String {
         val seed = "v1|$GLOBAL_CHAT_ID|$GLOBAL_SESSION_ID"
