@@ -2,6 +2,7 @@ package com.meshenger.backend.transport2
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.security.keystore.KeyProtection
 import org.bouncycastle.crypto.generators.X25519KeyPairGenerator
 import org.bouncycastle.crypto.params.X25519KeyGenerationParameters
 import org.bouncycastle.crypto.params.X25519PrivateKeyParameters
@@ -18,6 +19,10 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import android.util.Base64
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.security.Security
+import javax.crypto.spec.SecretKeySpec
 
 // To do: to init the static public and private's key
 object StaticKeyManager {
@@ -73,6 +78,13 @@ object StaticKeyManager {
         return Pair(publicKey, privateKey)
     }
 
+    fun X25519KeyByteArrayToString(rawKeyBytes: ByteArray): String {
+        return Base64.encodeToString(rawKeyBytes, Base64.NO_WRAP)
+    }
+
+    fun X25519KeyStringToByteArray(keyString: String): ByteArray {
+        return Base64.decode(keyString, Base64.NO_WRAP)
+    }
     /**
      * Encrypts raw private key bytes.
      * @return Pair of (Ciphertext, Initialization Vector) to be stored in SQLite.
@@ -121,6 +133,41 @@ object StaticKeyManager {
         return entry.secretKey
     }
 
+    fun generateSoftwareMasterKey(): SecretKey {
+        // Ensure Bouncy Castle is registered
+        if (Security.getProvider("BC") == null) {
+            Security.addProvider(BouncyCastleProvider())
+        }
+
+        val keyGenerator = KeyGenerator.getInstance("AES", "BC")
+        keyGenerator.init(256) // 256-bit AES
+        return keyGenerator.generateKey()
+    }
+
+    fun importSecretKeyToKeystore(alias: String, keyBytes: ByteArray) {
+        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+
+        // 1. Wrap the ByteArray into a SecretKey object (AES example)
+        val secretKey = SecretKeySpec(keyBytes, KeyProperties.KEY_ALGORITHM_AES)
+
+        // 2. Define the protection parameters
+        // This tells the Keystore what this imported key is allowed to do
+        val protectionParameter = KeyProtection.Builder(
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+        )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            // Optional: .setUserAuthenticationRequired(true)
+            .build()
+
+        // 3. Store it
+        keyStore.setEntry(
+            alias,
+            KeyStore.SecretKeyEntry(secretKey),
+            protectionParameter
+        )
+    }
+
     fun decodeRawIdentityPublicKey(rawKey: ByteArray): PublicKey {
         val x509Header = byteArrayOf(
             0x30, 0x2a,                   // SEQUENCE
@@ -135,14 +182,21 @@ object StaticKeyManager {
         return kf.generatePublic(spec)
     }
 
-    fun getRawPublicKey(publicKey: PublicKey): ByteArray {
+    fun getRawPublicIdentityKey(publicKey: PublicKey): ByteArray {
         val encoded = publicKey.encoded // This returns the X.509 format
 
-        // For Ed25519/X25519, the raw key is the last 32 bytes.
+        // For Ed25519 the raw key is the last 32 bytes.
         return if (encoded.size >= 32) {
             encoded.takeLast(32).toByteArray()
         } else {
             throw IllegalArgumentException("Key encoding is too short")
         }
     }
+
+    fun getStringPublicIdentityKey(rawKeyBytes: ByteArray): String {
+        return Base64.encodeToString(rawKeyBytes, Base64.NO_WRAP)
+    }
+
+
+
 }
