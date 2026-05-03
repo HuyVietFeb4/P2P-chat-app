@@ -168,6 +168,22 @@ object StaticKeyManager {
         )
     }
 
+    fun getSecretKeyFromKeystore(alias: String): SecretKey? {
+        // 1. Access the Android Keystore
+        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+
+        // 2. Check if the alias exists
+        if (!keyStore.containsAlias(alias)) {
+            return null
+        }
+
+        // 3. Retrieve the key
+        // The second parameter (password) is always null for AndroidKeyStore
+        val key = keyStore.getKey(alias, null)
+
+        return key as? SecretKey
+    }
+
     fun decodeRawIdentityPublicKey(rawKey: ByteArray): PublicKey {
         val x509Header = byteArrayOf(
             0x30, 0x2a,                   // SEQUENCE
