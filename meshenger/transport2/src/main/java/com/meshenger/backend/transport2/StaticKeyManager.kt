@@ -3,6 +3,7 @@ package com.meshenger.backend.transport2
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.security.keystore.KeyProtection
+import android.util.Log
 import org.bouncycastle.crypto.generators.X25519KeyPairGenerator
 import org.bouncycastle.crypto.params.X25519KeyGenerationParameters
 import org.bouncycastle.crypto.params.X25519PrivateKeyParameters
@@ -26,6 +27,7 @@ import javax.crypto.spec.SecretKeySpec
 
 // To do: to init the static public and private's key
 object StaticKeyManager {
+    private const val TAG = "StaticKeyManager"
     private val PROVIDER = "AndroidKeyStore"
     private val keyStore = KeyStore.getInstance(PROVIDER).apply { load(null) }
     private const val STATIC_IDENTITY_ALIAS = "static_identity_ed25519"
@@ -40,9 +42,31 @@ object StaticKeyManager {
 
     fun getOrCreateIdentityKey(): KeyPair {
         if (keyStore.containsAlias(STATIC_IDENTITY_ALIAS)) {
-            val privateKey = keyStore.getKey(STATIC_IDENTITY_ALIAS, null) as PrivateKey
-            val publicKey = keyStore.getCertificate(STATIC_IDENTITY_ALIAS).publicKey
-            return KeyPair(publicKey, privateKey)
+            try {
+                val privateKey = keyStore.getKey(STATIC_IDENTITY_ALIAS, null) as? PrivateKey
+                val publicKey = keyStore.getCertificate(STATIC_IDENTITY_ALIAS)?.publicKey
+                if (privateKey != null && publicKey != null) {
+                    return KeyPair(publicKey, privateKey)
+                }
+                Log.w(TAG, "Identity key alias exists but keypair is incomplete, regenerating")
+            } catch (e: Exception) {
+                Log.w(TAG, "Existing identity key is not usable, regenerating: ${e.message}")
+            }
+            // Remove stale/incompatible alias before regenerating.
+            keyStore.deleteEntry(STATIC_IDENTITY_ALIAS)
+        }
+        val kpg = KeyPairGenerator.getInstance(ED25519_ALGO, PROVIDER)
+        val spec = KeyGenParameterSpec.Builder(
+            STATIC_IDENTITY_ALIAS,
+            KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
+        ).build()
+        kpg.initialize(spec)
+        return kpg.generateKeyPair()
+    }
+
+    fun regenerateIdentityKey(): KeyPair {
+        if (keyStore.containsAlias(STATIC_IDENTITY_ALIAS)) {
+            keyStore.deleteEntry(STATIC_IDENTITY_ALIAS)
         }
         val kpg = KeyPairGenerator.getInstance(ED25519_ALGO, PROVIDER)
         val spec = KeyGenParameterSpec.Builder(

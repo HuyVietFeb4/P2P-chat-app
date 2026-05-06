@@ -246,7 +246,10 @@ object PacketFactory {
                     )
                 }
                 MessageType.USER_MESSAGE_ONE_TO_ONE.value -> {
-                    signature = PacketSigner.signTwoPartySession(
+                    // Keep 1:1 signing consistent with current receiver verification path
+                    // (verifyDirectProtocolKey = HMAC direct key). A mismatch here causes
+                    // packets to be dropped even when transport is healthy.
+                    signature = PacketSigner.getSignatureDirectProtocol(
                         version, flags, type, fragment,
                         index.toUShort(), fragments.size.toUShort(), inputTimeStamp,
                         senderID, receiverID

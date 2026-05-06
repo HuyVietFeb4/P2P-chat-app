@@ -49,6 +49,7 @@ class TwoPartySession(
         }
     }
     override fun close() {
+        cancelMessageBusEmitter()
         // Unregister from the singleton to prevent memory leaks
         ListenerRegistry.unregisterTwoPartyListener(peerId)
         Log.d("TwoPartySession", "Session with $userName closed and unregistered.")
@@ -107,7 +108,7 @@ class TwoPartySession(
             put("SessionType", "TwoPartyChat")
             put("Action", "Send")
         }
-        _messageBus.tryEmit(jsonResult)
+        offerMessageBus(jsonResult)
         EpidemicFlooding.onTwoPartyMessageSend(ciphertext, timeStamp, receiverMPAddress, MessageType.USER_MESSAGE_ONE_TO_ONE)
     }
 
@@ -125,7 +126,7 @@ class TwoPartySession(
                 put("SessionType", "TwoPartyChat")
                 put("Action", "Receive")
             }
-            _messageBus.tryEmit(jsonResult)
+            offerMessageBus(jsonResult)
         } catch (e: Exception) {
             Log.e("TwoPartySession", "Decryption failed (Tampered or Replay): ${e.message}")
         }
@@ -133,10 +134,12 @@ class TwoPartySession(
 
     override fun onDirectMessageReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong, signature: ByteArray, signedData: ByteArray) {
         val currentKey = remotePublicIdentityKey
-        if(currentKey != null && PacketSigner.verifyTwoPartySession(signedData, signature, currentKey)) {
-            this.receiveMessageStr(senderID, payload, timeStamp)
-        } // else: drop
-
+        if (currentKey != null) {
+            if (!PacketSigner.verifyTwoPartySession(signedData, signature, currentKey)) return
+        }
+        // When no Ed25519 peer binding yet, authenticity is enforced by PacketSigner.verifyDirectProtocolKey()
+        // in EpidemicFlooding before this callback (same shared key as handshake).
+        receiveMessageStr(senderID, payload, timeStamp)
     }
 
     /**

@@ -1,22 +1,21 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  NativeEventEmitter,
-  NativeModules,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    FlatList,
+    Image,
+    DeviceEventEmitter,
+    NativeModules,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { MeshengerApplicationModule } = NativeModules;
-const meshEvents = new NativeEventEmitter(MeshengerApplicationModule);
 const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
 
 export default function ChatList() {
@@ -60,7 +59,7 @@ export default function ChatList() {
   );
 
   useEffect(() => {
-    const sub = meshEvents.addListener('onPeerDisplayNameUpdated', () => {
+    const sub = DeviceEventEmitter.addListener('onPeerDisplayNameUpdated', () => {
       loadPeers();
     });
     return () => sub.remove();

@@ -7,6 +7,7 @@ import com.meshenger.backend.application.messaging.MessageStatus
 import com.meshenger.backend.application.user.UserProfile
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -106,6 +107,76 @@ class MeshengerDbHelperTest {
         cursor.use {
             assertTrue(it.moveToFirst())
             assertEquals("user-b", it.getString(0))
+        }
+    }
+
+    @Test
+    fun deleteDirectPeerGraph_cleansCrossChatReferencesAndDeletesUser() {
+        val me = UserProfile("me", "hash-me", "Me")
+        val peer = UserProfile("peer-1", "hash-peer", "Peer")
+        dbHelper.upsertUserProfile(me)
+        dbHelper.upsertUserProfile(peer)
+
+        // Create peer direct graph.
+        dbHelper.ensureDirectChatForPeer(peer.id, peer.userName)
+
+        // Create a global chat/session where peer is also referenced.
+        val globalChatId = "global-chat"
+        val globalSessionId = "global-session"
+        dbHelper.insertChat(globalChatId, "Global Chat", "GLOBAL", System.currentTimeMillis())
+        dbHelper.insertSession(globalSessionId, globalChatId, "global-key")
+
+        // Add participation rows for peer outside direct chat.
+        val participationValues = android.content.ContentValues().apply {
+            put("chatId", globalChatId)
+            put("userId", peer.id)
+            put("role", "MEMBER")
+            put("joinAt", System.currentTimeMillis())
+            put("isLeft", 0)
+        }
+        dbHelper.writableDatabase.insert("user_participation", null, participationValues)
+
+        // Insert a global message authored by peer to validate sender FK cleanup.
+        val globalMessage = Message(
+            id = "global-msg-1",
+            sessionId = globalSessionId,
+            senderId = peer.id,
+            timestamp = System.currentTimeMillis(),
+            nonce = "global-nonce",
+            status = MessageStatus.SENT,
+            encryptedPayload = "cipher-global",
+        )
+        dbHelper.insertMessage(globalMessage, listOf(me.id))
+
+        // Add peer-scoped key material that is not FK protected.
+        dbHelper.upsertPeerRemoteKey(
+            peerUserId = peer.id,
+            keyType = "identity",
+            keystoreAlias = "alias-peer",
+            ciphertextBlob = "ct",
+            ivBlob = "iv",
+        )
+
+        dbHelper.deleteDirectPeerGraph(peer.id)
+
+        assertNull(dbHelper.getUserProfile(peer.id))
+        assertEquals(0, dbHelper.countMessagesForDirectPeer(peer.id))
+        assertNull(dbHelper.getPeerRemoteKey(peer.id, "identity"))
+
+        dbHelper.readableDatabase.rawQuery(
+            "SELECT COUNT(*) FROM messages WHERE senderId = ?",
+            arrayOf(peer.id),
+        ).use { c ->
+            assertTrue(c.moveToFirst())
+            assertEquals(0, c.getInt(0))
+        }
+
+        dbHelper.readableDatabase.rawQuery(
+            "SELECT COUNT(*) FROM user_participation WHERE userId = ?",
+            arrayOf(peer.id),
+        ).use { c ->
+            assertTrue(c.moveToFirst())
+            assertEquals(0, c.getInt(0))
         }
     }
 }

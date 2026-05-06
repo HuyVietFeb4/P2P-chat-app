@@ -64,6 +64,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         private val TWO_PARTY_PROLOGUE = "meshenger-twoparty-v1".encodeToByteArray()
         private const val MP_PREFIX = "mp:"
         private const val PRESENCE_INTERVAL_MS = 25_000L
+        /** Dùng filter Logcat: `MeshengerChat` — theo dõi gửi tin 1–1 và emit JS */
+        private const val CHAT_DIAG = "MeshengerChat"
     }
 
     init {
@@ -87,9 +89,37 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     override fun getName(): String = "MeshengerApplicationModule"
 
     private fun sendEvent(eventName: String, params: WritableMap?) {
-        reactApplicationContext
-            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-            .emit(eventName, params)
+        val reactCtx = reactApplicationContext
+        val active = reactCtx.hasActiveReactInstance()
+        val msgIdForLog =
+            params?.let { map ->
+                try {
+                    map.getString("id")
+                } catch (_: Throwable) {
+                    null
+                }
+            }
+
+        Log.d(
+            CHAT_DIAG,
+            "sendEvent queued: $eventName id=$msgIdForLog hasActiveReactInstance=$active callerThread=${Thread.currentThread().name}",
+        )
+
+        reactCtx.runOnUiQueueThread {
+            try {
+                if (!reactCtx.hasActiveReactInstance()) {
+                    Log.w(CHAT_DIAG, "sendEvent SKIP (no React): $eventName id=$msgIdForLog")
+                    return@runOnUiQueueThread
+                }
+                reactCtx
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+                    .emit(eventName, params)
+                Log.d(CHAT_DIAG, "sendEvent OK: $eventName id=$msgIdForLog thread=ui-queue")
+            } catch (e: Exception) {
+                Log.w("MeshengerApplication", "sendEvent($eventName) skipped: ${e.message}")
+                Log.e(CHAT_DIAG, "sendEvent EXCEPTION: $eventName", e)
+            }
+        }
     }
 
     private fun ensureGlobalChatStorage() {
@@ -147,7 +177,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     senderId = senderId,
                     nonce = nonce,
                     status = if (action == "Send") MessageStatus.PENDING else MessageStatus.SENT,
-                    encryptedPayload = payload
+                    encryptedPayload = payload,
+                    bodyText = plaintext.takeIf { it.isNotEmpty() },
                 )
                 dbHelper.insertMessage(msg, receiverIds)
 
@@ -331,11 +362,13 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         sessionKey: ByteArray? = null,
         plaintextOverride: String? = null
     ): WritableMap {
-        val plaintext = plaintextOverride ?: if (sessionKey != null) {
-            decryptGlobalPayload(msg.encryptedPayload, msg.nonce, sessionKey)
-        } else {
-            ""
-        }
+        val plaintext = plaintextOverride
+            ?: msg.bodyText?.takeIf { it.isNotBlank() }
+            ?: if (sessionKey != null) {
+                decryptGlobalPayload(msg.encryptedPayload, msg.nonce, sessionKey)
+            } else {
+                ""
+            }
         return Arguments.createMap().apply {
             putString("id", msg.id)
             putString("sessionId", msg.sessionId)
@@ -491,9 +524,11 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     private fun meshPeersArrayExcludingSelf(): Pair<WritableArray, Int> {
         val self = MPAddress.getMyMPAddressULong()
         val array = Arguments.createArray()
+        val seen = HashSet<ULong>()
         var n = 0
         for (peer in PeerInMeshRegistry.getAllPeers()) {
             if (peer.MPAddress == self) continue
+            if (!seen.add(peer.MPAddress)) continue
             array.pushMap(meshPeerToWritableMap(peer))
             n++
         }
@@ -565,6 +600,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 promise.reject("INVALID_INPUT", "peerId and plaintext cannot be empty")
                 return
             }
+            Log.i(
+                CHAT_DIAG,
+                "sendDirectMessage START peer=$peerId len=${plaintext.length} hasSession=${activeSessions.containsKey(peerId)}",
+            )
             val session = activeSessions[peerId]
                 ?: run {
                     promise.reject("NO_SESSION", "Open a two-party session before sending")
@@ -572,6 +611,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 }
             val mp = parseMeshPeerId(peerId)
             session.sendMessageStr(mp, plaintext)
+            Log.i(CHAT_DIAG, "sendDirectMessage DONE peer=$peerId plaintextLen=${plaintext.length}")
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("SEND_DIRECT_FAILED", e.message, e)
@@ -625,6 +665,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             chosenPattern = NoisePattern.XX,
         )
         activeSessions[peerId] = session
+        sessionBusJobs.remove(peerId)?.cancel()
         sessionBusJobs[peerId] = startObservingTwoPartyBus(peerId, session)
         Log.d(
             "MeshengerApplication",
@@ -646,23 +687,32 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         val payload = json["Payload"]?.toString()?.trim('"').orEmpty()
         val nonce = json["Nonce"]?.toString()?.trim('"').orEmpty()
         val plaintext = json["Plaintext"]?.toString()?.trim('"').orEmpty()
-        if (payload.isEmpty()) return
+        if (payload.isEmpty()) {
+            Log.w(CHAT_DIAG, "twoPartyBus DROP empty payload peer=$peerId action=$action")
+            return
+        }
+
+        Log.d(CHAT_DIAG, "twoPartyBus peer=$peerId action=$action payloadLen=${payload.length} nonce=$nonce")
 
         val msg = try {
             when (action) {
-                "Send" -> MessagingStore.sendMessage(peerId, payload, nonce)
+                "Send" -> MessagingStore.sendMessage(peerId, payload, nonce, bodyText = plaintext)
                 "Receive" -> MessagingStore.addIncomingMessage(
                     peerId = peerId,
                     senderId = peerId,
                     encryptedPayload = payload,
                     nonce = nonce,
+                    bodyText = plaintext,
                 )
                 else -> return
             }
         } catch (e: Exception) {
             Log.e("MeshengerApplication", "Failed to persist 1-1 message: ${e.message}", e)
+            Log.e(CHAT_DIAG, "twoParty persist FAILED peer=$peerId action=$action", e)
             return
         }
+
+        Log.i(CHAT_DIAG, "twoParty persisted id=${msg.id} action=$action peer=$peerId")
 
         val map = messageToWritableMap(
             msg = msg,

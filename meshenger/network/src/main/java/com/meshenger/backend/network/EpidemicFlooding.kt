@@ -129,7 +129,7 @@ object EpidemicFlooding : TransportPacketListener {
             MessageType.ANTI_ENTROPY_RESPOND.value,
             MessageType.NOISE_HANDSHAKE.value -> PacketSigner.verifyDirectProtocolKey(decodedPacket)
 
-            MessageType.USER_MESSAGE_ONE_TO_ONE.value -> true // Automatic push to session for upper layer verification
+            MessageType.USER_MESSAGE_ONE_TO_ONE.value -> PacketSigner.verifyDirectProtocolKey(decodedPacket)
             else -> {
                 Log.d("EpidemicFlooding", "Unsupported packet type: ${decodedPacket.header.type}")
                 false

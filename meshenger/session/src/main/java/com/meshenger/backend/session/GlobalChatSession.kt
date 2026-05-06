@@ -61,7 +61,7 @@ object GlobalChatSession : Session(), GlobalMessageListener {
             put("SessionType", "GlobalChat")
             put("Action", "Send")
         }
-        _messageBus.tryEmit(jsonResult)
+        offerMessageBus(jsonResult)
         EpidemicFlooding.onGlobalChatMessageSend(encryptMsg, timeStamp)
     }
 
@@ -80,7 +80,7 @@ object GlobalChatSession : Session(), GlobalMessageListener {
                 put("Action", "Receive")
             }
 
-            _messageBus.tryEmit(jsonResult)
+            offerMessageBus(jsonResult)
         } catch (e: Exception) {
             Log.e("GlobalChatSession", "Failed to decrypt global message: ${e.message}")
         }
@@ -103,6 +103,9 @@ object GlobalChatSession : Session(), GlobalMessageListener {
     }
 
     override fun onBootStrapReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong) {
+        if (senderID == MPAddress.getMyMPAddressULong()) {
+            return
+        }
         val GlobalChatKey = getFixedKey(NativeCredentials.getGlobalChatKey())
         val decryptMsg = try {
             globalChatDecrypt(GlobalChatKey, payload, timeStamp.toLong())

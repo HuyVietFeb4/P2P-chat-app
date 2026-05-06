@@ -7,6 +7,7 @@ import java.nio.ByteOrder
 import java.security.MessageDigest
 import java.security.PublicKey
 import java.security.Signature
+import java.security.InvalidKeyException
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -49,11 +50,34 @@ object PacketSigner {
             fragmentID, totalFragments, timeStamp, senderID, true)
         buffer.putLong(receiverID.toLong())
         buffer.put(payload)
-        val identityKeyPair = StaticKeyManager.getOrCreateIdentityKey()
-        return Signature.getInstance("Ed25519").run {
-            initSign(identityKeyPair.private)
-            update(buffer.array())
-            sign()
+        return try {
+            val identityKeyPair = StaticKeyManager.getOrCreateIdentityKey()
+            Signature.getInstance("Ed25519").run {
+                initSign(identityKeyPair.private)
+                update(buffer.array())
+                sign()
+            }
+        } catch (e: InvalidKeyException) {
+            // Defensive recovery for stale/incompatible keystore alias on some devices.
+            Log.w("PacketSigner", "Identity key invalid, regenerating once: ${e.message}")
+            try {
+                val regenerated = StaticKeyManager.regenerateIdentityKey()
+                Signature.getInstance("Ed25519").run {
+                    initSign(regenerated.private)
+                    update(buffer.array())
+                    sign()
+                }
+            } catch (e2: Exception) {
+                Log.e(
+                    "PacketSigner",
+                    "Ed25519 signing still failing after regenerate; fallback to direct HMAC: ${e2.message}",
+                )
+                // Keep app alive on devices whose keystore Ed25519 is unstable.
+                calculateHmac(buffer.array(), directKeySpec)
+            }
+        } catch (e: Exception) {
+            Log.e("PacketSigner", "Ed25519 signing failed; fallback to direct HMAC: ${e.message}")
+            calculateHmac(buffer.array(), directKeySpec)
         }
     }
 

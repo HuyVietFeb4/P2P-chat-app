@@ -1,11 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Image, NativeEventEmitter, NativeModules, StyleSheet, Text, View } from 'react-native';
+import {
+    FlatList,
+    Image,
+    DeviceEventEmitter,
+    InteractionManager,
+    NativeModules,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
 const { MeshengerApplicationModule } = NativeModules;
-const meshEvents = new NativeEventEmitter(MeshengerApplicationModule);
 
 type ChatMessage = {
     id: string;
@@ -17,6 +25,30 @@ type ChatMessage = {
     text: string;
 };
 
+/** Normalize native WritableMap → predictable shape (avoids bad keys / FlatList crashes). */
+function normalizeConversationRow(raw: unknown): ChatMessage | null {
+    if (raw == null || typeof raw !== 'object') return null;
+    const row = raw as Record<string, unknown>;
+    const id = row.id != null ? String(row.id) : '';
+    if (!id) return null;
+    const n = Number(row.timestamp);
+    const timestamp =
+        typeof row.timestamp === 'number' && !Number.isNaN(row.timestamp)
+            ? row.timestamp
+            : !Number.isNaN(n)
+              ? n
+              : Date.now();
+    return {
+        id,
+        sessionId: String(row.sessionId ?? ''),
+        senderId: String(row.senderId ?? ''),
+        status: String(row.status ?? 'SENT'),
+        timestamp,
+        fromMe: Boolean(row.fromMe),
+        text: row.text != null ? String(row.text) : '',
+    };
+}
+
 export default function Body({ peerId }: { peerId: string }) {
     const { t } = useTranslation();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -27,12 +59,18 @@ export default function Body({ peerId }: { peerId: string }) {
 
     const fetchHistory = useCallback(async () => {
         try {
-            const history: ChatMessage[] = isGlobal
+            const rawList = isGlobal
                 ? await MeshengerApplicationModule.getGlobalConversation()
                 : await MeshengerApplicationModule.getConversation(peerId);
-            setMessages(history);
+
+            const list = Array.isArray(rawList)
+                ? rawList
+                      .map((row: unknown) => normalizeConversationRow(row))
+                      .filter((row): row is ChatMessage => row !== null)
+                : [];
+            setMessages(list);
         } catch (error) {
-            console.error("Failed to fetch messages:", error);
+            console.error('Failed to fetch messages:', error);
         }
     }, [isGlobal, peerId]);
 
@@ -41,30 +79,44 @@ export default function Body({ peerId }: { peerId: string }) {
     }, [fetchHistory]);
 
     useEffect(() => {
-        const sub = meshEvents.addListener('onNewMessage', (event: any) => {
-            // Direct chats use peerId; global chat uses chatId='global-chat' with sessionType='GlobalChat'.
+        let cancelled = false;
+
+        const sub = DeviceEventEmitter.addListener('onNewMessage', (event: unknown) => {
+            const evt = event as Record<string, unknown>;
             const matches = isGlobal
-                ? event?.sessionType === 'GlobalChat' || event?.chatId === 'global-chat'
-                : event?.peerId === peerId;
+                ? evt?.sessionType === 'GlobalChat' || evt?.chatId === 'global-chat'
+                : evt?.peerId === peerId;
             if (!matches) return;
 
-            const incoming: ChatMessage = {
-                id: String(event.id),
-                sessionId: String(event.sessionId ?? ''),
-                senderId: String(event.senderId ?? ''),
-                status: String(event.status ?? 'SENT'),
-                timestamp: Number(event.timestamp ?? Date.now()),
-                fromMe: Boolean(event.fromMe),
-                text: String(event.text ?? ''),
-            };
+            if (__DEV__) {
+                console.log('[MeshengerChat][JS] onNewMessage', {
+                    screenPeerId: peerId,
+                    eventId: evt?.id,
+                    chatId: evt?.chatId,
+                });
+            }
+
+            const normalized = normalizeConversationRow(evt);
+            if (!normalized) return;
 
             setMessages((prev) => {
-                if (prev.some((m) => m.id === incoming.id)) return prev;
-                return [...prev, incoming];
+                if (prev.some((m) => m.id === normalized.id)) return prev;
+                return [...prev, normalized];
+            });
+
+            // Defer SQLite resync + avoid racing layout (can crash Native FlatList on some RN builds).
+            InteractionManager.runAfterInteractions(() => {
+                setTimeout(() => {
+                    if (!cancelled) void fetchHistory();
+                }, 150);
             });
         });
-        return () => sub.remove();
-    }, [isGlobal, peerId]);
+
+        return () => {
+            cancelled = true;
+            sub.remove();
+        };
+    }, [isGlobal, peerId, fetchHistory]);
 
     useEffect(() => {
         // Light polling as a safety net for events fired before the screen mounted.
@@ -74,11 +126,20 @@ export default function Body({ peerId }: { peerId: string }) {
 
     useEffect(() => {
         if (messages.length === 0) return;
-        const t = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
-        return () => clearTimeout(t);
+        const task = InteractionManager.runAfterInteractions(() => {
+            requestAnimationFrame(() => {
+                try {
+                    listRef.current?.scrollToEnd({ animated: true });
+                } catch {
+                    /* noop: some RN versions crash if layout not ready */
+                }
+            });
+        });
+        return () => task.cancel();
     }, [messages.length]);
 
     const formatTime = (timestamp: number) => {
+        if (!Number.isFinite(timestamp)) return '--';
         const date = new Date(timestamp);
         let hours = date.getHours();
         const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -122,6 +183,7 @@ export default function Body({ peerId }: { peerId: string }) {
         <FlatList
             ref={listRef}
             data={messages}
+            extraData={messages}
             renderItem={renderMessage}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}

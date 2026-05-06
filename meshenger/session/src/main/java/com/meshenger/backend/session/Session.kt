@@ -1,13 +1,34 @@
 package com.meshenger.backend.session
 
 import com.meshenger.backend.network.MessageType
-import kotlinx.serialization.json.*
 import com.meshenger.backend.network.SpecialRecipients
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import java.security.MessageDigest
+
 abstract class Session {
     protected val peers = mutableListOf<Peer>()
-    protected val _messageBus = MutableSharedFlow<JsonObject>(replay = 1, extraBufferCapacity = 10)
+    protected val _messageBus = MutableSharedFlow<JsonObject>(replay = 0, extraBufferCapacity = 64)
+    private val messageBusEmitJob = SupervisorJob()
+    private val messageBusEmitScope = CoroutineScope(messageBusEmitJob + Dispatchers.Default)
+
+    /**
+     * If [tryEmit] misses (subscriber not ready yet), suspend [emit] so chat lines aren't dropped.
+     */
+    protected fun offerMessageBus(json: JsonObject) {
+        if (_messageBus.tryEmit(json)) return
+        messageBusEmitScope.launch {
+            _messageBus.emit(json)
+        }
+    }
+
+    protected fun cancelMessageBusEmitter() {
+        messageBusEmitJob.cancel()
+    }
     protected fun getFixedKey(rawKey: String): ByteArray {
         val digest = MessageDigest.getInstance("SHA-256")
         return digest.digest(rawKey.encodeToByteArray())

@@ -24,6 +24,7 @@ object MessagingStore {
         peerId: String,
         encryptedPayload: String,
         nonce: String,
+        bodyText: String? = null,
     ): Message {
         val helper = db ?: throw IllegalStateException("MessagingStore not initialized")
         if (peerId.isBlank() || encryptedPayload.isBlank()) {
@@ -38,7 +39,8 @@ object MessagingStore {
             timestamp = System.currentTimeMillis(),
             nonce = nonce,
             status = MessageStatus.PENDING,
-            encryptedPayload = encryptedPayload
+            encryptedPayload = encryptedPayload,
+            bodyText = bodyText,
         )
         helper.insertMessage(message, receiverIds = listOf(peerId))
 
@@ -62,6 +64,7 @@ object MessagingStore {
         senderId: String,
         encryptedPayload: String,
         nonce: String,
+        bodyText: String? = null,
     ): Message {
         val helper = db ?: throw IllegalStateException("MessagingStore not initialized")
         if (peerId.isBlank() || senderId.isBlank() || encryptedPayload.isBlank()) {
@@ -76,7 +79,8 @@ object MessagingStore {
             timestamp = System.currentTimeMillis(),
             nonce = nonce,
             status = MessageStatus.SENT,
-            encryptedPayload = encryptedPayload
+            encryptedPayload = encryptedPayload,
+            bodyText = bodyText,
         )
         helper.insertMessage(message, receiverIds = listOf(LOCAL_SENDER_ID))
         return message
