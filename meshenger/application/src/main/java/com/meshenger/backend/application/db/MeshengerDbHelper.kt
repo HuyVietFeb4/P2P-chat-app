@@ -19,7 +19,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             CREATE TABLE users (
                 userId TEXT PRIMARY KEY,
                 publicKeyHash TEXT NOT NULL,
-                userName TEXT NOT NULL
+                userName TEXT NOT NULL,
+                userAvtId TEXT DEFAULT NULL
             );
         """)
 
@@ -129,6 +130,7 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         }
         if (oldVersion < 6) {
             db.execSQL("ALTER TABLE messages ADD COLUMN bodyText TEXT")
+            db.execSQL("ALTER TABLE users ADD COLUMN userAvtId TEXT DEFAULT NULL")
         }
     }
 
@@ -140,18 +142,20 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             put("userId", user.id)
             put("publicKeyHash", user.publicKeyHash)
             put("userName", user.userName)
+            put("userAvtId", user.userAvtId)
         }
         db.insertWithOnConflict("users", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
     fun getUserProfile(userId: String): UserProfile? {
         val db = readableDatabase
-        db.rawQuery("SELECT userId, publicKeyHash, userName FROM users WHERE userId = ?", arrayOf(userId)).use { c ->
+        db.rawQuery("SELECT userId, publicKeyHash, userName, userAvtId FROM users WHERE userId = ?", arrayOf(userId)).use { c ->
             if (!c.moveToFirst()) return null
             return UserProfile(
                 id = c.getString(0),
                 publicKeyHash = c.getString(1),
-                userName = c.getString(2)
+                userName = c.getString(2),
+                userAvtId = c.getString(3)
             )
         }
     }
@@ -159,13 +163,14 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     fun getAllUserProfiles(): List<UserProfile> {
         val db = readableDatabase
         val out = mutableListOf<UserProfile>()
-        db.rawQuery("SELECT userId, publicKeyHash, userName FROM users ORDER BY userName", null).use { c ->
+        db.rawQuery("SELECT userId, publicKeyHash, userName, userAvtId FROM users ORDER BY userName", null).use { c ->
             while (c.moveToNext()) {
                 out.add(
                     UserProfile(
                         id = c.getString(0),
                         publicKeyHash = c.getString(1),
-                        userName = c.getString(2)
+                        userName = c.getString(2),
+                        userAvtId = c.getString(3)
                     )
                 )
             }
