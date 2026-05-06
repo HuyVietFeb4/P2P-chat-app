@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View, Modal, FlatList, Image, NativeModules } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
 // 1. CHANGE: Import expo-device
 import * as Device from 'expo-device';
 
@@ -35,7 +34,6 @@ export default function Onboarding5() {
     const [selectedAvtId, setSelectedAvtId] = useState<string>('avt0');
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
-    const { t } = useTranslation();
 
     // 2. CHANGE: Update useEffect logic
     useEffect(() => {
@@ -48,11 +46,11 @@ export default function Onboarding5() {
     const handleNavigateToChat = async () => {
         let validateError = null;
         if (!deviceName.trim()) {
-            validateError = t('device-name-cannot-be-empty');
+            validateError = 'Device name cannot be empty! ';
         }
 
         if (deviceName.length > 15) {
-            validateError = t('device-15-char');
+            validateError = 'Device name must be 15 characters or less. ';
         }
 
         if (validateError) {
@@ -61,19 +59,18 @@ export default function Onboarding5() {
             return;
         }
 
-        const trimmed = deviceName.trim();
-        try {
-            if (MeshengerApplicationModule?.updateMyProfile) {
-                await MeshengerApplicationModule.updateMyProfile(trimmed, selectedAvtId);
-            }
-        } catch (e: any) {
-            const msg = e?.message ?? e?.userInfo?.NSLocalizedDescription ?? String(e);
-            setError(msg);
-            setTimeout(() => setError(null), 5000);
+        if (error) {
+            setTimeout(() => setError(null), 3000);
             return;
+        } else {
+            try {
+                await MeshengerApplicationModule.updateMyProfile(deviceName.trim(), selectedAvtId);
+            } catch (e) {
+                console.error("Failed to update profile", e);
+            }
+            await AsyncStorage.setItem("firstLaunch", deviceName.trim());
+            router.replace("/ChatBox");
         }
-        await AsyncStorage.setItem("firstLaunch", trimmed);
-        router.replace("/ChatBox");
     };
 
     return (
@@ -98,8 +95,8 @@ export default function Onboarding5() {
                     >
                         {/* Header Section */}
                         <View style={styles.headerSection}>
-                            <Text style={styles.title}>{t('spice-up-your')}</Text>
-                            
+                            <Text style={styles.title}>Spice Up Your Avatar{'\n'}and Name!</Text>
+
                             <View style={styles.iconContainer}>
                                 {selectedAvtId ? (
                                     <Image
@@ -119,19 +116,19 @@ export default function Onboarding5() {
                             >
                                 <TouchableOpacity style={styles.buttonContent} activeOpacity={0.8} onPress={() => setModalVisible(true)}>
                                     <MaterialCommunityIcons name="plus" size={20} color="#FFFFFF" />
-                                    <Text style={styles.buttonText}>{t('select-image')}</Text>
+                                    <Text style={styles.buttonText}>Select Avt</Text>
                                 </TouchableOpacity>
                             </LinearGradient>
                         </View>
 
                         {/* Input Section */}
                         <View style={styles.formSection}>
-                            <Text style={styles.label}>{t('please-enter-your-device-name')}</Text>
-                            
+                            <Text style={styles.label}>Please enter your device name</Text>
+
                             <View style={styles.inputContainer}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder={t('device-name')}
+                                    placeholder="Device Name"
                                     placeholderTextColor="#999999"
                                     value={deviceName}
                                     onChangeText={setDeviceName}
@@ -149,7 +146,7 @@ export default function Onboarding5() {
                                     activeOpacity={0.8}
                                     onPress={handleNavigateToChat}
                                 >
-                                    <Text style={[styles.buttonText, { fontSize: 18 }]}>{t('go-to-chat')}</Text>
+                                    <Text style={[styles.buttonText, { fontSize: 18 }]}>Go to chat!</Text>
                                     <MaterialCommunityIcons name="arrow-right" size={22} color="#FFFFFF" />
                                 </TouchableOpacity>
                             </LinearGradient>
@@ -158,45 +155,55 @@ export default function Onboarding5() {
                         {/* Footer Section */}
                         <View style={styles.footerSection}>
                             <Text style={styles.quote}>
-                                {t('a-good-name-is')}
+                                "A good name is rather to be chosen than great riches." Proverbs 22:1
                             </Text>
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
-            <Modal visible={isModalVisible} animationType="fade" transparent onRequestClose={() => setModalVisible(false)}>
+            <Message visible={!!error} message={error} title="Username error!" />
+
+            {/* Avatar Selection Modal */}
+            <Modal
+                visible={isModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setModalVisible(false)}
+            >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>{t('select-image')}</Text>
+                        <Text style={styles.modalTitle}>Choose an Avatar</Text>
                         <FlatList
-                            data={avatars}
+                            data={avatars.filter(a => a.id !== 'avt0')}
                             numColumns={3}
                             keyExtractor={(item) => item.id}
-                            scrollEnabled={false}
-                            columnWrapperStyle={{ gap: 12 }}
-                            contentContainerStyle={{ gap: 12 }}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingVertical: 10, alignItems: 'center' }}
+                            columnWrapperStyle={{ gap: 20, justifyContent: 'center', marginBottom: 20 }}
                             renderItem={({ item }) => (
                                 <TouchableOpacity
+                                    style={[
+                                        styles.avatarOption,
+                                        selectedAvtId === item.id && styles.avatarOptionSelected
+                                    ]}
                                     onPress={() => {
                                         setSelectedAvtId(item.id);
                                         setModalVisible(false);
                                     }}
-                                    style={[
-                                        styles.avatarOption,
-                                        selectedAvtId === item.id && styles.avatarOptionSelected,
-                                    ]}
                                 >
                                     <Image source={item.source} style={styles.avatarImage} />
                                 </TouchableOpacity>
                             )}
                         />
-                        <TouchableOpacity style={styles.closeModalButton} onPress={() => setModalVisible(false)}>
-                            <Text style={styles.closeModalButtonText}>OK</Text>
+                        <TouchableOpacity
+                            style={styles.closeModalButton}
+                            onPress={() => setModalVisible(false)}
+                        >
+                            <Text style={styles.closeModalButtonText}>Cancel</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
-            <Message visible={!!error} message={error} title={t('username-error')} />
         </View>
     );
 }

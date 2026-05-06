@@ -41,10 +41,11 @@ object UserStore {
         return allUsers.filter { it.id != LOCAL_ID }
     }
 
-    fun updateProfile(userName: String, publicKeyHash: String? = null): UserProfile {
+    fun updateProfile(userName: String, publicKeyHash: String? = null, userAvtId: String? = null): UserProfile {
         profile = profile.copy(
             userName = userName,
-            publicKeyHash = publicKeyHash ?: profile.publicKeyHash
+            publicKeyHash = publicKeyHash ?: profile.publicKeyHash,
+            userAvtId = userAvtId ?: profile.userAvtId
         )
         db?.upsertUserProfile(profile)
         return profile

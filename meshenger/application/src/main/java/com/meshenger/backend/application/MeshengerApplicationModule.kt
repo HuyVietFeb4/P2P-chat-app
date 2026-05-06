@@ -844,6 +844,9 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             val profileMap = Arguments.createMap().apply {
                 putString("id", profile.id)
                 putString("displayName", profile.userName)
+                if (profile.userAvtId != null) {
+                    putString("userAvtId", profile.userAvtId)
+                }
             }
             promise.resolve(profileMap)
         } catch (e: Exception) {
@@ -866,10 +869,13 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            val updated = UserStore.updateProfile(userName = trimmed)
+            val updated = UserStore.updateProfile(userName = trimmed, userAvtId = newAvatarUrl)
             val profile = Arguments.createMap().apply {
                 putString("id", updated.id)
                 putString("displayName", updated.userName)
+                if (updated.userAvtId != null) {
+                    putString("userAvtId", updated.userAvtId)
+                }
             }
             promise.resolve(profile)
         } catch (e: Exception) {
