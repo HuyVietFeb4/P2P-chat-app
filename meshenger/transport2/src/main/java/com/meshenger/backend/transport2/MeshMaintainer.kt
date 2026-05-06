@@ -91,6 +91,9 @@ class MeshMaintainer : Service() {
         // Perform any urgent cleanup here
         // Note: You have very limited time before the process is killed
         isRunning = false
+        MeshConnectionRegistry.getOutboundMap().forEach { (_, client) -> client.close() }
+        MeshConnectionRegistry.updateIsInMesh(false)
+
         stopSelf() // Tells the system to stop this service
         super.onTaskRemoved(rootIntent)
     }
@@ -106,9 +109,6 @@ class MeshMaintainer : Service() {
         if(server.isServerActive()) server.shutDownServer()
         if(BleAdvertiser.isAdvertisingActive()) BleAdvertiser.stopAdvertising()
 
-        // 3. Clear all active GATT connections
-        MeshConnectionRegistry.getOutboundMap().forEach { (_, client) -> client.close() }
-        MeshConnectionRegistry.updateIsInMesh(false)
         super.onDestroy()
     }
 
@@ -140,7 +140,17 @@ class MeshMaintainer : Service() {
     private suspend fun maintainConnections() {
         try {
             val activeCount = MeshConnectionRegistry.getCountConnections()
+            val outboundCount = MeshConnectionRegistry.getCountOutbound()
+            val inboundCount = MeshConnectionRegistry.getCountInbound()
 
+            Log.d(
+                "MeshMaintainer",
+                "Outbound connections ($outboundCount)"
+            )
+            Log.d(
+                "MeshMaintainer",
+                "Inbound connections ($inboundCount)"
+            )
             if (activeCount < BleLimitConstants.MIN_CONNECTIONS_LIMIT) {
                 Log.d(
                     "MeshMaintainer",

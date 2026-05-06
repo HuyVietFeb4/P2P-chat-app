@@ -1,6 +1,5 @@
 package com.meshenger.backend.transport2.client
 
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.os.Handler
 import android.os.Looper

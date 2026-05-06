@@ -16,6 +16,8 @@ object MeshConnectionRegistry {
     private val physicalPeerList = CopyOnWriteArrayList<PhysicalPeer>()
     fun getAllPeers(): Set<String> = inboundMap.keys + outboundMap.keys
     fun getCountConnections(): Int = inboundMap.size + outboundMap.size
+    fun getCountOutbound(): Int = outboundMap.size
+    fun getCountInbound(): Int = inboundMap.size
     fun isPending(address: String): Boolean = pendingConnections.contains(address)
 
     fun markPending(address: String) { pendingConnections.add(address) }

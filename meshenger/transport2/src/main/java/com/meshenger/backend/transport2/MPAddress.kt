@@ -11,7 +11,7 @@ object MPAddress {
     private val SALT = "This-is-salt-value-to-generate-routing-id".encodeToByteArray()
     private val INFO_PREFIX = "Meshenger-v1-generate-routing-id".encodeToByteArray()
     fun getMyMPAddress(
-        epochHours: Int = 2,
+        epochHours: Int = 24,
         length: Int = 8
     ): ByteArray {
         val publicKeyEncoded = StaticKeyManager.getRawPublicIdentityKey(StaticKeyManager.getOrCreateIdentityKey().public)
