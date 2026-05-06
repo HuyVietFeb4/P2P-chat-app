@@ -90,7 +90,7 @@ android {
     namespace 'com.meshenger'
     defaultConfig {
         applicationId 'com.meshenger'
-        minSdkVersion 26
+        minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
@@ -131,16 +131,7 @@ android {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
     packaging {
-        resources {
-            // Pick one of the files or just exclude it.
-            // These manifest files are usually not needed for Android apps.
-            excludes.add("/META-INF/versions/9/OSGI-INF/MANIFEST.MF")
-
-            // It's also good practice to exclude these BC-specific files
-            // to avoid signature errors during the merge
-            excludes.add("META-INF/BCKEY.SF")
-            excludes.add("META-INF/BCKEY.RSA")
-        }
+        pickFirst 'META-INF/versions/9/OSGI-INF/MANIFEST.MF'
     }
 }
 
@@ -167,11 +158,9 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+
     implementation project(':backend:application')
     implementation project(':backend:session')
-    implementation project(':backend:network')
-//    implementation project(':backend:transport')
-    implementation project(':backend:transport2')
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
