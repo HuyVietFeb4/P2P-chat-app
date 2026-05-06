@@ -20,6 +20,7 @@ export const Colors = {
     peerBubble: '#FFFFFF',
     myMessageText: '#FFFFFF',
     peerMessageText: '#333333',
+    returnIcon: '#4DA6FF',
   },
   dark: {
     background: '#313338', // Discord-like gray background
@@ -38,6 +39,7 @@ export const Colors = {
     peerBubble: '#313338',
     myMessageText: '#F2F3F5',
     peerMessageText: '#DBDEE1',
+    returnIcon: '#373A40'
   },
 };
 

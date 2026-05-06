@@ -5,6 +5,8 @@ import Footer from "./component/Footer"
 import Header from "./component/Header"
 import MyQR from "./component/MyQR"
 import QRCamera from "./component/QRCamera"
+import { useBluetooth } from "../hook/useBluetooth";
+import BluetoothPopup from "../common components/BluetoothPopUp";
 
 
 export default function QRScan() {
@@ -12,6 +14,7 @@ export default function QRScan() {
     const [image, setImage] = useState<string | null>(null);
     const [permission, requestPermission] = ImagePicker.useMediaLibraryPermissions();
     const [username, setUsername] = useState<string>("Loading...");
+    const { showPopup, openBluetoothSettings, dismissPopup } = useBluetooth();
 
     const pickImage = async () => {
         if (!permission?.granted) {
@@ -52,6 +55,13 @@ export default function QRScan() {
             }
 
             <Footer setActiveTab={setActiveTab} openAlbum={pickImage}/>
+
+             {showPopup && (
+                            <BluetoothPopup
+                                visible={true}
+                                onDismiss={dismissPopup}
+                            />
+                        )}
         </View>
     )
 }

@@ -2,8 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Image, NativeModules, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const { MeshengerApplicationModule } = NativeModules;
+const { t } = useTranslation();
 
 export default function Body({ peerId }: { peerId: string }) {
     const [messages, setMessages] = useState<any[]>([]);
@@ -60,7 +62,7 @@ export default function Body({ peerId }: { peerId: string }) {
                         {isMe && (
                             <View style={styles.statusContainer}>
                                 <Ionicons name="checkmark-done" size={14} color="white" style={{marginLeft: 4}} />
-                                <Text style={[styles.sentText, { color: 'white' }]}>Sent</Text>
+                                <Text style={[styles.sentText, { color: 'white' }]}>{t("sent")}</Text>
                             </View>
                         )}
                     </View>

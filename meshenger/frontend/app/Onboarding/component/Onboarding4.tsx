@@ -1,7 +1,9 @@
 import { Image } from "expo-image";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useTranslation } from "react-i18next";
 export default function Onboarding4() {
     const { width, height } = useWindowDimensions();
+    const { t } = useTranslation();
     return (
         <>
             <View style = {{ width: width, height: height * 0.7 }}>
@@ -13,8 +15,8 @@ export default function Onboarding4() {
             </View>
 
             <View style = { styles.textContainer }>
-                <Text style = { styles.title}>Let’s mesh up and start chatting.</Text>
-                <Text style = { styles.subtitle }>Enable Bluetooth and explore your connected world.</Text>
+                <Text style = { styles.title}>{t('let-meshed-up')}</Text>
+                <Text style = { styles.subtitle }>{t('enable-bluetooth-and-explore')}</Text>
             </View>
         </>
     );

@@ -1,6 +1,7 @@
 import { Ban, BellOff, Search, Trash2, UserMinus } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
+import { useTranslation } from "react-i18next";
 
 const DANGER_COLOR = "#E24B4A";
 
@@ -10,34 +11,34 @@ type Props = {
 
 export default function ActionPopUp({setOnClose} : Props) {
     const { colors } = useTheme();
-
+    const { t } = useTranslation();
     return (
         <View style={[styles.container, { backgroundColor: colors.card }]}>
             <View style={styles.option}>
                 <Search size={15} color={colors.primary} strokeWidth={1.8} />
-                <Text style={[styles.text, { color: colors.text }]}>Search Messages</Text>
+                <Text style={[styles.text, { color: colors.text }]}>{t("search-messages")}</Text>
             </View>
 
             <View style={styles.option}>
                 <BellOff size={15} color={colors.primary} strokeWidth={1.8} />
-                <Text style={[styles.text, { color: colors.text }]}>Mute Notifications</Text>
+                <Text style={[styles.text, { color: colors.text }]}>{t("mute-notifications")}</Text>
             </View>
 
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <View style={styles.option}>
                 <Trash2 size={15} color={DANGER_COLOR} strokeWidth={1.8} />
-                <Text style={[styles.text, styles.dangerText]}>Clear Chat</Text>
+                <Text style={[styles.text, styles.dangerText]}>{t("clear-chat")}</Text>
             </View>
 
             <View style={styles.option}>
                 <Ban size={15} color={DANGER_COLOR} strokeWidth={1.8} />
-                <Text style={[styles.text, styles.dangerText]}>Block User</Text>
+                <Text style={[styles.text, styles.dangerText]}>{t("block-user")}</Text>
             </View>
 
             <View style={styles.option}>
                 <UserMinus size={15} color={DANGER_COLOR} strokeWidth={1.8} />
-                <Text style={[styles.text, styles.dangerText]}>Delete User</Text>
+                <Text style={[styles.text, styles.dangerText]}>{t("delete-user")}</Text>
             </View>
         </View>
     );

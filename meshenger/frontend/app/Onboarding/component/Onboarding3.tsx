@@ -1,7 +1,9 @@
 import { Image } from "expo-image";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useTranslation } from "react-i18next";
 export default function Onboarding3() {
     const { width, height } = useWindowDimensions();
+    const { t } = useTranslation();
     return (
         <>
             <View style = {{ width: width, height: height * 0.7, justifyContent: "flex-end" }}>
@@ -13,8 +15,8 @@ export default function Onboarding3() {
             </View>
 
             <View style = { styles.textContainer }>
-                <Text style = { styles.title}>Instant messaging, redefined.</Text>
-                <Text style = { styles.subtitle }>No setup needed — just open the app and start chatting with nearby friends.</Text>
+                <Text style = { styles.title}>{t('instant-messaging')}</Text>
+                <Text style = { styles.subtitle }>{t('no-setup-needed')}</Text>
             </View>
         </>
     );

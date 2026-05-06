@@ -7,12 +7,16 @@ import { useBehavior } from '../hook/useBehavior';
 import Body from "./component/Body";
 import Header from "./component/Header";
 import Input from "./component/TextInput";
+import { useBluetooth } from "../hook/useBluetooth";
+import BluetoothPopup from "../common components/BluetoothPopUp";
+
 
 export default function ChatRoom() {
     const { id, name, avatarUrl } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const behavior = useBehavior();
     const { colors } = useTheme();
+    const { showPopup, openBluetoothSettings, dismissPopup } = useBluetooth();
 
     return (
         <SafeAreaView style={{flex: 1, backgroundColor: colors.background}}>
@@ -32,6 +36,12 @@ export default function ChatRoom() {
                 {/* 3. Text Input Area: Naturally sits at the bottom */}
                 <Input peerId={id as string} />
                 
+                 {showPopup && (
+                                <BluetoothPopup
+                                    visible={true}
+                                    onDismiss={dismissPopup}
+                                />
+                            )}
             </KeyboardAvoidingView>
         </SafeAreaView>
     );

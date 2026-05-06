@@ -45,18 +45,20 @@ import { useRouter } from "expo-router";
 import { Camera } from "lucide-react-native";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 export default function QRCamera() {
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+    const { t } = useTranslation();
 
     if (!permission) {
         return (
             <View style={{flex: 0.5, justifyContent: 'center', alignItems: 'center', gap: 10}}>
                 <Camera size={40} color='#B0B3B8' />
-                <Text style={{color: '#B0B3B8', fontWeight: 'bold'}}>Camera is loading! Please wait</Text>
+                <Text style={{color: '#B0B3B8', fontWeight: 'bold'}}>{t('camera-is-loading-please-wait')}</Text>
             </View>
         );
     }
@@ -97,9 +99,9 @@ export default function QRCamera() {
                 !permission?.granted ? (
                     <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10}}>
                         <Camera size={40} color='#B0B3B8' />
-                        <Text style={{color: '#B0B3B8', fontWeight: 'bold'}}>We need your permission to access the camera!</Text>
+                        <Text style={{color: '#B0B3B8', fontWeight: 'bold'}}>{t('we-need-your-permission-to-access-the-camera')}</Text>
                         <TouchableOpacity style={{backgroundColor: '#0082FC', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12}} onPress={requestCameraPermission}>
-                            <Text style={{color: 'white', fontWeight: 'bold'}}>Grant Permission</Text>
+                            <Text style={{color: 'white', fontWeight: 'bold'}}>{t('grant-permission')}</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (

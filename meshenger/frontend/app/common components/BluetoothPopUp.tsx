@@ -3,6 +3,7 @@ import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useCallback } from "react";
 import * as IntentLauncher from "expo-intent-launcher";
 import { BackHandler } from "react-native";
+import { useTranslation } from "react-i18next";
 
 type Props = {
     visible: boolean;
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export default function BluetoothPopup({ visible, onDismiss }: Props) {
+    const { t } = useTranslation();
     const handleEnable = useCallback(async () => {
         // Kéo thanh tác vụ xuống và mở Quick Settings để bật Bluetooth
         await IntentLauncher.startActivityAsync(
@@ -36,17 +38,17 @@ export default function BluetoothPopup({ visible, onDismiss }: Props) {
                         <Bluetooth size={28} color="#5F2EEA" />
                     </View>
 
-                    <Text style={styles.title}>Enable Bluetooth</Text>
+                    <Text style={styles.title}>{t("enable-bluetooth")}</Text>
                     <Text style={styles.desc}>
-                        Meshenger needs Bluetooth to discover and connect with nearby devices.
+                        {t("meshenger-needs-bluetooth-to-discover-peers")}
                     </Text>
 
                     <TouchableOpacity style={styles.btnEnable} onPress={handleEnable} activeOpacity={0.85}>
-                        <Text style={styles.btnEnableText}>Enable Bluetooth</Text>
+                        <Text style={styles.btnEnableText}>{t("enable-bluetooth")}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.btnCancel} onPress={handleExit} activeOpacity={0.6}>
-                        <Text style={styles.btnCancelText}>Exit app</Text>
+                        <Text style={styles.btnCancelText}>{t("exit-app")}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { QrCode, Tablet, UserRoundPlus } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 type Props = {
     setOnClose: () => void;
@@ -9,6 +10,7 @@ type Props = {
 export default function ScanPopUp({ setOnClose }: Props) {
     const router = useRouter();
     const { width } = useWindowDimensions();
+    const { t } = useTranslation();
 
     const handleRouteDeviceScan = () => {
         setOnClose();
@@ -27,7 +29,7 @@ export default function ScanPopUp({ setOnClose }: Props) {
                     size={20}
                     color="#5F2EEA"
                 />
-                <Text style={styles.addUserText}>Add users</Text>
+                <Text style={styles.addUserText}>{t("add-users")}</Text>
             </View>
 
             <View style={styles.addUserActionContainer}>
@@ -36,7 +38,7 @@ export default function ScanPopUp({ setOnClose }: Props) {
                         size={20}
                         color="#5F2EEA"
                     />
-                    <Text style={styles.addUserText}>Devices</Text>
+                    <Text style={styles.addUserText}>{t("devices")}</Text>
                 </Pressable>
 
                 <Pressable style={styles.addUserAction} onPress={handleRouteQRScan}>
@@ -44,7 +46,7 @@ export default function ScanPopUp({ setOnClose }: Props) {
                         size={20}
                         color="#5F2EEA"
                     />
-                    <Text style={styles.addUserText}>QR</Text>
+                    <Text style={styles.addUserText}>{t("qr")}</Text>
                 </Pressable>
             </View>
         </View>

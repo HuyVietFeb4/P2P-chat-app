@@ -5,13 +5,14 @@ import {
   FlatList,
   Image,
   NativeModules,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { MeshengerApplicationModule } = NativeModules;
 const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
@@ -22,6 +23,7 @@ export default function ChatList() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { colors, isDarkMode } = useTheme();
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadPeers();
@@ -119,7 +121,7 @@ export default function ChatList() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         data={chatData}
         keyExtractor={(item) => item.id}
@@ -127,14 +129,14 @@ export default function ChatList() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.subText }]}>No peers added yet.</Text>
-            <Text style={[styles.emptySubText, { color: colors.subText, opacity: 0.7 }]}>Scan a QR code to add a peer.</Text>
+            <Text style={[styles.emptyText, { color: colors.subText }]}>{t("no-peers-added-yet")}</Text>
+            <Text style={[styles.emptySubText, { color: colors.subText, opacity: 0.7 }]}>{t("scan-a-qr-code-to-add-a-peer")}</Text>
           </View>
         }
         onRefresh={loadPeers}
         refreshing={loading}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

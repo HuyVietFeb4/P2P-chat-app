@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Plus, SendHorizontal } from "lucide-react-native";
 import { StyleSheet, TextInput, TouchableOpacity, View, NativeModules } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
+import { useTranslation } from "react-i18next";
 
 const { MeshengerApplicationModule } = NativeModules;
 
@@ -12,6 +13,7 @@ type Props = {
 export default function Input({peerId} : Props) {
     const { colors } = useTheme();
     const [message, setMessage] = useState('');
+    const { t } = useTranslation();
 
     const handleSend = async () => {
         if (message.trim()) {
@@ -36,7 +38,7 @@ export default function Input({peerId} : Props) {
             </TouchableOpacity>
 
             <TextInput
-                placeholder="Type a message"
+                placeholder={t("type-a-message")}
                 style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                 placeholderTextColor={colors.subText}
                 value={message}

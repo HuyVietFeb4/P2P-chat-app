@@ -6,6 +6,7 @@ import Onboarding1 from "./component/Onboarding1";
 import Onboarding2 from "./component/Onboarding2";
 import Onboarding3 from "./component/Onboarding3";
 import Onboarding4 from "./component/Onboarding4";
+import { useTranslation } from "react-i18next";
 
 type OnboardingItem = {
     id: number;
@@ -24,6 +25,7 @@ export default function OnboardingScreen() {
     const flatListRef = useRef<FlatList<OnboardingItem> | null>(null);
     const { width } = useWindowDimensions();
     const router = useRouter();
+    const { t } = useTranslation();
 
     const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
         if (viewableItems.length > 0 && viewableItems[0].index != null) {
@@ -67,7 +69,7 @@ export default function OnboardingScreen() {
                     activeOpacity={0.8}
                     onPress={() => router.push('/Onboarding/component/Onboarding5')}
                 >
-                    <Text style={styles.buttonText}>Get Started!</Text>
+                    <Text style={styles.buttonText}>{t('get-started')}</Text>
                 </TouchableOpacity>
             )}
         </View>

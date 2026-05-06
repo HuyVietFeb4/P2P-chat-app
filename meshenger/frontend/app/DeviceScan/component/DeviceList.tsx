@@ -4,6 +4,7 @@ import { Animated, StyleSheet, Text, View, useWindowDimensions } from "react-nat
 import { deviceList } from "./data";
 import DeviceInfo from "./DeviceInfo";
 import TypingDots from "./TypingDots";
+import { useTranslation } from "react-i18next";
 
 type deviceType = {
     id: number,
@@ -16,6 +17,7 @@ export default function DeviceList() {
     const { width, height } = useWindowDimensions();
     const fadeAnim = useState(new Animated.Value(0))[0];
     const translateY = useState(new Animated.Value(20))[0];
+    const { t } = useTranslation();
 
     useEffect(() => {
         setTimeout(() => {
@@ -39,13 +41,13 @@ export default function DeviceList() {
         <View style={[styles.container, {width: width, height: height * 0.5}]}>
             <View style={styles.row}>
                 <Smartphone size={20} color='#4DA6FF' />
-                <Text style={styles.text}>Scanning</Text>
+                <Text style={styles.text}>{t('scanning')}</Text>
                 <TypingDots />
             </View>
 
             <View style={styles.scannedDevices}>
                 <BadgePlus size={20} color='rgba(0, 0, 0, 0.65)'/>
-                <Text>Scanned Devices</Text>
+                <Text>{t('scanned-devices')}</Text>
             </View>
 
             <View style={{ flexShrink: 1 }}>

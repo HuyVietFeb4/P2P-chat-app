@@ -6,6 +6,7 @@ import { LayoutGrid, Search, ShieldAlert, UserPlus, UserRound, Users } from "luc
 import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
+import { useTranslation } from "react-i18next";
 
 interface HeaderProps {
     activeIndex?: number,
@@ -18,12 +19,13 @@ export default function Header({ activeIndex, onTabPress, openPopUp, setOpenPopU
     const {width, height} = useWindowDimensions();
     const pathname = usePathname();
     const { colors, isDarkMode } = useTheme();
+    const { t } = useTranslation();
 
     const tabs = [
-        { label: 'All', icon: LayoutGrid },
-        { label: 'Individual', icon: UserRound },
-        { label: 'Group', icon: Users },
-        { label: 'Emergency', icon: ShieldAlert },
+        { label: t('all'), icon: LayoutGrid },
+        { label: t('individual'), icon: UserRound },
+        { label: t('group'), icon: Users },
+        { label: t('emergency'), icon: ShieldAlert },
     ];
 
     return (

@@ -5,10 +5,13 @@ import Footer from '../common components/Footer';
 import Header from '../common components/Header';
 import { useTheme } from "../context/ThemeContext";
 import SettingList from "./component/SettingList";
+import { useBluetooth } from "../hook/useBluetooth";
+import BluetoothPopup from "../common components/BluetoothPopUp";
 
 export default function MoreOptions() {
     const [openPopUp, setOpenPopUp] = useState<boolean>(false);
     const { colors } = useTheme();
+    const { showPopup, openBluetoothSettings, dismissPopup } = useBluetooth();
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -25,6 +28,13 @@ export default function MoreOptions() {
                     </>
                 ) : null
             }
+
+             {showPopup && (
+                            <BluetoothPopup
+                                visible={true}
+                                onDismiss={dismissPopup}
+                            />
+                        )}
         </View>
     );
 }

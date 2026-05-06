@@ -2,6 +2,7 @@ import { ScanQrCode } from "lucide-react-native";
 import { StyleSheet, Text, View, useWindowDimensions, NativeModules } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const { MeshengerApplicationModule } = NativeModules;
 
@@ -12,6 +13,7 @@ export default function MyQR() {
     const [username, setUsername] = useState<string>("");
     const [xkey, setXKey] = useState<string>("");
     const [edkey, setEDKey] = useState<string>("");
+    const { t } = useTranslation();
 
     useEffect(() => {
         const loadData = async () => {
@@ -64,7 +66,7 @@ export default function MyQR() {
                             />
                         ) : (
                             <View style={{ width: width * 0.4, height: width * 0.4, justifyContent: 'center', alignItems: 'center' }}>
-                                <Text>Loading...</Text>
+                                <Text>{t('loading')}</Text>
                             </View>
                         )}
                     </View>
@@ -74,7 +76,7 @@ export default function MyQR() {
                     <View style={[styles.corner, styles.br]} />
                 </View>
 
-                <Text style={styles.hint}>Allow others to scan the code to connect.</Text>
+                <Text style={styles.hint}>{t('allow-other-to')}</Text>
             </View>
         </View>
     );

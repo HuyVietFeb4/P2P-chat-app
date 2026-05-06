@@ -4,16 +4,38 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View, Modal, FlatList, Image, NativeModules } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 // 1. CHANGE: Import expo-device
 import * as Device from 'expo-device';
+
+const { MeshengerApplicationModule } = NativeModules;
+
+const avatars = [
+    { id: 'avt0', source: require('../../../assets/avt_set/avt0.png') },
+    { id: 'avt1', source: require('../../../assets/avt_set/avt1.png') },
+    { id: 'avt2', source: require('../../../assets/avt_set/avt2.png') },
+    { id: 'avt3', source: require('../../../assets/avt_set/avt3.png') },
+    { id: 'avt4', source: require('../../../assets/avt_set/avt4.png') },
+    { id: 'avt5', source: require('../../../assets/avt_set/avt5.png') },
+    { id: 'avt6', source: require('../../../assets/avt_set/avt6.png') },
+    { id: 'avt7', source: require('../../../assets/avt_set/avt7.png') },
+    { id: 'avt8', source: require('../../../assets/avt_set/avt8.png') },
+    { id: 'avt9', source: require('../../../assets/avt_set/avt9.png') },
+    { id: 'avt10', source: require('../../../assets/avt_set/avt10.png') },
+    { id: 'avt11', source: require('../../../assets/avt_set/avt11.png') },
+    { id: 'avt12', source: require('../../../assets/avt_set/avt12.png') },
+];
 
 export default function Onboarding5() {
     const { width, height } = useWindowDimensions();
     const [deviceName, setDeviceName] = useState('Loading...');
+    const [isModalVisible, setModalVisible] = useState(false);
+    const [selectedAvtId, setSelectedAvtId] = useState<string>('avt0');
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+    const { t } = useTranslation();
 
     // 2. CHANGE: Update useEffect logic
     useEffect(() => {
@@ -26,11 +48,11 @@ export default function Onboarding5() {
     const handleNavigateToChat = async () => {
         let validateError = null;
         if (!deviceName.trim()) {
-            validateError = 'Device name cannot be empty! ';
+            validateError = t('device-name-cannot-be-empty');
         }
 
         if (deviceName.length > 15) {
-            validateError = 'Device name must be 15 characters or less. ';
+            validateError = t('device-15-char');
         }
 
         if (validateError) {
@@ -43,6 +65,11 @@ export default function Onboarding5() {
             setTimeout(() => setError(null), 3000);
             return;
         } else {
+            try {
+                await MeshengerApplicationModule.updateMyProfile(deviceName.trim(), selectedAvtId);
+            } catch (e) {
+                console.error("Failed to update profile", e);
+            }
             await AsyncStorage.setItem("firstLaunch", deviceName.trim());
             router.replace("/ChatBox");
         }
@@ -59,21 +86,28 @@ export default function Onboarding5() {
             />
 
             <SafeAreaView style={styles.safeArea}>
-                <KeyboardAvoidingView 
+                <KeyboardAvoidingView
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     style={styles.keyboardView}
                 >
-                    <ScrollView 
-                        contentContainerStyle={styles.scrollContent} 
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
                         showsVerticalScrollIndicator={false}
                         bounces={false}
                     >
                         {/* Header Section */}
                         <View style={styles.headerSection}>
-                            <Text style={styles.title}>Spice Up Your Avatar{'\n'}and Name!</Text>
+                            <Text style={styles.title}>{t('spice-up-your')}</Text>
                             
                             <View style={styles.iconContainer}>
-                                <MaterialCommunityIcons name="bluetooth" size={60} color="#FFFFFF" />
+                                {selectedAvtId ? (
+                                    <Image
+                                        source={avatars.find(a => a.id === selectedAvtId)?.source}
+                                        style={{ width: 100, height: 100, borderRadius: 50 }}
+                                    />
+                                ) : (
+                                    <MaterialCommunityIcons name="bluetooth" size={60} color="#FFFFFF" />
+                                )}
                             </View>
 
                             <LinearGradient
@@ -82,21 +116,21 @@ export default function Onboarding5() {
                                 end={{ x: 1, y: 0 }}
                                 style={styles.actionButton}
                             >
-                                <TouchableOpacity style={styles.buttonContent} activeOpacity={0.8}>
+                                <TouchableOpacity style={styles.buttonContent} activeOpacity={0.8} onPress={() => setModalVisible(true)}>
                                     <MaterialCommunityIcons name="plus" size={20} color="#FFFFFF" />
-                                    <Text style={styles.buttonText}>Add image</Text>
+                                    <Text style={styles.buttonText}>{t('select-image')}</Text>
                                 </TouchableOpacity>
                             </LinearGradient>
                         </View>
 
                         {/* Input Section */}
                         <View style={styles.formSection}>
-                            <Text style={styles.label}>Please enter your device name</Text>
+                            <Text style={styles.label}>{t('please-enter-your-device-name')}</Text>
                             
                             <View style={styles.inputContainer}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Device Name"
+                                    placeholder={t('device-name')}
                                     placeholderTextColor="#999999"
                                     value={deviceName}
                                     onChangeText={setDeviceName}
@@ -109,12 +143,12 @@ export default function Onboarding5() {
                                 end={{ x: 1, y: 0 }}
                                 style={[styles.actionButton, styles.chatButton]}
                             >
-                                <TouchableOpacity 
-                                    style={styles.buttonContent} 
+                                <TouchableOpacity
+                                    style={styles.buttonContent}
                                     activeOpacity={0.8}
                                     onPress={handleNavigateToChat}
                                 >
-                                    <Text style={[styles.buttonText, { fontSize: 18 }]}>Go to chat!</Text>
+                                    <Text style={[styles.buttonText, { fontSize: 18 }]}>{t('go-to-chat')}</Text>
                                     <MaterialCommunityIcons name="arrow-right" size={22} color="#FFFFFF" />
                                 </TouchableOpacity>
                             </LinearGradient>
@@ -123,13 +157,13 @@ export default function Onboarding5() {
                         {/* Footer Section */}
                         <View style={styles.footerSection}>
                             <Text style={styles.quote}>
-                                "A good name is rather to be chosen than great riches." Proverbs 22:1
+                                {t('a-good-name-is')}
                             </Text>
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
-            <Message visible={!!error} message={error} title="Username error!" />
+            <Message visible={!!error} message={error} title={t('username-error')} />
         </View>
     );
 }
@@ -145,9 +179,9 @@ const styles = StyleSheet.create({
         width: 873,
         height: 873,
         // Centered horizontally based on the center of the shape
-        left: '50%', 
+        left: '50%',
         // Positioned vertically relative to screen top
-        top: -250, 
+        top: -250,
         marginLeft: -436.5, // Shift left by half width to center
         borderRadius: 873 / 2,
         zIndex: 0,
@@ -165,7 +199,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 30,
     },
-    
+
     // --- Header Section ---
     headerSection: {
         alignItems: 'center',
@@ -190,7 +224,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.3)',
     },
-    
+
     // --- Form Section ---
     formSection: {
         width: '100%',
@@ -268,5 +302,52 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontStyle: 'italic',
         lineHeight: 20,
+    },
+    // --- Modal Styles ---
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: '85%',
+        backgroundColor: '#FFF',
+        borderRadius: 24,
+        padding: 24,
+        alignItems: 'center',
+        maxHeight: '75%',
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        color: '#333',
+    },
+    avatarOption: {
+        padding: 4,
+        borderRadius: 50,
+        borderWidth: 3,
+        borderColor: 'transparent',
+    },
+    avatarOptionSelected: {
+        borderColor: '#278EFF',
+    },
+    avatarImage: {
+        width: 65,
+        height: 65,
+        borderRadius: 32.5,
+    },
+    closeModalButton: {
+        marginTop: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 30,
+        backgroundColor: '#EAEAEA',
+        borderRadius: 20,
+    },
+    closeModalButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#555',
     },
 });

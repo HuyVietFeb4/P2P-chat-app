@@ -1,10 +1,11 @@
 import { Image } from "expo-image";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useCommPermission } from "@/app/hook/useCommPermission";
+import { useTranslation } from "react-i18next";
 
 export default function Onboarding1() {
-    useCommPermission();
     const { width, height } = useWindowDimensions();
+    const { t } = useTranslation();
     return (
         <View style = {{ flex: 1}}>
             <View style = {{ width: width, height: height * 0.7 }}>
@@ -16,8 +17,8 @@ export default function Onboarding1() {
             </View>
 
             <View style = { styles.textContainer }>
-                <Text style = { styles.title}>Chat without Wifi or Internet</Text>
-                <Text style = { styles.subtitle }>Stay connected anywhere through Bluetooth Mesh — even when you’re offline.</Text>
+                <Text style = { styles.title}>{t('chat-without-wifi-or-internet')}</Text>
+                <Text style = { styles.subtitle }>{t('stay-connected')}</Text>
             </View>
         </View>
     );

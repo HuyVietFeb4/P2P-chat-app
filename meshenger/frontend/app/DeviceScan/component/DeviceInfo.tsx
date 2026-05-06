@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { MessageCircle } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 type deviceInfo = {
     avatarName: String,
@@ -8,6 +9,7 @@ type deviceInfo = {
 }
 
 export default function DeviceInfo({ avatarName, status }: deviceInfo) {
+    const { t } = useTranslation();
     return (
         <View style={styles.deviceInfoContainer}>
             <View style={styles.info}>
@@ -20,7 +22,7 @@ export default function DeviceInfo({ avatarName, status }: deviceInfo) {
 
             <View style={styles.chatStatus}>
                 <Text style={{fontSize: 10, fontStyle: 'italic', fontWeight: 600}}>
-                    Status: {status === 1 ? <Text style={{color: '#22C55E', fontSize: 10}}>strong</Text> : <Text style={{color: '#EF4444', fontSize: 10}}>weak</Text>}
+                    {t('status')}: {status === 1 ? <Text style={{color: '#22C55E', fontSize: 10}}>{t('strong')}</Text> : <Text style={{color: '#EF4444', fontSize: 10}}>{t('weak')}</Text>}
                 </Text>
 
                 <View style={styles.icon}>

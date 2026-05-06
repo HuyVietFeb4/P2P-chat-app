@@ -4,12 +4,8 @@ import { StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'r
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Shadow } from 'react-native-shadow-2';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
-const NAV_ITEMS = [
-  { key: '/ChatBox', label: 'Chats', Icon: MessageCircleMore },
-  { key: '/Pending', label: 'Pending', Icon: MessageSquareMore },
-  { key: '/More', label: 'More', Icon: Menu },
-];
 
 export default function Footer() {
   const { width } = useWindowDimensions();
@@ -17,6 +13,13 @@ export default function Footer() {
   const pathName = usePathname();
   const insets = useSafeAreaInsets();
   const { colors, isDarkMode } = useTheme();
+  const { t } = useTranslation();
+
+  const NAV_ITEMS = [
+    { key: '/ChatBox', label: t('chats'), Icon: MessageCircleMore },
+    { key: '/Pending', label: t('pending'), Icon: MessageSquareMore },
+    { key: '/More', label: t('more'), Icon: Menu },
+  ];
 
   const handleNavigate = (key: string) => {
     if (pathName !== key) {
