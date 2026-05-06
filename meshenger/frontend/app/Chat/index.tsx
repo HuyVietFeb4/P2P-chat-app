@@ -42,6 +42,6 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     bodyContainer: {
-        flexGrow: 1,
+        flex: 1,
     }
 });
