@@ -7,7 +7,7 @@ import com.meshenger.backend.application.db.MeshengerDbHelper
 import com.meshenger.backend.application.messaging.Message
 import com.meshenger.backend.application.messaging.MessageStatus
 import com.meshenger.backend.application.messaging.MessagingStore
-import com.meshenger.backend.application.security.RemotePeerCryptoStore
+//import com.meshenger.backend.application.security.RemotePeerCryptoStore
 import com.meshenger.backend.application.user.UserProfile
 import com.meshenger.backend.application.user.UserStore
 import com.meshenger.backend.security_native.NativeCredentials
@@ -37,7 +37,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     private val dbHelper = MeshengerDbHelper(reactContext.applicationContext)
-    private val remotePeerCrypto = RemotePeerCryptoStore(dbHelper)
+//    private val remotePeerCrypto = RemotePeerCryptoStore(dbHelper)
     private val moduleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private companion object {
@@ -54,7 +54,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         UserStore.init(dbHelper)
         ensureGlobalChatStorage()
         observeGlobalChatBus()
-        initLocalKeys()
+//        initLocalKeys()
 
         MessagingStore.onStatusChanged = { messageId: String, status: MessageStatus ->
             val event = Arguments.createMap().apply {
@@ -80,23 +80,23 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         dbHelper.ensureGlobalChat(GLOBAL_CHAT_ID, GLOBAL_SESSION_ID, globalKeyId)
     }
 
-    private fun initLocalKeys() {
-        try {
-            // Ed25519
-            if (remotePeerCrypto.loadRemoteRawKey(LOCAL_ID, RemotePeerCryptoStore.KEY_TYPE_ED25519_RAW) == null) {
-                val keyPair = StaticKeyManager.getOrCreateIdentityKey()
-                val raw = StaticKeyManager.getRawPublicIdentityKey(keyPair.public)
-                remotePeerCrypto.saveRemoteRawKey(LOCAL_ID, RemotePeerCryptoStore.KEY_TYPE_ED25519_RAW, raw)
-            }
-            // X25519 - generate and save if missing
-            if (remotePeerCrypto.loadRemoteRawKey(LOCAL_ID, RemotePeerCryptoStore.KEY_TYPE_X25519_RAW) == null) {
-                val (pub, _) = StaticKeyManager.generateX25519KeyPair()
-                remotePeerCrypto.saveRemoteRawKey(LOCAL_ID, RemotePeerCryptoStore.KEY_TYPE_X25519_RAW, pub)
-            }
-        } catch (e: Exception) {
-            Log.e("MeshengerApplication", "Failed to init local keys", e)
-        }
-    }
+//    private fun initLocalKeys() {
+//        try {
+//            // Ed25519
+//            if (remotePeerCrypto.loadRemoteRawKey(LOCAL_ID, RemotePeerCryptoStore.KEY_TYPE_ED25519_RAW) == null) {
+//                val keyPair = StaticKeyManager.getOrCreateIdentityKey()
+//                val raw = StaticKeyManager.getRawPublicIdentityKey(keyPair.public)
+//                remotePeerCrypto.saveRemoteRawKey(LOCAL_ID, RemotePeerCryptoStore.KEY_TYPE_ED25519_RAW, raw)
+//            }
+//            // X25519 - generate and save if missing
+//            if (remotePeerCrypto.loadRemoteRawKey(LOCAL_ID, RemotePeerCryptoStore.KEY_TYPE_X25519_RAW) == null) {
+//                val (pub, _) = StaticKeyManager.generateX25519KeyPair()
+//                remotePeerCrypto.saveRemoteRawKey(LOCAL_ID, RemotePeerCryptoStore.KEY_TYPE_X25519_RAW, pub)
+//            }
+//        } catch (e: Exception) {
+//            Log.e("MeshengerApplication", "Failed to init local keys", e)
+//        }
+//    }
 
     private fun observeGlobalChatBus() {
         moduleScope.launch {
@@ -408,7 +408,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
      * Registers the chosen mesh peer in the app DB so chat/navigation can use [peerId].
      * Does not start BLE or [com.meshenger.backend.session.TwoPartySession] — session team wires crypto/handshake later.
      *
-     * @param mpAddress decimal string (e.g. from [meshPeerToWritableMap] `mpAddress`) or MP address Base64 from bootstrap.
+     * @param mpAddress decimal string (e.g. from [meshPeerToWritableMap] mpAddress) or MP address Base64 from bootstrap.
      */
 
     @ReactMethod
@@ -578,62 +578,62 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
      * Persists remote raw key material (32-byte Ed25519 or X25519 public encoding as received).
      * Uses software AES master → encrypt → SQLite; master imported under SHA-256 alias in Keystore.
      */
-    @ReactMethod
-    fun saveRemotePeerRawKey(peerUserId: String, keyType: String, rawKeyMaterialBase64: String, promise: Promise) {
-        try {
-            if (peerUserId.isBlank() || keyType.isBlank() || rawKeyMaterialBase64.isBlank()) {
-                promise.reject("INVALID_INPUT", "peerUserId, keyType and rawKeyMaterialBase64 are required")
-                return
-            }
-            val normalizedType = keyType.trim()
-            if (!RemotePeerCryptoStore.allowedKeyTypes().contains(normalizedType)) {
-                promise.reject(
-                    "INVALID_KEY_TYPE",
-                    "keyType must be ${RemotePeerCryptoStore.KEY_TYPE_ED25519_RAW} or ${RemotePeerCryptoStore.KEY_TYPE_X25519_RAW}",
-                )
-                return
-            }
-            val raw = android.util.Base64.decode(rawKeyMaterialBase64.trim(), android.util.Base64.NO_WRAP)
-            remotePeerCrypto.saveRemoteRawKey(peerUserId.trim(), normalizedType, raw)
-            promise.resolve(null)
-        } catch (e: Exception) {
-            promise.reject("SAVE_REMOTE_KEY_FAILED", e.message, e)
-        }
-    }
-
-    /** Returns Base64(raw bytes) or a map of {type: Base64} if keyType is "ALL". */
-    @ReactMethod
-    fun loadRemotePeerRawKey(peerUserId: String, keyType: String, promise: Promise) {
-        try {
-            if (keyType == "ALL") {
-                val map = Arguments.createMap()
-                for (type in RemotePeerCryptoStore.allowedKeyTypes()) {
-                    val bytes = remotePeerCrypto.loadRemoteRawKey(peerUserId.trim(), type)
-                    if (bytes != null) {
-                        map.putString(type, android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
-                    }
-                }
-                promise.resolve(map)
-                return
-            }
-            val bytes = remotePeerCrypto.loadRemoteRawKey(peerUserId.trim(), keyType.trim())
-                ?: run {
-                    promise.reject("NOT_FOUND", "No stored key for this peer and keyType")
-                    return
-                }
-            promise.resolve(android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
-        } catch (e: Exception) {
-            promise.reject("LOAD_REMOTE_KEY_FAILED", e.message, e)
-        }
-    }
-
-    @ReactMethod
-    fun deleteRemotePeerRawKey(peerUserId: String, keyType: String, promise: Promise) {
-        try {
-            remotePeerCrypto.deleteRemoteRawKey(peerUserId.trim(), keyType.trim())
-            promise.resolve(null)
-        } catch (e: Exception) {
-            promise.reject("DELETE_REMOTE_KEY_FAILED", e.message, e)
-        }
-    }
+//    @ReactMethod
+//    fun saveRemotePeerRawKey(peerUserId: String, keyType: String, rawKeyMaterialBase64: String, promise: Promise) {
+//        try {
+//            if (peerUserId.isBlank() || keyType.isBlank() || rawKeyMaterialBase64.isBlank()) {
+//                promise.reject("INVALID_INPUT", "peerUserId, keyType and rawKeyMaterialBase64 are required")
+//                return
+//            }
+//            val normalizedType = keyType.trim()
+//            if (!RemotePeerCryptoStore.allowedKeyTypes().contains(normalizedType)) {
+//                promise.reject(
+//                    "INVALID_KEY_TYPE",
+//                    "keyType must be ${RemotePeerCryptoStore.KEY_TYPE_ED25519_RAW} or ${RemotePeerCryptoStore.KEY_TYPE_X25519_RAW}",
+//                )
+//                return
+//            }
+//            val raw = android.util.Base64.decode(rawKeyMaterialBase64.trim(), android.util.Base64.NO_WRAP)
+//            remotePeerCrypto.saveRemoteRawKey(peerUserId.trim(), normalizedType, raw)
+//            promise.resolve(null)
+//        } catch (e: Exception) {
+//            promise.reject("SAVE_REMOTE_KEY_FAILED", e.message, e)
+//        }
+//    }
+//
+//    /** Returns Base64(raw bytes) or a map of {type: Base64} if keyType is "ALL". */
+//    @ReactMethod
+//    fun loadRemotePeerRawKey(peerUserId: String, keyType: String, promise: Promise) {
+//        try {
+//            if (keyType == "ALL") {
+//                val map = Arguments.createMap()
+//                for (type in RemotePeerCryptoStore.allowedKeyTypes()) {
+//                    val bytes = remotePeerCrypto.loadRemoteRawKey(peerUserId.trim(), type)
+//                    if (bytes != null) {
+//                        map.putString(type, android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
+//                    }
+//                }
+//                promise.resolve(map)
+//                return
+//            }
+//            val bytes = remotePeerCrypto.loadRemoteRawKey(peerUserId.trim(), keyType.trim())
+//                ?: run {
+//                    promise.reject("NOT_FOUND", "No stored key for this peer and keyType")
+//                    return
+//                }
+//            promise.resolve(android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
+//        } catch (e: Exception) {
+//            promise.reject("LOAD_REMOTE_KEY_FAILED", e.message, e)
+//        }
+//    }
+//
+//    @ReactMethod
+//    fun deleteRemotePeerRawKey(peerUserId: String, keyType: String, promise: Promise) {
+//        try {
+//            remotePeerCrypto.deleteRemoteRawKey(peerUserId.trim(), keyType.trim())
+//            promise.resolve(null)
+//        } catch (e: Exception) {
+//            promise.reject("DELETE_REMOTE_KEY_FAILED", e.message, e)
+//        }
+//    }
 }
