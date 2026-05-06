@@ -783,9 +783,13 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun getMyIdentity(promise: Promise) {
+        val profile = UserStore.getProfile()
         val result = Arguments.createMap().apply {
             putString("id", LOCAL_ID)
-            putString("displayName", UserStore.getProfile().userName)
+            putString("displayName", profile.userName)
+            if (profile.userAvtId != null) {
+                putString("userAvtId", profile.userAvtId)
+            }
         }
         promise.resolve(result)
     }

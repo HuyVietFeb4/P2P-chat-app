@@ -1,16 +1,53 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Bell, BookA, ChevronRight, Pencil, SunMoon, UserLock } from "lucide-react-native";
-import { ScrollView, StyleSheet, Switch, Text, View, TouchableOpacity } from "react-native";
+import { ScrollView, StyleSheet, Switch, Text, View, TouchableOpacity, NativeModules } from "react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../context/ThemeContext";
 import { useTranslation } from "react-i18next";
+import { useState, useEffect } from "react";
+
+const { MeshengerApplicationModule } = NativeModules;
+
+const avatars = [
+    { id: 'avt0', source: require('../../../assets/avt_set/avt0.png') },
+    { id: 'avt1', source: require('../../../assets/avt_set/avt1.png') },
+    { id: 'avt2', source: require('../../../assets/avt_set/avt2.png') },
+    { id: 'avt3', source: require('../../../assets/avt_set/avt3.png') },
+    { id: 'avt4', source: require('../../../assets/avt_set/avt4.png') },
+    { id: 'avt5', source: require('../../../assets/avt_set/avt5.png') },
+    { id: 'avt6', source: require('../../../assets/avt_set/avt6.png') },
+    { id: 'avt7', source: require('../../../assets/avt_set/avt7.png') },
+    { id: 'avt8', source: require('../../../assets/avt_set/avt8.png') },
+    { id: 'avt9', source: require('../../../assets/avt_set/avt9.png') },
+    { id: 'avt10', source: require('../../../assets/avt_set/avt10.png') },
+    { id: 'avt11', source: require('../../../assets/avt_set/avt11.png') },
+    { id: 'avt12', source: require('../../../assets/avt_set/avt12.png') },
+];
 
 export default function SettingList() {
     const router = useRouter();
     const { t } = useTranslation();
 
     const { isDarkMode, toggleDarkMode, colors } = useTheme();
+
+    const [deviceName, setDeviceName] = useState<string>('Loading...');
+    const [userAvtId, setUserAvtId] = useState<string>('avt0');
+
+    useEffect(() => {
+        const fetchIdentity = async () => {
+            try {
+                const result = await MeshengerApplicationModule.getMyIdentity();
+                setDeviceName(result.displayName || 'Galaxy S5');
+                setUserAvtId(result.userAvtId || 'avt0');
+            } catch (error) {
+                console.error("Failed to fetch identity:", error);
+            }
+        };
+        fetchIdentity();
+    }, []);
+
+    const selectedAvtSource = avatars.find(a => a.id === userAvtId)?.source || avatars[0].source;
 
     return  (
         <ScrollView 
@@ -26,12 +63,14 @@ export default function SettingList() {
                     style={styles.profileWrapper}
                 >
                     <View style={[styles.profileContainer]}>
-                        <Image
-                            source={require("@/assets/images/avatar.png")}
-                            contentFit="cover"
-                            style={styles.image}
-                        />
-                        <Text style={styles.profile}>Galaxy S5</Text>
+                        <View style={styles.iconContainer}>
+                            <Image
+                                source={selectedAvtSource}
+                                contentFit="cover"
+                                style={styles.image}
+                            />
+                        </View>
+                        <Text style={styles.profile}>{deviceName}</Text>
                     </View>
 
                     <Pencil size={16} color="#fff" />
@@ -162,7 +201,18 @@ export default function SettingList() {
 const styles = StyleSheet.create({
     image: {
         width: 45,
-        height: 45
+        height: 45,
+        borderRadius: 22.5
+    },
+    iconContainer: {
+        width: 45,
+        height: 45,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 22.5,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.3)',
     },
 
     profile: {
