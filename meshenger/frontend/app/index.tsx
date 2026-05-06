@@ -5,12 +5,14 @@ import { useEffect } from "react";
 import { useCommPermission } from "./hook/useCommPermission";
 import { BackHandler, NativeModules } from "react-native";
 
+const DEFAULT_NATIVE_DISPLAY_NAME = "Local User";
+
 // Prevent the splash screen from hiding automatically
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
     const router = useRouter();
-    const { MainModule } = NativeModules;
+    const { MainModule, MeshengerApplicationModule } = NativeModules;
 
     const { granted } = useCommPermission(); // ✅ đặt ở đây
 
@@ -26,8 +28,24 @@ export default function App() {
             }
 
             MainModule.ensureServiceStarted();
-            
+
+            // Onboarding used to save the name only in AsyncStorage; mesh/chat use SQLite via native.
             const value = await AsyncStorage.getItem("firstLaunch");
+            if (
+                value &&
+                value !== "false" &&
+                MeshengerApplicationModule?.getMyProfile &&
+                MeshengerApplicationModule?.updateMyProfile
+            ) {
+                try {
+                    const profile = await MeshengerApplicationModule.getMyProfile();
+                    if (profile?.displayName === DEFAULT_NATIVE_DISPLAY_NAME) {
+                        await MeshengerApplicationModule.updateMyProfile(value, null);
+                    }
+                } catch {
+                    /* ignore sync failure; user can set name on Device Scan */
+                }
+            }
 
             if (value === null) {
                 await AsyncStorage.setItem("firstLaunch", "false"); // 🔥 fix bug

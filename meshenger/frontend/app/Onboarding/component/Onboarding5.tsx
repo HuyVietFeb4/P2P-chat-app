@@ -61,18 +61,19 @@ export default function Onboarding5() {
             return;
         }
 
-        if (error) {
-            setTimeout(() => setError(null), 3000);
-            return;
-        } else {
-            try {
-                await MeshengerApplicationModule.updateMyProfile(deviceName.trim(), selectedAvtId);
-            } catch (e) {
-                console.error("Failed to update profile", e);
+        const trimmed = deviceName.trim();
+        try {
+            if (MeshengerApplicationModule?.updateMyProfile) {
+                await MeshengerApplicationModule.updateMyProfile(trimmed, selectedAvtId);
             }
-            await AsyncStorage.setItem("firstLaunch", deviceName.trim());
-            router.replace("/ChatBox");
+        } catch (e: any) {
+            const msg = e?.message ?? e?.userInfo?.NSLocalizedDescription ?? String(e);
+            setError(msg);
+            setTimeout(() => setError(null), 5000);
+            return;
         }
+        await AsyncStorage.setItem("firstLaunch", trimmed);
+        router.replace("/ChatBox");
     };
 
     return (
@@ -163,6 +164,38 @@ export default function Onboarding5() {
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
+            <Modal visible={isModalVisible} animationType="fade" transparent onRequestClose={() => setModalVisible(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>{t('select-image')}</Text>
+                        <FlatList
+                            data={avatars}
+                            numColumns={3}
+                            keyExtractor={(item) => item.id}
+                            scrollEnabled={false}
+                            columnWrapperStyle={{ gap: 12 }}
+                            contentContainerStyle={{ gap: 12 }}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setSelectedAvtId(item.id);
+                                        setModalVisible(false);
+                                    }}
+                                    style={[
+                                        styles.avatarOption,
+                                        selectedAvtId === item.id && styles.avatarOptionSelected,
+                                    ]}
+                                >
+                                    <Image source={item.source} style={styles.avatarImage} />
+                                </TouchableOpacity>
+                            )}
+                        />
+                        <TouchableOpacity style={styles.closeModalButton} onPress={() => setModalVisible(false)}>
+                            <Text style={styles.closeModalButtonText}>OK</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
             <Message visible={!!error} message={error} title={t('username-error')} />
         </View>
     );

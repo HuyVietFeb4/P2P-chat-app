@@ -190,6 +190,20 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         }
     }
 
+    /** Updates stored user name and the direct chat title (if present). */
+    fun updateDirectPeerDisplayName(peerId: String, newUserName: String) {
+        val trimmed = newUserName.trim()
+        if (trimmed.isEmpty()) return
+        val existing = getUserProfile(peerId) ?: return
+        upsertUserProfile(existing.copy(userName = trimmed))
+        val chatId = directChatId(peerId)
+        if (rowExists("chats", "chatId", chatId)) {
+            val db = writableDatabase
+            val values = ContentValues().apply { put("name", trimmed) }
+            db.update("chats", values, "chatId = ?", arrayOf(chatId))
+        }
+    }
+
     fun directChatId(peerId: String) = "direct-$peerId"
 
     fun directSessionId(peerId: String) = "session-$peerId"
@@ -292,6 +306,78 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             }
         }
         return messages
+    }
+
+    fun countMessagesForDirectPeer(peerId: String): Int {
+        val chatId = directChatId(peerId)
+        readableDatabase.rawQuery(
+            """
+            SELECT COUNT(*) FROM messages m
+            JOIN sessions s ON m.sessionId = s.sessionId
+            WHERE s.chatId = ?
+            """.trimIndent(),
+            arrayOf(chatId),
+        ).use { c ->
+            if (!c.moveToFirst()) return 0
+            return c.getInt(0)
+        }
+    }
+
+    /** Removes user row and direct chat graph for [peerId]. Intended when that direct chat has no messages. */
+    fun deleteDirectPeerGraph(peerId: String) {
+        val chatId = directChatId(peerId)
+        val sessionId = directSessionId(peerId)
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            db.execSQL(
+                "DELETE FROM message_delivery WHERE messageId IN (SELECT messageId FROM messages WHERE sessionId = ?)",
+                arrayOf(sessionId),
+            )
+            db.delete("messages", "sessionId = ?", arrayOf(sessionId))
+            db.delete("sessions", "sessionId = ?", arrayOf(sessionId))
+            db.delete("user_participation", "chatId = ?", arrayOf(chatId))
+            db.delete("chats", "chatId = ?", arrayOf(chatId))
+            db.delete("peer_remote_keys", "peerUserId = ?", arrayOf(peerId))
+            db.delete("users", "userId = ?", arrayOf(peerId))
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    /** Mesh rows still using `mp:…` as display name, with no traffic (e.g. old MP epoch). */
+    fun prunePlaceholderMeshPeersWithNoMessages() {
+        val toRemove = getAllUserProfiles()
+            .filter { u ->
+                u.id.startsWith("mp:") &&
+                    u.userName == u.id &&
+                    countMessagesForDirectPeer(u.id) == 0
+            }
+            .map { it.id }
+        for (id in toRemove) {
+            deleteDirectPeerGraph(id)
+        }
+    }
+
+    /**
+     * Removes other empty `mp:` contacts sharing [displayName], keeping [keepPeerId].
+     * Call only for the factory-default display label so distinct real peers are not removed.
+     */
+    fun pruneEmptyMeshPeersWithSameDisplayName(keepPeerId: String, displayName: String) {
+        val trimmed = displayName.trim()
+        if (trimmed.isEmpty()) return
+        val toRemove = getAllUserProfiles()
+            .filter { u ->
+                u.id.startsWith("mp:") &&
+                    u.id != keepPeerId &&
+                    u.userName == trimmed &&
+                    countMessagesForDirectPeer(u.id) == 0
+            }
+            .map { it.id }
+        for (id in toRemove) {
+            deleteDirectPeerGraph(id)
+        }
     }
 
     data class PeerRemoteKeyRow(

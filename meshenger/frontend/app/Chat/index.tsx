@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
-import React from "react";
-import { KeyboardAvoidingView, StyleSheet, View } from "react-native";
+import React, { useEffect } from "react";
+import { KeyboardAvoidingView, NativeModules, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useBehavior } from '../hook/useBehavior';
@@ -11,12 +11,30 @@ import { useBluetooth } from "../hook/useBluetooth";
 import BluetoothPopup from "../common components/BluetoothPopUp";
 
 
+const { MeshengerApplicationModule } = NativeModules;
+
 export default function ChatRoom() {
     const { id, name, avatarUrl } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const behavior = useBehavior();
     const { colors } = useTheme();
     const { showPopup, openBluetoothSettings, dismissPopup } = useBluetooth();
+
+    const peerId = (id as string) ?? '';
+    const rawName = typeof name === 'string' ? name : '';
+    const peerName = rawName.trim().length > 0 ? rawName.trim() : peerId;
+    const isDirect = peerId.startsWith('mp:');
+
+    useEffect(() => {
+        if (!isDirect) return;
+        // Idempotent on the native side: if a session is already open (e.g. created by the
+        // responder fallback), this resolves without recreating it.
+        MeshengerApplicationModule.openTwoPartySession(peerId, peerName, true).catch(
+            (error: any) => {
+                console.warn("openTwoPartySession failed:", error?.message ?? error);
+            },
+        );
+    }, [isDirect, peerId, peerName]);
 
     return (
         <SafeAreaView style={{flex: 1, backgroundColor: colors.background}}>
@@ -25,23 +43,20 @@ export default function ChatRoom() {
                 keyboardVerticalOffset={insets.bottom}
                 style={[styles.container, { backgroundColor: colors.chatBackground }]}
             >
-                {/* 1. Reusable Header - Using the passed name and avatar */}
-                <Header title="abc" avatarUrl="abc" status={true} />
-                
-                {/* 2. Chat Body: flex: 1 tells it to fill all space between Header and Input */}
+                <Header title={peerName} avatarUrl={(avatarUrl as string) ?? ''} status={true} />
+
                 <View style={styles.bodyContainer}>
-                    <Body peerId={id as string} />
+                    <Body peerId={peerId} />
                 </View>
-                
-                {/* 3. Text Input Area: Naturally sits at the bottom */}
-                <Input peerId={id as string} />
-                
-                 {showPopup && (
-                                <BluetoothPopup
-                                    visible={true}
-                                    onDismiss={dismissPopup}
-                                />
-                            )}
+
+                <Input peerId={peerId} />
+
+                {showPopup && (
+                    <BluetoothPopup
+                        visible={true}
+                        onDismiss={dismissPopup}
+                    />
+                )}
             </KeyboardAvoidingView>
         </SafeAreaView>
     );

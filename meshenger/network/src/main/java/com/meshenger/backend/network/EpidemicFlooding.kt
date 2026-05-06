@@ -43,6 +43,13 @@ object EpidemicFlooding : TransportPacketListener {
     }
     fun onBootstrapSend(payload: ByteArray, timeStamp: Long) {
         epidemicScope.launch {
+            val neighbors = MeshConnectionRegistry.getOutboundMap()
+            if (neighbors.isEmpty()) {
+                Log.w(
+                    "EpidemicFlooding",
+                    "onBootstrapSend: outbound mesh links = 0; bootstrap is not sent on the wire",
+                )
+            }
             val type = MessageType.BOOTSTRAP.value
             val senderID = MPAddress.getMyMPAddressULong()
             val packetLst = PacketFactory.createPackets(type, senderID = senderID,
@@ -53,7 +60,7 @@ object EpidemicFlooding : TransportPacketListener {
                 UserPacketCache.addToCache(packet.signature, packet)
 
                 // Parallel flood to all neighbors
-                MeshConnectionRegistry.getOutboundMap().values.forEach {
+                neighbors.values.forEach {
                     launch { it.sendPacketToServerSuspending(packetEncoded) }
                 }
             }
@@ -79,7 +86,10 @@ object EpidemicFlooding : TransportPacketListener {
     }
 
     override fun onReceivePacket(packet: ByteArray, sourceMac: String) {
-        val decodedPacket = Packet.decode(packet) ?: return
+        val decodedPacket = Packet.decode(packet) ?: run {
+            Log.w("EpidemicFlooding", "DROP: decode failed (size=${packet.size}) from $sourceMac")
+            return
+        }
         val sig = decodedPacket.signature
 
         // 1. ATOMIC CHECK & ADD (The "Guard")
@@ -92,10 +102,22 @@ object EpidemicFlooding : TransportPacketListener {
             else -> UserPacketCache.addIfNew(sig, decodedPacket)
         }
 
-        if (!isNew) return // Already seen and being processed or finished. Stop the storm.
+        if (!isNew) {
+            Log.v(
+                "EpidemicFlooding",
+                "DROP: duplicate type=${decodedPacket.header.type} sender=${decodedPacket.header.senderID}",
+            )
+            return
+        }
 
         // 2. TTL Check
-        if (decodedPacket.header.TTL <= 0u) return
+        if (decodedPacket.header.TTL <= 0u) {
+            Log.w(
+                "EpidemicFlooding",
+                "DROP: TTL=0 type=${decodedPacket.header.type} sender=${decodedPacket.header.senderID}",
+            )
+            return
+        }
 
         // 3. Signature Verification
         val isValid = when(decodedPacket.header.type) {
@@ -115,6 +137,10 @@ object EpidemicFlooding : TransportPacketListener {
         }
 
         if (!isValid) {
+            Log.w(
+                "EpidemicFlooding",
+                "DROP: signature invalid type=${decodedPacket.header.type} sender=${decodedPacket.header.senderID}",
+            )
             // If it was fake, remove it from cache so we can receive a valid one later
             UserPacketCache.removeFromCache(sig)
             ProtocolPacketCache.removeFromCache(sig)
@@ -249,10 +275,20 @@ object EpidemicFlooding : TransportPacketListener {
                 onReceivePacket(completePayload)
             }
             MessageType.NOISE_HANDSHAKE.value -> {
-                targetListener?.onReceiveMessageHandShake(
-                    packet.header.senderID,
-                    completePayload,
-                )
+                if (targetListener != null) {
+                    targetListener.onReceiveMessageHandShake(
+                        packet.header.senderID,
+                        completePayload,
+                    )
+                } else {
+                    // No active session for this sender yet (responder side, first handshake msg).
+                    // Hand off to the application-layer fallback so it can spin up a TwoPartySession
+                    // and feed this packet back in.
+                    ListenerRegistry.getTwoPartyHandshakeFallback()?.onIncomingHandshake(
+                        packet.header.senderID,
+                        completePayload,
+                    )
+                }
             }
             MessageType.USER_MESSAGE_ONE_TO_ONE.value -> {
                 val signedData = PacketSigner.reassembleSignedData(packet)
@@ -266,11 +302,19 @@ object EpidemicFlooding : TransportPacketListener {
                 )
             }
             MessageType.BOOTSTRAP.value -> {
-                ListenerRegistry.getGlobalListener()?.onBootStrapReceived(
-                    packet.header.senderID,
-                    completePayload,
-                    packet.header.timeStamp
-                )
+                val globalListener = ListenerRegistry.getGlobalListener()
+                if (globalListener == null) {
+                    Log.e(
+                        "EpidemicFlooding",
+                        "BOOTSTRAP verified but no GlobalMessageListener (GlobalChatSession not initialized?)",
+                    )
+                } else {
+                    globalListener.onBootStrapReceived(
+                        packet.header.senderID,
+                        completePayload,
+                        packet.header.timeStamp
+                    )
+                }
             }
             MessageType.USER_MESSAGE_GROUP.value -> { /* TODO */ }
             else -> Log.e("Basic Flooding", "Unknown packet type: ${packet.header.type}")

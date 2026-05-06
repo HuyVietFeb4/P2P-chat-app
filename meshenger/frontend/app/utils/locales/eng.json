@@ -68,5 +68,7 @@
     "grant-permission": "Grant Permission",
     "select-a-language": "Select language",
     "english": "English",
-    "vietnamese": "Vietnamese"
+    "vietnamese": "Vietnamese",
+    "no-direct-peers-yet": "No 1-on-1 chats yet",
+    "open-device-scan-hint": "Open Devices Scan to find a peer, or wait for an incoming handshake."
 }

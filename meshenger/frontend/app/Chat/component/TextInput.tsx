@@ -16,18 +16,17 @@ export default function Input({peerId} : Props) {
     const { t } = useTranslation();
 
     const handleSend = async () => {
-        if (message.trim()) {
-            try {
-                if (peerId === 'global-broadcast') {
-                    await MeshengerApplicationModule.globalChatSendMessageStr(message.trim());
-                } else {
-                    // Placeholder for peer-to-peer messaging
-                    console.log("Sending to peer:", peerId, message);
-                }
-                setMessage('');
-            } catch (error) {
-                console.error("Failed to send message:", error);
+        const text = message.trim();
+        if (!text) return;
+        try {
+            if (peerId === 'global-broadcast') {
+                await MeshengerApplicationModule.globalChatSendMessageStr(text);
+            } else {
+                await MeshengerApplicationModule.sendDirectMessage(peerId, text);
             }
+            setMessage('');
+        } catch (error) {
+            console.error("Failed to send message:", error);
         }
     };
 

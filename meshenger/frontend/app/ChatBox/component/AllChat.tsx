@@ -1,9 +1,10 @@
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Image,
+  NativeEventEmitter,
   NativeModules,
   StyleSheet,
   Text,
@@ -15,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { MeshengerApplicationModule } = NativeModules;
+const meshEvents = new NativeEventEmitter(MeshengerApplicationModule);
 const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
 
 export default function ChatList() {
@@ -25,11 +27,7 @@ export default function ChatList() {
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
 
-  useEffect(() => {
-    loadPeers();
-  }, []);
-
-  const loadPeers = async () => {
+  const loadPeers = useCallback(async () => {
     if (!MeshengerApplicationModule) {
       console.error("MeshengerApplicationModule is not available");
       setLoading(false);
@@ -53,7 +51,20 @@ export default function ChatList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPeers();
+    }, [loadPeers]),
+  );
+
+  useEffect(() => {
+    const sub = meshEvents.addListener('onPeerDisplayNameUpdated', () => {
+      loadPeers();
+    });
+    return () => sub.remove();
+  }, [loadPeers]);
 
   const handleSelectChat = (id: string, name: string, avatarUrl: string | null) => {
     setSelectedChat(id);

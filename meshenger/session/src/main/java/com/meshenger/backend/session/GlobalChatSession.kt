@@ -17,6 +17,13 @@ import kotlinx.serialization.json.put
 
 
 object GlobalChatSession : Session(), GlobalMessageListener {
+    /**
+     * Optional hook for the app layer to persist display names when a mesh peer
+     * announces via bootstrap (e.g. upgrade SQLite rows that still use `mp:` placeholders).
+     */
+    @Volatile
+    var onMeshPeerAnnounced: ((mpAddress: ULong, displayName: String) -> Unit)? = null
+
     private val TAG_LENGTH = 128
     private val ALGORITHM = "AES/GCM/NoPadding"
     init {
@@ -87,18 +94,47 @@ object GlobalChatSession : Session(), GlobalMessageListener {
     fun sendBootstrap(userName: String) {
         val GlobalChatKey = getFixedKey(NativeCredentials.getGlobalChatKey())
         val payLoad = "$userName|${MPAddress.getMyMPAddressString()}"
-        val timeStamp =  System.currentTimeMillis()
+        // CRITICAL: encryption IV is derived from this timestamp; the receiver re-derives the IV
+        // from the packet header timestamp, so both must be the SAME value. (Previous code
+        // generated two separate currentTimeMillis() calls, which silently broke AES-GCM auth.)
+        val timeStamp = System.currentTimeMillis()
         val encryptMsg = globalChatEncrypt(GlobalChatKey, payLoad.encodeToByteArray(), timeStamp)
-        EpidemicFlooding.onBootstrapSend(encryptMsg, System.currentTimeMillis())
+        EpidemicFlooding.onBootstrapSend(encryptMsg, timeStamp)
     }
 
     override fun onBootStrapReceived(senderID: ULong, payload: ByteArray, timeStamp: ULong) {
         val GlobalChatKey = getFixedKey(NativeCredentials.getGlobalChatKey())
-        val decryptMsg = globalChatDecrypt(GlobalChatKey, payload, timeStamp.toLong())
+        val decryptMsg = try {
+            globalChatDecrypt(GlobalChatKey, payload, timeStamp.toLong())
+        } catch (e: Exception) {
+            Log.w(
+                "GlobalChatSession",
+                "Bootstrap decrypt failed (sender=$senderID ts=$timeStamp): ${e.message}",
+            )
+            return
+        }
         val decoded = String(decryptMsg, Charsets.UTF_8)
-        val parts = decoded.split("|")
+        val parts = decoded.split("|", limit = 2)
+        if (parts.size < 2) {
+            Log.w("GlobalChatSession", "Bootstrap payload missing MP address: $decoded")
+            return
+        }
         val userName = parts[0]
-        val peerMpAddres = parts[1].toULong()
+        val mpRaw = parts[1].trim()
+        // Bootstrap encodes MP address with Base64 (see sendBootstrap), so decode then read 8 BE bytes.
+        val peerMpAddres = try {
+            mpRaw.toULongOrNull()
+                ?: MPAddress.MPAddressByteArrayToULong(MPAddress.MPAddressStringToByteArray(mpRaw))
+        } catch (e: Exception) {
+            Log.w("GlobalChatSession", "Bootstrap MP address unparseable: '$mpRaw' (${e.message})")
+            return
+        }
         PeerInMeshRegistry.addOrUpdatePeer(Peer(userName, peerMpAddres))
+        Log.d("GlobalChatSession", "Bootstrap received: $userName ($peerMpAddres)")
+        try {
+            onMeshPeerAnnounced?.invoke(peerMpAddres, userName.trim())
+        } catch (e: Exception) {
+            Log.w("GlobalChatSession", "onMeshPeerAnnounced failed: ${e.message}")
+        }
     }
 }

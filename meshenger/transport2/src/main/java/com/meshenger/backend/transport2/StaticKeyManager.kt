@@ -134,13 +134,11 @@ object StaticKeyManager {
     }
 
     fun generateSoftwareMasterKey(): SecretKey {
-        // Ensure Bouncy Castle is registered
-        if (Security.getProvider("BC") == null) {
-            Security.addProvider(BouncyCastleProvider())
-        }
-
-        val keyGenerator = KeyGenerator.getInstance("AES", "BC")
-        keyGenerator.init(256) // 256-bit AES
+        // Android API 28+ stripped AES from the bundled BouncyCastle provider, so requesting
+        // KeyGenerator.getInstance("AES", "BC") throws NoSuchAlgorithmException. Use the default
+        // (Android) AES provider instead — we only need a plain 256-bit AES key here.
+        val keyGenerator = KeyGenerator.getInstance("AES")
+        keyGenerator.init(256)
         return keyGenerator.generateKey()
     }
 

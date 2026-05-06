@@ -2,9 +2,20 @@ package com.meshenger.backend.network
 
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * Fired when a NOISE_HANDSHAKE arrives for a peer that has no registered [TwoPartyMessageListener].
+ * Implementations should create the responder-side `TwoPartySession` (which auto-registers itself)
+ * and forward the inbound handshake bytes via `onReceiveMessageHandShake`.
+ */
+fun interface TwoPartyHandshakeFallback {
+    fun onIncomingHandshake(senderId: ULong, message: ByteArray)
+}
+
 object ListenerRegistry {
     private val twoPartyListener = ConcurrentHashMap<ULong, TwoPartyMessageListener>()
     private var globalListener: GlobalMessageListener? = null
+    @Volatile
+    private var handshakeFallback: TwoPartyHandshakeFallback? = null
 
     fun setGlobalListener(listener: GlobalMessageListener) {
         this.globalListener = listener
@@ -23,4 +34,10 @@ object ListenerRegistry {
     fun getTwoPartyListener(peerId: ULong): TwoPartyMessageListener? {
         return twoPartyListener[peerId]
     }
+
+    fun setTwoPartyHandshakeFallback(fallback: TwoPartyHandshakeFallback?) {
+        this.handshakeFallback = fallback
+    }
+
+    fun getTwoPartyHandshakeFallback(): TwoPartyHandshakeFallback? = handshakeFallback
 }

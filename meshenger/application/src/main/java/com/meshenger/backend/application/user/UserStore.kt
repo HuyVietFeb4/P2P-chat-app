@@ -10,10 +10,13 @@ object UserStore {
     private const val LOCAL_ID = "local-device"
     private const val PLACEHOLDER_HASH = "-"
 
+    /** Default profile name on first install; must change for mesh so peers stay distinguishable. */
+    const val DEFAULT_PROFILE_USER_NAME = "Local User"
+
     private var profile: UserProfile = UserProfile(
         id = LOCAL_ID,
         publicKeyHash = PLACEHOLDER_HASH,
-        userName = "Local User"
+        userName = DEFAULT_PROFILE_USER_NAME
     )
 
     private val favoritePeers: MutableSet<String> = mutableSetOf()
@@ -56,4 +59,8 @@ object UserStore {
         if (peerId.isBlank()) return
         if (isBlocked) blockedPeers.add(peerId) else blockedPeers.remove(peerId)
     }
+
+    /** True for the factory-default name — too ambiguous for mesh bootstrap / chat lists. */
+    fun isGenericMeshDisplayName(name: String): Boolean =
+        name.trim().equals(DEFAULT_PROFILE_USER_NAME, ignoreCase = true)
 }

@@ -1,6 +1,7 @@
 package com.meshenger
 import android.content.Intent
 import com.meshenger.backend.network.EpidemicFlooding
+import com.meshenger.backend.session.GlobalChatSession
 import com.meshenger.backend.transport2.MeshMaintainer
 import com.meshenger.backend.transport2.server.BleAdvertiser
 
@@ -60,6 +61,9 @@ class MainApplication : Application(), ReactApplication {
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
 
     MeshMaintainer.setGlobalPacketListener(EpidemicFlooding)
+    // Ensure GlobalChatSession registers ListenerRegistry before any mesh packet is delivered
+    // (otherwise BOOTSTRAP can be verified and dropped at the session layer with no UI update).
+    GlobalChatSession.hashCode()
   }
 
   override fun onConfigurationChanged(newConfig: Configuration) {

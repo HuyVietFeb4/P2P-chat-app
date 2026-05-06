@@ -22,19 +22,20 @@ object PacketSigner {
     fun verifyDirectProtocolKey(packet: Packet): Boolean = verifyHmac(packet, directKeySpec, true)
 
     private fun verifyHmac(packet: Packet, key: SecretKeySpec, isDirect: Boolean): Boolean {
-        val expected = if (isDirect) {
-            getSignatureDirectProtocol(
-                packet.header.version, packet.header.flags, packet.header.type, packet.payload,
-                packet.header.fragmentID, packet.header.totalFragments, packet.header.timeStamp,
-                packet.header.senderID, packet.header.receiverID
-            )
-        } else {
-            getSignatureGlobalChat(
-                packet.header.version, packet.header.flags, packet.header.type, packet.payload,
-                packet.header.fragmentID, packet.header.totalFragments, packet.header.timeStamp,
-                packet.header.senderID
-            )
+        // CRITICAL: previous version called getSignatureGlobalChat() / getSignatureDirectProtocol()
+        // here, both of which hard-code their own key spec internally. That meant the [key] param
+        // was silently ignored, so e.g. BOOTSTRAP packets (signed with appKeySpec) were always
+        // verified against globalKeySpec → 100% drop. Build the HMAC inline with the passed-in key.
+        val buffer = buildBaseBuffer(
+            packet.header.version, packet.header.flags, packet.header.type, packet.payload,
+            packet.header.fragmentID, packet.header.totalFragments, packet.header.timeStamp,
+            packet.header.senderID, isDirect,
+        )
+        if (isDirect) {
+            buffer.putLong(packet.header.receiverID.toLong())
+            buffer.put(packet.payload)
         }
+        val expected = calculateHmac(buffer.array(), key)
         return MessageDigest.isEqual(expected, packet.signature)
     }
 
