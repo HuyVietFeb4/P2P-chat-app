@@ -1,21 +1,74 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Image, NativeEventEmitter, NativeModules, StyleSheet, Text, View } from 'react-native';
+import {
+    FlatList,
+    Image,
+    DeviceEventEmitter,
+    InteractionManager,
+    NativeModules,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
 const { MeshengerApplicationModule } = NativeModules;
-const meshEvents = new NativeEventEmitter(MeshengerApplicationModule);
 
 type ChatMessage = {
     id: string;
     sessionId: string;
     senderId: string;
+    senderName: string;
+    senderAvatarId: string;
     status: string;
     timestamp: number;
     fromMe: boolean;
     text: string;
 };
+
+const AVATAR_SOURCES: Record<string, any> = {
+    avt0: require('../../../assets/avt_set/avt0.png'),
+    avt1: require('../../../assets/avt_set/avt1.png'),
+    avt2: require('../../../assets/avt_set/avt2.png'),
+    avt3: require('../../../assets/avt_set/avt3.png'),
+    avt4: require('../../../assets/avt_set/avt4.png'),
+    avt5: require('../../../assets/avt_set/avt5.png'),
+    avt6: require('../../../assets/avt_set/avt6.png'),
+    avt7: require('../../../assets/avt_set/avt7.png'),
+    avt8: require('../../../assets/avt_set/avt8.png'),
+    avt9: require('../../../assets/avt_set/avt9.png'),
+    avt10: require('../../../assets/avt_set/avt10.png'),
+    avt11: require('../../../assets/avt_set/avt11.png'),
+    avt12: require('../../../assets/avt_set/avt12.png'),
+};
+const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
+
+/** Normalize native WritableMap → predictable shape (avoids bad keys / FlatList crashes). */
+function normalizeConversationRow(raw: unknown): ChatMessage | null {
+    if (raw == null || typeof raw !== 'object') return null;
+    const row = raw as Record<string, unknown>;
+    const id = row.id != null ? String(row.id) : '';
+    if (!id) return null;
+    const n = Number(row.timestamp);
+    const timestamp =
+        typeof row.timestamp === 'number' && !Number.isNaN(row.timestamp)
+            ? row.timestamp
+            : !Number.isNaN(n)
+              ? n
+              : Date.now();
+    return {
+        id,
+        sessionId: String(row.sessionId ?? ''),
+        senderId: String(row.senderId ?? ''),
+        senderName: String(row.senderName ?? row.senderId ?? ''),
+        senderAvatarId: String(row.senderAvatarId ?? ''),
+        status: String(row.status ?? 'SENT'),
+        timestamp,
+        fromMe: Boolean(row.fromMe),
+        text: row.text != null ? String(row.text) : '',
+    };
+}
 
 export default function Body({ peerId }: { peerId: string }) {
     const { t } = useTranslation();
@@ -27,12 +80,18 @@ export default function Body({ peerId }: { peerId: string }) {
 
     const fetchHistory = useCallback(async () => {
         try {
-            const history: ChatMessage[] = isGlobal
+            const rawList = isGlobal
                 ? await MeshengerApplicationModule.getGlobalConversation()
                 : await MeshengerApplicationModule.getConversation(peerId);
-            setMessages(history);
+
+            const list = Array.isArray(rawList)
+                ? rawList
+                      .map((row: unknown) => normalizeConversationRow(row))
+                      .filter((row): row is ChatMessage => row !== null)
+                : [];
+            setMessages(list);
         } catch (error) {
-            console.error("Failed to fetch messages:", error);
+            console.error('Failed to fetch messages:', error);
         }
     }, [isGlobal, peerId]);
 
@@ -41,30 +100,44 @@ export default function Body({ peerId }: { peerId: string }) {
     }, [fetchHistory]);
 
     useEffect(() => {
-        const sub = meshEvents.addListener('onNewMessage', (event: any) => {
-            // Direct chats use peerId; global chat uses chatId='global-chat' with sessionType='GlobalChat'.
+        let cancelled = false;
+
+        const sub = DeviceEventEmitter.addListener('onNewMessage', (event: unknown) => {
+            const evt = event as Record<string, unknown>;
             const matches = isGlobal
-                ? event?.sessionType === 'GlobalChat' || event?.chatId === 'global-chat'
-                : event?.peerId === peerId;
+                ? evt?.sessionType === 'GlobalChat' || evt?.chatId === 'global-chat'
+                : evt?.peerId === peerId;
             if (!matches) return;
 
-            const incoming: ChatMessage = {
-                id: String(event.id),
-                sessionId: String(event.sessionId ?? ''),
-                senderId: String(event.senderId ?? ''),
-                status: String(event.status ?? 'SENT'),
-                timestamp: Number(event.timestamp ?? Date.now()),
-                fromMe: Boolean(event.fromMe),
-                text: String(event.text ?? ''),
-            };
+            if (__DEV__) {
+                console.log('[MeshengerChat][JS] onNewMessage', {
+                    screenPeerId: peerId,
+                    eventId: evt?.id,
+                    chatId: evt?.chatId,
+                });
+            }
+
+            const normalized = normalizeConversationRow(evt);
+            if (!normalized) return;
 
             setMessages((prev) => {
-                if (prev.some((m) => m.id === incoming.id)) return prev;
-                return [...prev, incoming];
+                if (prev.some((m) => m.id === normalized.id)) return prev;
+                return [...prev, normalized];
+            });
+
+            // Defer SQLite resync + avoid racing layout (can crash Native FlatList on some RN builds).
+            InteractionManager.runAfterInteractions(() => {
+                setTimeout(() => {
+                    if (!cancelled) void fetchHistory();
+                }, 150);
             });
         });
-        return () => sub.remove();
-    }, [isGlobal, peerId]);
+
+        return () => {
+            cancelled = true;
+            sub.remove();
+        };
+    }, [isGlobal, peerId, fetchHistory]);
 
     useEffect(() => {
         // Light polling as a safety net for events fired before the screen mounted.
@@ -74,11 +147,20 @@ export default function Body({ peerId }: { peerId: string }) {
 
     useEffect(() => {
         if (messages.length === 0) return;
-        const t = setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
-        return () => clearTimeout(t);
+        const task = InteractionManager.runAfterInteractions(() => {
+            requestAnimationFrame(() => {
+                try {
+                    listRef.current?.scrollToEnd({ animated: true });
+                } catch {
+                    /* noop: some RN versions crash if layout not ready */
+                }
+            });
+        });
+        return () => task.cancel();
     }, [messages.length]);
 
     const formatTime = (timestamp: number) => {
+        if (!Number.isFinite(timestamp)) return '--';
         const date = new Date(timestamp);
         let hours = date.getHours();
         const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -90,15 +172,22 @@ export default function Body({ peerId }: { peerId: string }) {
 
     const renderMessage = ({ item }: { item: ChatMessage }) => {
         const isMe = item.fromMe;
+        const showSenderName = isGlobal && !isMe;
+        const avatarSource = AVATAR_SOURCES[item.senderAvatarId] ?? DEFAULT_AVATAR;
         return (
             <View style={[styles.messageRow, isMe ? styles.myMessageRow : styles.peerMessageRow]}>
                 {!isMe && (
                     <Image
-                        source={{ uri: 'https://i.pravatar.cc/150?u=alice' }}
+                        source={avatarSource}
                         style={styles.messageAvatar}
                     />
                 )}
                 <View style={[styles.bubble, isMe ? { backgroundColor: colors.myBubble, borderBottomRightRadius: 5 } : { backgroundColor: colors.peerBubble, borderBottomLeftRadius: 5, borderWidth: 1, borderColor: colors.border }]}>
+                    {showSenderName && (
+                        <Text style={[styles.senderNameText, { color: colors.subText }]}>
+                            {item.senderName || item.senderId}
+                        </Text>
+                    )}
                     <Text style={[styles.messageText, { color: isMe ? colors.myMessageText : colors.peerMessageText }]}>
                         {item.text}
                     </Text>
@@ -122,6 +211,7 @@ export default function Body({ peerId }: { peerId: string }) {
         <FlatList
             ref={listRef}
             data={messages}
+            extraData={messages}
             renderItem={renderMessage}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
@@ -162,6 +252,11 @@ const styles = StyleSheet.create({
     messageText: {
         fontSize: 15,
         lineHeight: 20,
+    },
+    senderNameText: {
+        fontSize: 12,
+        fontWeight: '600',
+        marginBottom: 4,
     },
     footer: {
         flexDirection: 'row',

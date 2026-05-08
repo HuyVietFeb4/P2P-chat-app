@@ -12,7 +12,7 @@ export default function DeviceScan() {
     const { showPopup, openBluetoothSettings, dismissPopup } = useBluetooth();
     const { colors } = useTheme();
     return (
-        <View style={[styles.container, {backgroundColor: colors.background}]}>
+        <View style={[styles.container, {backgroundColor: colors.scannedBg}]}>
             <Header />
             <Scanning />
             <DeviceList />

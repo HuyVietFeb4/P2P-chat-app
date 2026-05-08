@@ -4,7 +4,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  NativeEventEmitter,
+  DeviceEventEmitter,
   NativeModules,
   StyleSheet,
   Text,
@@ -15,7 +15,6 @@ import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
 const { MeshengerApplicationModule } = NativeModules;
-const meshEvents = new NativeEventEmitter(MeshengerApplicationModule);
 const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
 
 type DirectPeer = {
@@ -52,13 +51,13 @@ export default function IndividualChat() {
   );
 
   React.useEffect(() => {
-    const handshakeSub = meshEvents.addListener('onIncomingHandshake', () => {
+    const handshakeSub = DeviceEventEmitter.addListener('onIncomingHandshake', () => {
       loadPeers();
     });
-    const messageSub = meshEvents.addListener('onNewMessage', (event: any) => {
+    const messageSub = DeviceEventEmitter.addListener('onNewMessage', (event: any) => {
       if (event?.sessionType === 'TwoPartyChat') loadPeers();
     });
-    const nameSub = meshEvents.addListener('onPeerDisplayNameUpdated', () => {
+    const nameSub = DeviceEventEmitter.addListener('onPeerDisplayNameUpdated', () => {
       loadPeers();
     });
     return () => {

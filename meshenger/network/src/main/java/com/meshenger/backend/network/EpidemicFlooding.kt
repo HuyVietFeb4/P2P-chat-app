@@ -85,6 +85,28 @@ object EpidemicFlooding : TransportPacketListener {
         }
     }
 
+    /** Signed unicast (direct HMAC) for invite / accept / reject negotiation. */
+    fun onDirectChatNegotiationSend(type: MessageType, receiverId: ULong, payload: ByteArray) {
+        epidemicScope.launch {
+            val senderID = MPAddress.getMyMPAddressULong()
+            val ts = System.currentTimeMillis().toULong()
+            val packetLst = PacketFactory.createPackets(
+                type.value,
+                senderID = senderID,
+                receiverID = receiverId,
+                payload = payload,
+                inputTimeStamp = ts,
+            )
+            packetLst.forEach { packet ->
+                val packetEncoded = Packet.encode(packet) ?: return@forEach
+                UserPacketCache.addToCache(packet.signature, packet)
+                MeshConnectionRegistry.getOutboundMap().values.forEach {
+                    launch { it.sendPacketToServerSuspending(packetEncoded) }
+                }
+            }
+        }
+    }
+
     override fun onReceivePacket(packet: ByteArray, sourceMac: String) {
         val decodedPacket = Packet.decode(packet) ?: run {
             Log.w("EpidemicFlooding", "DROP: decode failed (size=${packet.size}) from $sourceMac")
@@ -129,7 +151,10 @@ object EpidemicFlooding : TransportPacketListener {
             MessageType.ANTI_ENTROPY_RESPOND.value,
             MessageType.NOISE_HANDSHAKE.value -> PacketSigner.verifyDirectProtocolKey(decodedPacket)
 
-            MessageType.USER_MESSAGE_ONE_TO_ONE.value -> true // Automatic push to session for upper layer verification
+            MessageType.USER_MESSAGE_ONE_TO_ONE.value,
+            MessageType.DIRECT_CHAT_INVITE.value,
+            MessageType.DIRECT_CHAT_INVITE_ACCEPT.value,
+            MessageType.DIRECT_CHAT_INVITE_REJECT.value -> PacketSigner.verifyDirectProtocolKey(decodedPacket)
             else -> {
                 Log.d("EpidemicFlooding", "Unsupported packet type: ${decodedPacket.header.type}")
                 false
@@ -159,6 +184,9 @@ object EpidemicFlooding : TransportPacketListener {
             }
             MessageType.USER_MESSAGE_ALL.value,
             MessageType.USER_MESSAGE_ONE_TO_ONE.value,
+            MessageType.DIRECT_CHAT_INVITE.value,
+            MessageType.DIRECT_CHAT_INVITE_ACCEPT.value,
+            MessageType.DIRECT_CHAT_INVITE_REJECT.value,
             MessageType.USER_MESSAGE_GROUP.value-> {
                 // signature = getSignatureOneToOne(...)
                 UserPacketCache.addToCache(decodedPacket.signature, decodedPacket)
@@ -299,6 +327,27 @@ object EpidemicFlooding : TransportPacketListener {
                     timeStamp = packet.header.timeStamp,
                     signature = packet.signature,
                     signedData = signedData
+                )
+            }
+            MessageType.DIRECT_CHAT_INVITE.value -> {
+                ListenerRegistry.getDirectChatNegotiationListener()?.onInviteReceived(
+                    packet.header.senderID,
+                    completePayload,
+                    packet.header.timeStamp,
+                )
+            }
+            MessageType.DIRECT_CHAT_INVITE_ACCEPT.value -> {
+                ListenerRegistry.getDirectChatNegotiationListener()?.onInviteAccepted(
+                    packet.header.senderID,
+                    completePayload,
+                    packet.header.timeStamp,
+                )
+            }
+            MessageType.DIRECT_CHAT_INVITE_REJECT.value -> {
+                ListenerRegistry.getDirectChatNegotiationListener()?.onInviteRejected(
+                    packet.header.senderID,
+                    completePayload,
+                    packet.header.timeStamp,
                 )
             }
             MessageType.BOOTSTRAP.value -> {

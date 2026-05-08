@@ -16,5 +16,7 @@ data class Message(
     val timestamp: Long = System.currentTimeMillis(),
     val nonce: String,
     val status: MessageStatus,
-    val encryptedPayload: String
+    val encryptedPayload: String,
+    /** Local plaintext for UI history (two-party ciphertext alone cannot be decrypted after a new Noise session). */
+    val bodyText: String? = null,
 )

@@ -24,12 +24,14 @@ object MessagingStore {
         peerId: String,
         encryptedPayload: String,
         nonce: String,
+        bodyText: String? = null,
     ): Message {
         val helper = db ?: throw IllegalStateException("MessagingStore not initialized")
         if (peerId.isBlank() || encryptedPayload.isBlank()) {
             throw IllegalArgumentException("peerId and encryptedPayload must be non-blank")
         }
-        helper.ensureDirectChatForPeer(peerId, peerUserName = peerId)
+        val preferredPeerName = helper.getUserProfile(peerId)?.userName ?: peerId
+        helper.ensureDirectChatForPeer(peerId, peerUserName = preferredPeerName)
         val sessionId = helper.directSessionId(peerId)
         val message = Message(
             id = UUID.randomUUID().toString(),
@@ -38,7 +40,8 @@ object MessagingStore {
             timestamp = System.currentTimeMillis(),
             nonce = nonce,
             status = MessageStatus.PENDING,
-            encryptedPayload = encryptedPayload
+            encryptedPayload = encryptedPayload,
+            bodyText = bodyText,
         )
         helper.insertMessage(message, receiverIds = listOf(peerId))
 
@@ -62,12 +65,14 @@ object MessagingStore {
         senderId: String,
         encryptedPayload: String,
         nonce: String,
+        bodyText: String? = null,
     ): Message {
         val helper = db ?: throw IllegalStateException("MessagingStore not initialized")
         if (peerId.isBlank() || senderId.isBlank() || encryptedPayload.isBlank()) {
             throw IllegalArgumentException("peerId, senderId and encryptedPayload must be non-blank")
         }
-        helper.ensureDirectChatForPeer(peerId, peerUserName = senderId)
+        val preferredPeerName = helper.getUserProfile(peerId)?.userName ?: senderId
+        helper.ensureDirectChatForPeer(peerId, peerUserName = preferredPeerName)
         val sessionId = helper.directSessionId(peerId)
         val message = Message(
             id = UUID.randomUUID().toString(),
@@ -76,7 +81,8 @@ object MessagingStore {
             timestamp = System.currentTimeMillis(),
             nonce = nonce,
             status = MessageStatus.SENT,
-            encryptedPayload = encryptedPayload
+            encryptedPayload = encryptedPayload,
+            bodyText = bodyText,
         )
         helper.insertMessage(message, receiverIds = listOf(LOCAL_SENDER_ID))
         return message

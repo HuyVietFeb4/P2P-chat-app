@@ -11,11 +11,20 @@ fun interface TwoPartyHandshakeFallback {
     fun onIncomingHandshake(senderId: ULong, message: ByteArray)
 }
 
+/** Mesh 1:1 invite / accept / reject delivered to application layer after verify + decrypt N/A — payload opaque. */
+interface DirectChatNegotiationListener {
+    fun onInviteReceived(senderId: ULong, payload: ByteArray, timeStamp: ULong)
+    fun onInviteAccepted(senderId: ULong, payload: ByteArray, timeStamp: ULong)
+    fun onInviteRejected(senderId: ULong, payload: ByteArray, timeStamp: ULong)
+}
+
 object ListenerRegistry {
     private val twoPartyListener = ConcurrentHashMap<ULong, TwoPartyMessageListener>()
     private var globalListener: GlobalMessageListener? = null
     @Volatile
     private var handshakeFallback: TwoPartyHandshakeFallback? = null
+    @Volatile
+    private var directChatNegotiationListener: DirectChatNegotiationListener? = null
 
     fun setGlobalListener(listener: GlobalMessageListener) {
         this.globalListener = listener
@@ -40,4 +49,11 @@ object ListenerRegistry {
     }
 
     fun getTwoPartyHandshakeFallback(): TwoPartyHandshakeFallback? = handshakeFallback
+
+    fun setDirectChatNegotiationListener(listener: DirectChatNegotiationListener?) {
+        directChatNegotiationListener = listener
+    }
+
+    fun getDirectChatNegotiationListener(): DirectChatNegotiationListener? =
+        directChatNegotiationListener
 }

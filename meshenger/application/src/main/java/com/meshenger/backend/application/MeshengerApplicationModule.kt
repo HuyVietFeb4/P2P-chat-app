@@ -10,7 +10,10 @@ import com.meshenger.backend.application.messaging.MessagingStore
 //import com.meshenger.backend.application.security.RemotePeerCryptoStore
 import com.meshenger.backend.application.user.UserProfile
 import com.meshenger.backend.application.user.UserStore
+import com.meshenger.backend.network.DirectChatNegotiationListener
+import com.meshenger.backend.network.EpidemicFlooding
 import com.meshenger.backend.network.ListenerRegistry
+import com.meshenger.backend.network.MessageType
 import com.meshenger.backend.network.TwoPartyHandshakeFallback
 import com.meshenger.backend.security_native.NativeCredentials
 import com.meshenger.backend.session.GlobalChatSession
@@ -30,8 +33,10 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
+import org.json.JSONObject
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -54,6 +59,19 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     /** peerId -> coroutine collecting TwoPartySession._messageBus */
     private val sessionBusJobs = ConcurrentHashMap<String, Job>()
 
+    /** Outgoing 1:1 invites we sent (mp:…); cleared on accept/reject from peer. */
+    private val outgoingDirectChatInvites = ConcurrentHashMap<String, Long>()
+
+    /** Invites awaiting user action on this device (peerId mp:…). */
+    private data class PendingIncomingInvite(
+        val peerId: String,
+        val displayName: String,
+        val avatarId: String?,
+        val timestamp: Long,
+    )
+
+    private val pendingIncomingInviteByPeer = ConcurrentHashMap<String, PendingIncomingInvite>()
+
     private companion object {
         const val LOCAL_ID = "local-device"
         const val GLOBAL_CHAT_ID = "global-chat"
@@ -64,6 +82,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         private val TWO_PARTY_PROLOGUE = "meshenger-twoparty-v1".encodeToByteArray()
         private const val MP_PREFIX = "mp:"
         private const val PRESENCE_INTERVAL_MS = 25_000L
+        /** Dùng filter Logcat: `MeshengerChat` — theo dõi gửi tin 1–1 và emit JS */
+        private const val CHAT_DIAG = "MeshengerChat"
     }
 
     init {
@@ -72,6 +92,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         ensureGlobalChatStorage()
         observeGlobalChatBus()
         registerHandshakeFallback()
+        registerDirectChatNegotiationListener()
         registerMeshPeerAnnouncedHook()
         startPresenceLoop()
 
@@ -87,9 +108,37 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     override fun getName(): String = "MeshengerApplicationModule"
 
     private fun sendEvent(eventName: String, params: WritableMap?) {
-        reactApplicationContext
-            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-            .emit(eventName, params)
+        val reactCtx = reactApplicationContext
+        val active = reactCtx.hasActiveReactInstance()
+        val msgIdForLog =
+            params?.let { map ->
+                try {
+                    map.getString("id")
+                } catch (_: Throwable) {
+                    null
+                }
+            }
+
+        Log.d(
+            CHAT_DIAG,
+            "sendEvent queued: $eventName id=$msgIdForLog hasActiveReactInstance=$active callerThread=${Thread.currentThread().name}",
+        )
+
+        reactCtx.runOnUiQueueThread {
+            try {
+                if (!reactCtx.hasActiveReactInstance()) {
+                    Log.w(CHAT_DIAG, "sendEvent SKIP (no React): $eventName id=$msgIdForLog")
+                    return@runOnUiQueueThread
+                }
+                reactCtx
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+                    .emit(eventName, params)
+                Log.d(CHAT_DIAG, "sendEvent OK: $eventName id=$msgIdForLog thread=ui-queue")
+            } catch (e: Exception) {
+                Log.w("MeshengerApplication", "sendEvent($eventName) skipped: ${e.message}")
+                Log.e(CHAT_DIAG, "sendEvent EXCEPTION: $eventName", e)
+            }
+        }
     }
 
     private fun ensureGlobalChatStorage() {
@@ -132,11 +181,13 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 val receiverIds = if (action == "Send") listOf(GLOBAL_BROADCAST_ID) else listOf(LOCAL_ID)
 
                 if (action != "Send") {
+                    val existing = dbHelper.getUserProfile(senderId)
                     dbHelper.upsertUserProfile(
                         UserProfile(
                             id = senderId,
                             publicKeyHash = "-",
-                            userName = senderId
+                            userName = existing?.userName ?: senderId,
+                            userAvtId = existing?.userAvtId,
                         )
                     )
                 }
@@ -147,7 +198,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     senderId = senderId,
                     nonce = nonce,
                     status = if (action == "Send") MessageStatus.PENDING else MessageStatus.SENT,
-                    encryptedPayload = payload
+                    encryptedPayload = payload,
+                    bodyText = plaintext.takeIf { it.isNotEmpty() },
                 )
                 dbHelper.insertMessage(msg, receiverIds)
 
@@ -331,15 +383,27 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         sessionKey: ByteArray? = null,
         plaintextOverride: String? = null
     ): WritableMap {
-        val plaintext = plaintextOverride ?: if (sessionKey != null) {
-            decryptGlobalPayload(msg.encryptedPayload, msg.nonce, sessionKey)
-        } else {
-            ""
+        val senderName = when (msg.senderId) {
+            LOCAL_ID -> UserStore.getProfile().userName
+            else -> dbHelper.getUserProfile(msg.senderId)?.userName ?: msg.senderId
         }
+        val senderAvatarId = when (msg.senderId) {
+            LOCAL_ID -> UserStore.getProfile().userAvtId
+            else -> dbHelper.getUserProfile(msg.senderId)?.userAvtId
+        }
+        val plaintext = plaintextOverride
+            ?: msg.bodyText?.takeIf { it.isNotBlank() }
+            ?: if (sessionKey != null) {
+                decryptGlobalPayload(msg.encryptedPayload, msg.nonce, sessionKey)
+            } else {
+                ""
+            }
         return Arguments.createMap().apply {
             putString("id", msg.id)
             putString("sessionId", msg.sessionId)
             putString("senderId", msg.senderId)
+            putString("senderName", senderName)
+            putString("senderAvatarId", senderAvatarId)
             putString("status", msg.status.name)
             putDouble("timestamp", msg.timestamp.toDouble())
             putBoolean("fromMe", fromMe)
@@ -366,7 +430,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            GlobalChatSession.sendBootstrap(name)
+            GlobalChatSession.sendBootstrap(name, UserStore.getProfile().userAvtId)
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("MESH_BOOTSTRAP_FAILED", e.message, e)
@@ -406,7 +470,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            GlobalChatSession.sendBootstrap(name)
+            GlobalChatSession.sendBootstrap(name, UserStore.getProfile().userAvtId)
             val (peers, count) = meshPeersArrayExcludingSelf()
             promise.resolve(
                 Arguments.createMap().apply {
@@ -464,6 +528,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     userName = displayName.trim()
                 )
             )
+            dbHelper.ensureDirectChatForPeer(peerId, displayName.trim())
             val addrBytes = ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putLong(mp.toLong()).array()
             promise.resolve(
                 Arguments.createMap().apply {
@@ -491,9 +556,11 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     private fun meshPeersArrayExcludingSelf(): Pair<WritableArray, Int> {
         val self = MPAddress.getMyMPAddressULong()
         val array = Arguments.createArray()
+        val seen = HashSet<ULong>()
         var n = 0
         for (peer in PeerInMeshRegistry.getAllPeers()) {
             if (peer.MPAddress == self) continue
+            if (!seen.add(peer.MPAddress)) continue
             array.pushMap(meshPeerToWritableMap(peer))
             n++
         }
@@ -517,39 +584,136 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
 
     /**
      * Opens (or returns the existing) Noise XX two-party session with the peer.
-     * - When [isInitiator] is true, the constructor immediately writes the first
-     *   handshake message and floods it via EpidemicFlooding.
-     * - When [isInitiator] is false this still creates the session, but the handshake
-     *   only progresses once a packet from the peer arrives. In practice the responder
-     *   path is normally driven by [registerHandshakeFallback] instead of this RPC.
-     *
-     * Idempotent: calling again with the same [peerId] returns the existing session
-     * info without recreating it.
+     * Mesh note: Noise XX supports exactly **one** initiator. [isInitiator] from JS is
+     * intentionally ignored — the role is chosen deterministically via MP address
+     * comparison so both devices agree regardless of tap order (`myMp < peerMp` ⇒ initiator).
+     * The handshake fallback keeps working for the responder when the peer opens first.
      */
     @ReactMethod
     fun openTwoPartySession(
         peerId: String,
         displayName: String,
-        isInitiator: Boolean,
+        @Suppress("UNUSED_PARAMETER") isInitiator: Boolean,
         promise: Promise,
     ) {
         try {
+            val mp = parseMeshPeerId(peerId)
+            val myMp = MPAddress.getMyMPAddressULong()
+            val effectiveInitiator = myMp < mp
+
             val existing = activeSessions[peerId]
             if (existing != null) {
-                promise.resolve(twoPartySessionInfo(peerId, isInitiator = isInitiator, justOpened = false))
+                promise.resolve(twoPartySessionInfo(peerId, isInitiator = effectiveInitiator, justOpened = false))
                 return
             }
-            val mp = parseMeshPeerId(peerId)
-            if (mp == MPAddress.getMyMPAddressULong()) {
+            if (mp == myMp) {
                 promise.reject("INVALID_INPUT", "Cannot open a session with this device (self)")
                 return
             }
             val name = displayName.trim().ifBlank { peerId }
             ensurePeerRow(peerId, name)
-            createAndTrackSession(peerId, mp, name, isInitiator)
-            promise.resolve(twoPartySessionInfo(peerId, isInitiator = isInitiator, justOpened = true))
+            createAndTrackSession(peerId, mp, name, effectiveInitiator)
+            promise.resolve(twoPartySessionInfo(peerId, isInitiator = effectiveInitiator, justOpened = true))
         } catch (e: Exception) {
             promise.reject("OPEN_SESSION_FAILED", e.message, e)
+        }
+    }
+
+    /**
+     * Ask a mesh peer for a 1:1 chat. Receiver must accept on Pending before Noise handshake starts.
+     */
+    @ReactMethod
+    fun sendDirectChatInvite(peerId: String, promise: Promise) {
+        try {
+            if (peerId.isBlank()) {
+                promise.reject("INVALID_INPUT", "peerId cannot be empty")
+                return
+            }
+            val receiverMp = parseMeshPeerId(peerId)
+            if (receiverMp == MPAddress.getMyMPAddressULong()) {
+                promise.reject("INVALID_INPUT", "Cannot invite self")
+                return
+            }
+            val json = JSONObject().apply {
+                put("name", UserStore.getProfile().userName.trim())
+                UserStore.getProfile().userAvtId?.let { put("avatarId", it) }
+            }
+            val payload = json.toString().toByteArray(StandardCharsets.UTF_8)
+            EpidemicFlooding.onDirectChatNegotiationSend(
+                MessageType.DIRECT_CHAT_INVITE,
+                receiverMp,
+                payload,
+            )
+            outgoingDirectChatInvites[peerId] = System.currentTimeMillis()
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("INVITE_SEND_FAILED", e.message, e)
+        }
+    }
+
+    /**
+     * @param inviterDisplayName display name from invite payload (recommended when accept==true).
+     */
+    @ReactMethod
+    fun respondDirectChatInvite(
+        fromPeerId: String,
+        accept: Boolean,
+        inviterDisplayName: String?,
+        promise: Promise,
+    ) {
+        try {
+            if (fromPeerId.isBlank()) {
+                promise.reject("INVALID_INPUT", "fromPeerId cannot be empty")
+                return
+            }
+            val otherMp = parseMeshPeerId(fromPeerId)
+            if (otherMp == MPAddress.getMyMPAddressULong()) {
+                promise.reject("INVALID_INPUT", "Invalid peer")
+                return
+            }
+            pendingIncomingInviteByPeer.remove(fromPeerId.trim())
+            val emptyAck = "{}".toByteArray(StandardCharsets.UTF_8)
+            if (accept) {
+                EpidemicFlooding.onDirectChatNegotiationSend(
+                    MessageType.DIRECT_CHAT_INVITE_ACCEPT,
+                    otherMp,
+                    emptyAck,
+                )
+                val name = inviterDisplayName?.trim()?.takeIf { it.isNotEmpty() }
+                    ?: resolveMeshPeerDisplayName(otherMp)
+                ensurePeerRow(fromPeerId, name)
+                openOrEnsureTwoPartySession(fromPeerId, otherMp, name)
+            } else {
+                EpidemicFlooding.onDirectChatNegotiationSend(
+                    MessageType.DIRECT_CHAT_INVITE_REJECT,
+                    otherMp,
+                    emptyAck,
+                )
+            }
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("INVITE_RESPOND_FAILED", e.message, e)
+        }
+    }
+
+    /** Snapshot of invitations not yet accepted/rejected (for Pending screen refresh). */
+    @ReactMethod
+    fun getPendingIncomingInvites(promise: Promise) {
+        try {
+            val arr = Arguments.createArray()
+            for (inv in pendingIncomingInviteByPeer.values.sortedBy { it.timestamp }) {
+                arr.pushMap(
+                    Arguments.createMap().apply {
+                        putString("peerId", inv.peerId)
+                        putString("displayName", inv.displayName)
+                        inv.avatarId?.let { putString("avatarId", it) }
+                        putDouble("timestamp", inv.timestamp.toDouble())
+                    },
+                )
+            }
+            promise.resolve(arr)
+        } catch (e: Exception) {
+            promise.reject("PENDING_INVITES_FAILED", e.message, e)
         }
     }
 
@@ -565,6 +729,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 promise.reject("INVALID_INPUT", "peerId and plaintext cannot be empty")
                 return
             }
+            Log.i(
+                CHAT_DIAG,
+                "sendDirectMessage START peer=$peerId len=${plaintext.length} hasSession=${activeSessions.containsKey(peerId)}",
+            )
             val session = activeSessions[peerId]
                 ?: run {
                     promise.reject("NO_SESSION", "Open a two-party session before sending")
@@ -572,6 +740,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 }
             val mp = parseMeshPeerId(peerId)
             session.sendMessageStr(mp, plaintext)
+            Log.i(CHAT_DIAG, "sendDirectMessage DONE peer=$peerId plaintextLen=${plaintext.length}")
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("SEND_DIRECT_FAILED", e.message, e)
@@ -607,6 +776,36 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         dbHelper.ensureDirectChatForPeer(peerId, displayName)
     }
 
+    private data class InvitePayload(val displayName: String, val avatarId: String?)
+
+    private fun parseInvitePayload(payload: ByteArray): InvitePayload {
+        return try {
+            val o = JSONObject(String(payload, Charsets.UTF_8))
+            val name = o.optString("name", "").trim()
+            val avt = o.optString("avatarId", "").trim().takeIf { it.isNotEmpty() }
+            InvitePayload(name, avt)
+        } catch (_: Exception) {
+            InvitePayload("", null)
+        }
+    }
+
+    private fun resolveMeshPeerDisplayName(remoteMp: ULong): String {
+        val peerIdStr = meshPeerId(remoteMp)
+        val prof = dbHelper.getUserProfile(peerIdStr)
+        val u = prof?.userName?.trim()
+        if (!u.isNullOrEmpty() && u != peerIdStr) return u
+        val mesh = PeerInMeshRegistry.getAllPeers()
+            .firstOrNull { it.MPAddress == remoteMp }?.userName?.trim()
+        return mesh?.takeIf { it.isNotEmpty() } ?: peerIdStr
+    }
+
+    private fun openOrEnsureTwoPartySession(peerIdStr: String, remoteMp: ULong, displayName: String) {
+        if (activeSessions.containsKey(peerIdStr)) return
+        val myMp = MPAddress.getMyMPAddressULong()
+        val effectiveInitiator = myMp < remoteMp
+        createAndTrackSession(peerIdStr, remoteMp, displayName, effectiveInitiator)
+    }
+
     private fun createAndTrackSession(
         peerId: String,
         mpAddress: ULong,
@@ -625,6 +824,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             chosenPattern = NoisePattern.XX,
         )
         activeSessions[peerId] = session
+        sessionBusJobs.remove(peerId)?.cancel()
         sessionBusJobs[peerId] = startObservingTwoPartyBus(peerId, session)
         Log.d(
             "MeshengerApplication",
@@ -646,23 +846,32 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         val payload = json["Payload"]?.toString()?.trim('"').orEmpty()
         val nonce = json["Nonce"]?.toString()?.trim('"').orEmpty()
         val plaintext = json["Plaintext"]?.toString()?.trim('"').orEmpty()
-        if (payload.isEmpty()) return
+        if (payload.isEmpty()) {
+            Log.w(CHAT_DIAG, "twoPartyBus DROP empty payload peer=$peerId action=$action")
+            return
+        }
+
+        Log.d(CHAT_DIAG, "twoPartyBus peer=$peerId action=$action payloadLen=${payload.length} nonce=$nonce")
 
         val msg = try {
             when (action) {
-                "Send" -> MessagingStore.sendMessage(peerId, payload, nonce)
+                "Send" -> MessagingStore.sendMessage(peerId, payload, nonce, bodyText = plaintext)
                 "Receive" -> MessagingStore.addIncomingMessage(
                     peerId = peerId,
                     senderId = peerId,
                     encryptedPayload = payload,
                     nonce = nonce,
+                    bodyText = plaintext,
                 )
                 else -> return
             }
         } catch (e: Exception) {
             Log.e("MeshengerApplication", "Failed to persist 1-1 message: ${e.message}", e)
+            Log.e(CHAT_DIAG, "twoParty persist FAILED peer=$peerId action=$action", e)
             return
         }
+
+        Log.i(CHAT_DIAG, "twoParty persisted id=${msg.id} action=$action peer=$peerId")
 
         val map = messageToWritableMap(
             msg = msg,
@@ -679,10 +888,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     }
 
     private fun registerMeshPeerAnnouncedHook() {
-        GlobalChatSession.onMeshPeerAnnounced = { mp, rawName ->
+        GlobalChatSession.onMeshPeerAnnounced = { mp, rawName, avatarId ->
             moduleScope.launch(Dispatchers.IO) {
                 try {
-                    applyBootstrapToStoredMeshPeer(mp, rawName)
+                    applyBootstrapToStoredMeshPeer(mp, rawName, avatarId)
                 } catch (e: Exception) {
                     Log.e("MeshengerApplication", "applyBootstrapToStoredMeshPeer failed", e)
                 }
@@ -694,13 +903,34 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
      * When a peer was first recorded as a placeholder ([peerId] stored as their display name),
      * replace it with the name from their bootstrap announcement.
      */
-    private fun applyBootstrapToStoredMeshPeer(mp: ULong, displayNameRaw: String) {
+    private fun applyBootstrapToStoredMeshPeer(mp: ULong, displayNameRaw: String, avatarIdRaw: String?) {
         val displayName = displayNameRaw.trim()
         if (displayName.isBlank()) return
+        val avatarId = avatarIdRaw?.trim()?.takeIf { it.isNotEmpty() }
         val peerId = meshPeerId(mp)
-        val existing = dbHelper.getUserProfile(peerId) ?: return
-        if (existing.userName == peerId) {
-            dbHelper.updateDirectPeerDisplayName(peerId, displayName)
+        val existing = dbHelper.getUserProfile(peerId)
+        if (existing == null) {
+            dbHelper.upsertUserProfile(
+                UserProfile(
+                    id = peerId,
+                    publicKeyHash = "-",
+                    userName = displayName,
+                    userAvtId = avatarId,
+                )
+            )
+        } else {
+            val finalName = if (existing.userName == peerId) displayName else existing.userName
+            dbHelper.upsertUserProfile(
+                existing.copy(
+                    userName = finalName,
+                    userAvtId = avatarId ?: existing.userAvtId,
+                )
+            )
+            if (existing.userName == peerId) {
+                dbHelper.updateDirectPeerDisplayName(peerId, displayName)
+            }
+        }
+        if (existing?.userName == peerId) {
             Log.d("MeshengerApplication", "Upgraded mesh peer display name: $peerId -> $displayName")
             val event = Arguments.createMap().apply {
                 putString("peerId", peerId)
@@ -726,7 +956,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     val name = UserStore.getProfile().userName.trim()
                     val hasNeighbors = MeshConnectionRegistry.getOutboundMap().isNotEmpty()
                     if (name.isNotBlank() && !UserStore.isGenericMeshDisplayName(name) && hasNeighbors) {
-                        GlobalChatSession.sendBootstrap(name)
+                        GlobalChatSession.sendBootstrap(name, UserStore.getProfile().userAvtId)
                         Log.d("MeshengerApplication", "Presence bootstrap sent as '$name'")
                     }
                 } catch (e: Exception) {
@@ -772,6 +1002,78 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         )
     }
 
+    private fun registerDirectChatNegotiationListener() {
+        ListenerRegistry.setDirectChatNegotiationListener(
+            object : DirectChatNegotiationListener {
+                override fun onInviteReceived(senderId: ULong, payload: ByteArray, timeStamp: ULong) {
+                    try {
+                        if (senderId == MPAddress.getMyMPAddressULong()) return
+                        val peerIdStr = meshPeerId(senderId)
+                        val inv = parseInvitePayload(payload)
+                        if (inv.displayName.isNotBlank()) {
+                            dbHelper.upsertUserProfile(
+                                UserProfile(peerIdStr, "-", inv.displayName, inv.avatarId),
+                            )
+                        }
+                        pendingIncomingInviteByPeer[peerIdStr] = PendingIncomingInvite(
+                            peerId = peerIdStr,
+                            displayName = inv.displayName.ifBlank { peerIdStr },
+                            avatarId = inv.avatarId,
+                            timestamp = timeStamp.toLong(),
+                        )
+                        sendEvent(
+                            "onIncomingDirectChatInvite",
+                            Arguments.createMap().apply {
+                                putString("peerId", peerIdStr)
+                                putString("displayName", inv.displayName.ifBlank { peerIdStr })
+                                inv.avatarId?.let { putString("avatarId", it) }
+                                putDouble("timestamp", timeStamp.toLong().toDouble())
+                            },
+                        )
+                    } catch (e: Exception) {
+                        Log.e("MeshengerApplication", "onInviteReceived failed: ${e.message}", e)
+                    }
+                }
+
+                override fun onInviteAccepted(senderId: ULong, payload: ByteArray, timeStamp: ULong) {
+                    try {
+                        if (senderId == MPAddress.getMyMPAddressULong()) return
+                        val peerIdStr = meshPeerId(senderId)
+                        outgoingDirectChatInvites.remove(peerIdStr)
+                        val displayName = resolveMeshPeerDisplayName(senderId)
+                        ensurePeerRow(peerIdStr, displayName)
+                        openOrEnsureTwoPartySession(peerIdStr, senderId, displayName)
+                        sendEvent(
+                            "onDirectChatInviteAccepted",
+                            Arguments.createMap().apply {
+                                putString("peerId", peerIdStr)
+                                putString("displayName", displayName)
+                            },
+                        )
+                    } catch (e: Exception) {
+                        Log.e("MeshengerApplication", "onInviteAccepted failed: ${e.message}", e)
+                    }
+                }
+
+                override fun onInviteRejected(senderId: ULong, payload: ByteArray, timeStamp: ULong) {
+                    try {
+                        if (senderId == MPAddress.getMyMPAddressULong()) return
+                        val peerIdStr = meshPeerId(senderId)
+                        outgoingDirectChatInvites.remove(peerIdStr)
+                        sendEvent(
+                            "onDirectChatInviteRejected",
+                            Arguments.createMap().apply {
+                                putString("peerId", peerIdStr)
+                            },
+                        )
+                    } catch (e: Exception) {
+                        Log.e("MeshengerApplication", "onInviteRejected failed: ${e.message}", e)
+                    }
+                }
+            },
+        )
+    }
+
     private fun twoPartySessionInfo(peerId: String, isInitiator: Boolean, justOpened: Boolean): WritableMap {
         return Arguments.createMap().apply {
             putString("peerId", peerId)
@@ -802,7 +1104,13 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun listPeers(promise: Promise) {
         try {
-            val peersList = UserStore.getAllPeers()
+            val peersList = UserStore.getAllPeers().filter { peer ->
+                when {
+                    peer.id == GLOBAL_BROADCAST_ID -> true
+                    peer.id.startsWith(MP_PREFIX) -> dbHelper.hasDirectChatForPeer(peer.id)
+                    else -> false
+                }
+            }
             val array: WritableArray = Arguments.createArray()
             for (peer in peersList) {
                 val map: WritableMap = Arguments.createMap().apply {
@@ -848,9 +1156,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             val profileMap = Arguments.createMap().apply {
                 putString("id", profile.id)
                 putString("displayName", profile.userName)
-                if (profile.userAvtId != null) {
-                    putString("userAvtId", profile.userAvtId)
-                }
+                putString("avatarId", profile.userAvtId)
             }
             promise.resolve(profileMap)
         } catch (e: Exception) {
@@ -873,13 +1179,11 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            val updated = UserStore.updateProfile(userName = trimmed, userAvtId = newAvatarUrl)
+            val updated = UserStore.updateProfile(userName = trimmed)
             val profile = Arguments.createMap().apply {
                 putString("id", updated.id)
                 putString("displayName", updated.userName)
-                if (updated.userAvtId != null) {
-                    putString("userAvtId", updated.userAvtId)
-                }
+                putString("avatarId", updated.userAvtId)
             }
             promise.resolve(profile)
         } catch (e: Exception) {

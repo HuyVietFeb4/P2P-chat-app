@@ -20,7 +20,7 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 userId TEXT PRIMARY KEY,
                 publicKeyHash TEXT NOT NULL,
                 userName TEXT NOT NULL,
-                userAvtId TEXT DEFAULT NULL
+                userAvtId TEXT
             );
         """)
 
@@ -54,6 +54,7 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 nonce TEXT NOT NULL,
                 messageStatus TEXT NOT NULL,
                 encryptedPayload TEXT NOT NULL,
+                bodyText TEXT,
                 FOREIGN KEY(sessionId) REFERENCES sessions(sessionId) ON DELETE CASCADE,
                 FOREIGN KEY(senderId) REFERENCES users(userId)
             );
@@ -128,7 +129,10 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             )
         }
         if (oldVersion < 6) {
-            db.execSQL("ALTER TABLE users ADD COLUMN userAvtId TEXT DEFAULT NULL")
+            db.execSQL("ALTER TABLE messages ADD COLUMN bodyText TEXT")
+        }
+        if (oldVersion < 7) {
+            db.execSQL("ALTER TABLE users ADD COLUMN userAvtId TEXT")
         }
     }
 
@@ -186,7 +190,15 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
      * Ensures [peerId] exists in users and a 1:1 chat + session row exist for DB message FKs.
      */
     fun ensureDirectChatForPeer(peerId: String, peerUserName: String) {
-        upsertUserProfile(UserProfile(peerId, publicKeyHash = "-", userName = peerUserName))
+        val existing = getUserProfile(peerId)
+        if (existing == null) {
+            upsertUserProfile(UserProfile(peerId, publicKeyHash = "-", userName = peerUserName))
+        } else {
+            val shouldUpgradeName = existing.userName == peerId && peerUserName != peerId
+            if (shouldUpgradeName) {
+                upsertUserProfile(existing.copy(userName = peerUserName))
+            }
+        }
         val chatId = directChatId(peerId)
         val sessionId = directSessionId(peerId)
         if (!rowExists("chats", "chatId", chatId)) {
@@ -214,6 +226,11 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     fun directChatId(peerId: String) = "direct-$peerId"
 
     fun directSessionId(peerId: String) = "session-$peerId"
+
+    fun hasDirectChatForPeer(peerId: String): Boolean {
+        return rowExists("chats", "chatId", directChatId(peerId)) &&
+            rowExists("sessions", "sessionId", directSessionId(peerId))
+    }
 
     fun ensureGlobalChat(globalChatId: String, globalSessionId: String, keyId: String) {
         if (!rowExists("chats", "chatId", globalChatId)) {
@@ -265,6 +282,7 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 put("nonce", message.nonce)
                 put("messageStatus", message.status.name)
                 put("encryptedPayload", message.encryptedPayload)
+                put("bodyText", message.bodyText)
             }
             db.insert("messages", null, values)
 
@@ -300,6 +318,7 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         val cursor = db.rawQuery(query, arrayOf(chatId))
         val messages = mutableListOf<Message>()
         cursor.use {
+            val bodyIdx = it.getColumnIndex("bodyText")
             while (it.moveToNext()) {
                 messages.add(Message(
                     id = it.getString(it.getColumnIndexOrThrow("messageId")),
@@ -308,7 +327,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                     timestamp = it.getLong(it.getColumnIndexOrThrow("timeStamp")),
                     nonce = it.getString(it.getColumnIndexOrThrow("nonce")),
                     status = MessageStatus.valueOf(it.getString(it.getColumnIndexOrThrow("messageStatus"))),
-                    encryptedPayload = it.getString(it.getColumnIndexOrThrow("encryptedPayload"))
+                    encryptedPayload = it.getString(it.getColumnIndexOrThrow("encryptedPayload")),
+                    bodyText = if (bodyIdx >= 0 && !it.isNull(bodyIdx)) it.getString(bodyIdx) else null,
                 ))
             }
         }
@@ -330,21 +350,33 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         }
     }
 
-    /** Removes user row and direct chat graph for [peerId]. Intended when that direct chat has no messages. */
+    /**
+     * Removes user row and direct chat graph for [peerId].
+     * Also clears rows in other chats (e.g. global) referencing this peer as sender/receiver so
+     * [users] can be deleted without FK failures.
+     */
     fun deleteDirectPeerGraph(peerId: String) {
         val chatId = directChatId(peerId)
         val sessionId = directSessionId(peerId)
         val db = writableDatabase
         db.beginTransaction()
         try {
-            db.execSQL(
-                "DELETE FROM message_delivery WHERE messageId IN (SELECT messageId FROM messages WHERE sessionId = ?)",
-                arrayOf(sessionId),
-            )
-            db.delete("messages", "sessionId = ?", arrayOf(sessionId))
-            db.delete("sessions", "sessionId = ?", arrayOf(sessionId))
+            // Remove references to this peer in all chats first.
+            db.delete("message_delivery", "receiverId = ?", arrayOf(peerId))
+            db.delete("user_participation", "userId = ?", arrayOf(peerId))
+
+            // Remove direct-chat participation explicitly for safety/readability.
             db.delete("user_participation", "chatId = ?", arrayOf(chatId))
+
+            // Remove messages in direct session and any message authored by this peer.
+            db.delete("messages", "sessionId = ?", arrayOf(sessionId))
+            db.delete("messages", "senderId = ?", arrayOf(peerId))
+
+            // Delete direct session/chat graph.
+            db.delete("sessions", "sessionId = ?", arrayOf(sessionId))
             db.delete("chats", "chatId = ?", arrayOf(chatId))
+
+            // Clear peer-scoped crypto artifacts not protected by FK constraints.
             db.delete("peer_remote_keys", "peerUserId = ?", arrayOf(peerId))
             db.delete("users", "userId = ?", arrayOf(peerId))
             db.setTransactionSuccessful()
@@ -436,6 +468,6 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         private const val DATABASE_NAME = "meshenger.db"
-        private const val DATABASE_VERSION = 6
+        private const val DATABASE_VERSION = 7
     }
 }

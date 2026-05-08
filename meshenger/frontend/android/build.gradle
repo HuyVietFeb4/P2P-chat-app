@@ -12,6 +12,10 @@ buildscript {
   }
 }
 
+ext {
+  minSdkVersion = 26
+}
+
 allprojects {
   repositories {
     google()

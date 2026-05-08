@@ -31,7 +31,12 @@ enum class MessageType(val value: UInt) {
     REACTION(0x0105u),
     FILE(0x0106u),
     REPLY_QUOTE(0x0107u),
-    AUDIO(0x0108u);
+    AUDIO(0x0108u),
+
+    /** 1:1 chat invite — sender asks receiver (must accept before Noise handshake). */
+    DIRECT_CHAT_INVITE(0x0109u),
+    DIRECT_CHAT_INVITE_ACCEPT(0x010Au),
+    DIRECT_CHAT_INVITE_REJECT(0x010Bu);
 
     companion object {
         fun fromValue(value: UInt): MessageType? {
@@ -245,8 +250,14 @@ object PacketFactory {
                         senderID, receiverID
                     )
                 }
-                MessageType.USER_MESSAGE_ONE_TO_ONE.value -> {
-                    signature = PacketSigner.signTwoPartySession(
+                MessageType.USER_MESSAGE_ONE_TO_ONE.value,
+                MessageType.DIRECT_CHAT_INVITE.value,
+                MessageType.DIRECT_CHAT_INVITE_ACCEPT.value,
+                MessageType.DIRECT_CHAT_INVITE_REJECT.value -> {
+                    // Keep 1:1 signing consistent with current receiver verification path
+                    // (verifyDirectProtocolKey = HMAC direct key). A mismatch here causes
+                    // packets to be dropped even when transport is healthy.
+                    signature = PacketSigner.getSignatureDirectProtocol(
                         version, flags, type, fragment,
                         index.toUShort(), fragments.size.toUShort(), inputTimeStamp,
                         senderID, receiverID
