@@ -63,9 +63,9 @@ export default function App() {
             const isFirstLaunch = await AsyncStorage.getItem("firstLaunch");
 
             const canGetUserName = await MeshengerApplicationModule.getMyProfile() !== "Local User" ? true : false;
+            MainModule.ensureServiceStarted();
 
             if (canGetUserName && isFirstLaunch) {
-                await MainModule.ensureServiceStarted();
                 router.replace('/ChatBox');
             } else {
                 router.replace('/Onboarding');
