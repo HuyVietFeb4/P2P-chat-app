@@ -19,7 +19,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             CREATE TABLE users (
                 userId TEXT PRIMARY KEY,
                 publicKeyHash TEXT NOT NULL,
-                userName TEXT NOT NULL
+                userName TEXT NOT NULL,
+                userAvtId TEXT
             );
         """)
 
@@ -130,6 +131,9 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         if (oldVersion < 6) {
             db.execSQL("ALTER TABLE messages ADD COLUMN bodyText TEXT")
         }
+        if (oldVersion < 7) {
+            db.execSQL("ALTER TABLE users ADD COLUMN userAvtId TEXT")
+        }
     }
 
     // --- Helper Methods ---
@@ -140,18 +144,20 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             put("userId", user.id)
             put("publicKeyHash", user.publicKeyHash)
             put("userName", user.userName)
+            put("userAvtId", user.userAvtId)
         }
         db.insertWithOnConflict("users", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
     fun getUserProfile(userId: String): UserProfile? {
         val db = readableDatabase
-        db.rawQuery("SELECT userId, publicKeyHash, userName FROM users WHERE userId = ?", arrayOf(userId)).use { c ->
+        db.rawQuery("SELECT userId, publicKeyHash, userName, userAvtId FROM users WHERE userId = ?", arrayOf(userId)).use { c ->
             if (!c.moveToFirst()) return null
             return UserProfile(
                 id = c.getString(0),
                 publicKeyHash = c.getString(1),
-                userName = c.getString(2)
+                userName = c.getString(2),
+                userAvtId = c.getString(3)
             )
         }
     }
@@ -159,13 +165,14 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     fun getAllUserProfiles(): List<UserProfile> {
         val db = readableDatabase
         val out = mutableListOf<UserProfile>()
-        db.rawQuery("SELECT userId, publicKeyHash, userName FROM users ORDER BY userName", null).use { c ->
+        db.rawQuery("SELECT userId, publicKeyHash, userName, userAvtId FROM users ORDER BY userName", null).use { c ->
             while (c.moveToNext()) {
                 out.add(
                     UserProfile(
                         id = c.getString(0),
                         publicKeyHash = c.getString(1),
-                        userName = c.getString(2)
+                        userName = c.getString(2),
+                        userAvtId = c.getString(3)
                     )
                 )
             }
@@ -183,7 +190,15 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
      * Ensures [peerId] exists in users and a 1:1 chat + session row exist for DB message FKs.
      */
     fun ensureDirectChatForPeer(peerId: String, peerUserName: String) {
-        upsertUserProfile(UserProfile(peerId, publicKeyHash = "-", userName = peerUserName))
+        val existing = getUserProfile(peerId)
+        if (existing == null) {
+            upsertUserProfile(UserProfile(peerId, publicKeyHash = "-", userName = peerUserName))
+        } else {
+            val shouldUpgradeName = existing.userName == peerId && peerUserName != peerId
+            if (shouldUpgradeName) {
+                upsertUserProfile(existing.copy(userName = peerUserName))
+            }
+        }
         val chatId = directChatId(peerId)
         val sessionId = directSessionId(peerId)
         if (!rowExists("chats", "chatId", chatId)) {
@@ -211,6 +226,11 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     fun directChatId(peerId: String) = "direct-$peerId"
 
     fun directSessionId(peerId: String) = "session-$peerId"
+
+    fun hasDirectChatForPeer(peerId: String): Boolean {
+        return rowExists("chats", "chatId", directChatId(peerId)) &&
+            rowExists("sessions", "sessionId", directSessionId(peerId))
+    }
 
     fun ensureGlobalChat(globalChatId: String, globalSessionId: String, keyId: String) {
         if (!rowExists("chats", "chatId", globalChatId)) {
@@ -448,6 +468,6 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         private const val DATABASE_NAME = "meshenger.db"
-        private const val DATABASE_VERSION = 6
+        private const val DATABASE_VERSION = 7
     }
 }

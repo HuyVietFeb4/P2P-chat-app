@@ -162,11 +162,13 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 val receiverIds = if (action == "Send") listOf(GLOBAL_BROADCAST_ID) else listOf(LOCAL_ID)
 
                 if (action != "Send") {
+                    val existing = dbHelper.getUserProfile(senderId)
                     dbHelper.upsertUserProfile(
                         UserProfile(
                             id = senderId,
                             publicKeyHash = "-",
-                            userName = senderId
+                            userName = existing?.userName ?: senderId,
+                            userAvtId = existing?.userAvtId,
                         )
                     )
                 }
@@ -362,6 +364,14 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         sessionKey: ByteArray? = null,
         plaintextOverride: String? = null
     ): WritableMap {
+        val senderName = when (msg.senderId) {
+            LOCAL_ID -> UserStore.getProfile().userName
+            else -> dbHelper.getUserProfile(msg.senderId)?.userName ?: msg.senderId
+        }
+        val senderAvatarId = when (msg.senderId) {
+            LOCAL_ID -> UserStore.getProfile().userAvtId
+            else -> dbHelper.getUserProfile(msg.senderId)?.userAvtId
+        }
         val plaintext = plaintextOverride
             ?: msg.bodyText?.takeIf { it.isNotBlank() }
             ?: if (sessionKey != null) {
@@ -373,6 +383,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             putString("id", msg.id)
             putString("sessionId", msg.sessionId)
             putString("senderId", msg.senderId)
+            putString("senderName", senderName)
+            putString("senderAvatarId", senderAvatarId)
             putString("status", msg.status.name)
             putDouble("timestamp", msg.timestamp.toDouble())
             putBoolean("fromMe", fromMe)
@@ -399,7 +411,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            GlobalChatSession.sendBootstrap(name)
+            GlobalChatSession.sendBootstrap(name, UserStore.getProfile().userAvtId)
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("MESH_BOOTSTRAP_FAILED", e.message, e)
@@ -439,7 +451,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            GlobalChatSession.sendBootstrap(name)
+            GlobalChatSession.sendBootstrap(name, UserStore.getProfile().userAvtId)
             val (peers, count) = meshPeersArrayExcludingSelf()
             promise.resolve(
                 Arguments.createMap().apply {
@@ -497,6 +509,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     userName = displayName.trim()
                 )
             )
+            dbHelper.ensureDirectChatForPeer(peerId, displayName.trim())
             val addrBytes = ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putLong(mp.toLong()).array()
             promise.resolve(
                 Arguments.createMap().apply {
@@ -729,10 +742,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     }
 
     private fun registerMeshPeerAnnouncedHook() {
-        GlobalChatSession.onMeshPeerAnnounced = { mp, rawName ->
+        GlobalChatSession.onMeshPeerAnnounced = { mp, rawName, avatarId ->
             moduleScope.launch(Dispatchers.IO) {
                 try {
-                    applyBootstrapToStoredMeshPeer(mp, rawName)
+                    applyBootstrapToStoredMeshPeer(mp, rawName, avatarId)
                 } catch (e: Exception) {
                     Log.e("MeshengerApplication", "applyBootstrapToStoredMeshPeer failed", e)
                 }
@@ -744,13 +757,34 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
      * When a peer was first recorded as a placeholder ([peerId] stored as their display name),
      * replace it with the name from their bootstrap announcement.
      */
-    private fun applyBootstrapToStoredMeshPeer(mp: ULong, displayNameRaw: String) {
+    private fun applyBootstrapToStoredMeshPeer(mp: ULong, displayNameRaw: String, avatarIdRaw: String?) {
         val displayName = displayNameRaw.trim()
         if (displayName.isBlank()) return
+        val avatarId = avatarIdRaw?.trim()?.takeIf { it.isNotEmpty() }
         val peerId = meshPeerId(mp)
-        val existing = dbHelper.getUserProfile(peerId) ?: return
-        if (existing.userName == peerId) {
-            dbHelper.updateDirectPeerDisplayName(peerId, displayName)
+        val existing = dbHelper.getUserProfile(peerId)
+        if (existing == null) {
+            dbHelper.upsertUserProfile(
+                UserProfile(
+                    id = peerId,
+                    publicKeyHash = "-",
+                    userName = displayName,
+                    userAvtId = avatarId,
+                )
+            )
+        } else {
+            val finalName = if (existing.userName == peerId) displayName else existing.userName
+            dbHelper.upsertUserProfile(
+                existing.copy(
+                    userName = finalName,
+                    userAvtId = avatarId ?: existing.userAvtId,
+                )
+            )
+            if (existing.userName == peerId) {
+                dbHelper.updateDirectPeerDisplayName(peerId, displayName)
+            }
+        }
+        if (existing?.userName == peerId) {
             Log.d("MeshengerApplication", "Upgraded mesh peer display name: $peerId -> $displayName")
             val event = Arguments.createMap().apply {
                 putString("peerId", peerId)
@@ -776,7 +810,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     val name = UserStore.getProfile().userName.trim()
                     val hasNeighbors = MeshConnectionRegistry.getOutboundMap().isNotEmpty()
                     if (name.isNotBlank() && !UserStore.isGenericMeshDisplayName(name) && hasNeighbors) {
-                        GlobalChatSession.sendBootstrap(name)
+                        GlobalChatSession.sendBootstrap(name, UserStore.getProfile().userAvtId)
                         Log.d("MeshengerApplication", "Presence bootstrap sent as '$name'")
                     }
                 } catch (e: Exception) {
@@ -848,7 +882,13 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun listPeers(promise: Promise) {
         try {
-            val peersList = UserStore.getAllPeers()
+            val peersList = UserStore.getAllPeers().filter { peer ->
+                when {
+                    peer.id == GLOBAL_BROADCAST_ID -> true
+                    peer.id.startsWith(MP_PREFIX) -> dbHelper.hasDirectChatForPeer(peer.id)
+                    else -> false
+                }
+            }
             val array: WritableArray = Arguments.createArray()
             for (peer in peersList) {
                 val map: WritableMap = Arguments.createMap().apply {
@@ -894,6 +934,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             val profileMap = Arguments.createMap().apply {
                 putString("id", profile.id)
                 putString("displayName", profile.userName)
+                putString("avatarId", profile.userAvtId)
             }
             promise.resolve(profileMap)
         } catch (e: Exception) {
@@ -920,6 +961,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             val profile = Arguments.createMap().apply {
                 putString("id", updated.id)
                 putString("displayName", updated.userName)
+                putString("avatarId", updated.userAvtId)
             }
             promise.resolve(profile)
         } catch (e: Exception) {

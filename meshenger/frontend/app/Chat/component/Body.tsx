@@ -19,11 +19,30 @@ type ChatMessage = {
     id: string;
     sessionId: string;
     senderId: string;
+    senderName: string;
+    senderAvatarId: string;
     status: string;
     timestamp: number;
     fromMe: boolean;
     text: string;
 };
+
+const AVATAR_SOURCES: Record<string, any> = {
+    avt0: require('../../../assets/avt_set/avt0.png'),
+    avt1: require('../../../assets/avt_set/avt1.png'),
+    avt2: require('../../../assets/avt_set/avt2.png'),
+    avt3: require('../../../assets/avt_set/avt3.png'),
+    avt4: require('../../../assets/avt_set/avt4.png'),
+    avt5: require('../../../assets/avt_set/avt5.png'),
+    avt6: require('../../../assets/avt_set/avt6.png'),
+    avt7: require('../../../assets/avt_set/avt7.png'),
+    avt8: require('../../../assets/avt_set/avt8.png'),
+    avt9: require('../../../assets/avt_set/avt9.png'),
+    avt10: require('../../../assets/avt_set/avt10.png'),
+    avt11: require('../../../assets/avt_set/avt11.png'),
+    avt12: require('../../../assets/avt_set/avt12.png'),
+};
+const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
 
 /** Normalize native WritableMap → predictable shape (avoids bad keys / FlatList crashes). */
 function normalizeConversationRow(raw: unknown): ChatMessage | null {
@@ -42,6 +61,8 @@ function normalizeConversationRow(raw: unknown): ChatMessage | null {
         id,
         sessionId: String(row.sessionId ?? ''),
         senderId: String(row.senderId ?? ''),
+        senderName: String(row.senderName ?? row.senderId ?? ''),
+        senderAvatarId: String(row.senderAvatarId ?? ''),
         status: String(row.status ?? 'SENT'),
         timestamp,
         fromMe: Boolean(row.fromMe),
@@ -151,15 +172,22 @@ export default function Body({ peerId }: { peerId: string }) {
 
     const renderMessage = ({ item }: { item: ChatMessage }) => {
         const isMe = item.fromMe;
+        const showSenderName = isGlobal && !isMe;
+        const avatarSource = AVATAR_SOURCES[item.senderAvatarId] ?? DEFAULT_AVATAR;
         return (
             <View style={[styles.messageRow, isMe ? styles.myMessageRow : styles.peerMessageRow]}>
                 {!isMe && (
                     <Image
-                        source={{ uri: 'https://i.pravatar.cc/150?u=alice' }}
+                        source={avatarSource}
                         style={styles.messageAvatar}
                     />
                 )}
                 <View style={[styles.bubble, isMe ? { backgroundColor: colors.myBubble, borderBottomRightRadius: 5 } : { backgroundColor: colors.peerBubble, borderBottomLeftRadius: 5, borderWidth: 1, borderColor: colors.border }]}>
+                    {showSenderName && (
+                        <Text style={[styles.senderNameText, { color: colors.subText }]}>
+                            {item.senderName || item.senderId}
+                        </Text>
+                    )}
                     <Text style={[styles.messageText, { color: isMe ? colors.myMessageText : colors.peerMessageText }]}>
                         {item.text}
                     </Text>
@@ -224,6 +252,11 @@ const styles = StyleSheet.create({
     messageText: {
         fontSize: 15,
         lineHeight: 20,
+    },
+    senderNameText: {
+        fontSize: 12,
+        fontWeight: '600',
+        marginBottom: 4,
     },
     footer: {
         flexDirection: 'row',
