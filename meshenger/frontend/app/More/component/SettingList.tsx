@@ -7,7 +7,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { getAvatarSource } from "../../../assets/avatarMap";
-import InfoPopUp from "@/app/Pending/InfoPopUp";
+import InfoPopUp from "./InfoPopUp";
 
 const { MeshengerApplicationModule } = NativeModules;
 
