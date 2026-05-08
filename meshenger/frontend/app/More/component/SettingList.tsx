@@ -7,6 +7,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { getAvatarSource } from "../../../assets/avatarMap";
+import InfoPopUp from "@/app/Pending/InfoPopUp";
 
 const { MeshengerApplicationModule } = NativeModules;
 
@@ -37,151 +38,154 @@ export default function SettingList() {
     const selectedAvtSource = getAvatarSource(userAvtId);
 
     return  (
-        <ScrollView 
-            style={{flex: 1, backgroundColor: colors.background}}
-            contentContainerStyle={{paddingBottom: 50}}
-        >
-            <View style={styles.profileInfo}>
-                <Text style={[styles.moreText, { color: colors.sectionTitle }]}>{t('profile-info')}</Text>
-                <LinearGradient 
-                    colors={['#00C6FF', '#0072FF']}
-                    start={{x: 0, y: 0}}
-                    end={{x: 1, y: 0}}
-                    style={styles.profileWrapper}
-                >
-                    <View style={[styles.profileContainer]}>
-                        <View style={styles.iconContainer}>
-                            <Image
-                                source={selectedAvtSource}
-                                contentFit="cover"
-                                style={styles.image}
+        <View style={{flex: 1}}>
+            <ScrollView 
+                style={{flex: 1, backgroundColor: colors.background}}
+                contentContainerStyle={{paddingBottom: 50}}
+            >
+                <View style={styles.profileInfo}>
+                    <Text style={[styles.moreText, { color: colors.sectionTitle }]}>{t('profile-info')}</Text>
+                    <LinearGradient 
+                        colors={['#00C6FF', '#0072FF']}
+                        start={{x: 0, y: 0}}
+                        end={{x: 1, y: 0}}
+                        style={styles.profileWrapper}
+                    >
+                        <View style={[styles.profileContainer]}>
+                            <View style={styles.iconContainer}>
+                                <Image
+                                    source={selectedAvtSource}
+                                    contentFit="cover"
+                                    style={styles.image}
+                                />
+                            </View>
+                            <Text style={[styles.profile, {fontWeight: 'bold'}]}>{deviceName}</Text>
+                        </View>
+
+                        <Pencil size={16} color="#fff" />
+                    </LinearGradient>
+                </View>
+
+                {/* Messages */}
+                <View style={styles.profileInfo}>
+                    <Text style={[styles.moreText, { color: colors.sectionTitle }]}>{t('messages')}</Text>
+
+                    <View style={[styles.fieldContainer, { backgroundColor: colors.settingItemBg, borderColor: colors.border }]}>
+                        <View style={styles.profileWrapper}>
+                            <View style={styles.profileContainer}>
+                                <LinearGradient 
+                                    style={styles.menuIcon}
+                                    colors={['#5B8CFF', '#7C7DFF']}
+                                    start={{x: 0, y: 0}}
+                                    end={{x: 1, y: 0}}
+                                >
+                                    <UserLock size={15} color="#fff"/>
+                                </LinearGradient>
+
+                                <Text style={[styles.profile, {color: colors.text}]}>{t('blocked-users')}</Text>
+                            </View>
+                            <ChevronRight color={colors.subText} size={16} />
+                        </View>
+
+                        <View style={styles.profileWrapper}>
+                            <View style={styles.profileContainer}>
+                                <LinearGradient 
+                                    style={styles.menuIcon}
+                                    colors={['#5B8CFF', '#7C7DFF']}
+                                    start={{x: 0, y: 0}}
+                                    end={{x: 1, y: 0}}
+                                >
+                                    <UserLock size={15} color="#fff"/>
+                                </LinearGradient>
+
+                                <Text style={[styles.profile, {color: colors.text}]}>{t('messages-pending')}</Text>
+                            </View>
+                            <ChevronRight color={colors.subText} size={16} />
+                        </View>
+
+                        <View style={styles.profileWrapper}>
+                            <View style={styles.profileContainer}>
+                                <LinearGradient 
+                                    style={styles.menuIcon}
+                                    colors={['#5B8CFF', '#7C7DFF']}
+                                    start={{x: 0, y: 0}}
+                                    end={{x: 1, y: 0}}
+                                >
+                                    <UserLock size={15} color="#fff"/>
+                                </LinearGradient>
+
+                                <Text style={[styles.profile, {color: colors.text}]}>{t('messages-backup')}</Text>
+                            </View>
+                            <ChevronRight color={colors.subText} size={16} />
+                        </View>
+                    </View>
+                </View>
+
+                {/* Setting */}
+                <View style={styles.profileInfo}>
+                    <Text style={[styles.moreText, { color: colors.sectionTitle }]}>{t('settings')}</Text>
+
+                    <View style={[styles.fieldContainer, { backgroundColor: colors.settingItemBg, borderColor: colors.border }]}>
+                        <TouchableOpacity style={styles.profileWrapper} onPress={() => router.push("/Language")}>
+                            <View style={styles.profileContainer}>
+                                <LinearGradient
+                                    style={styles.menuIcon}
+                                    colors={['#5B8CFF', '#7C7DFF']}
+                                    start={{x: 0, y: 0}}
+                                    end={{x: 1, y: 0}}
+                                >
+                                    <BookA size={15} color="#fff"/>
+                                </LinearGradient>
+
+                                <Text style={[styles.profile, {color: colors.text}]}>{t('language')}</Text>
+                            </View>
+                            <ChevronRight color="#72727A" size={16} />
+                        </TouchableOpacity>
+
+                        <View style={styles.profileWrapper}>
+                            <View style={styles.profileContainer}>
+                                <LinearGradient
+                                    style={styles.menuIcon}
+                                    colors={['#5B8CFF', '#7C7DFF']}
+                                    start={{x: 0, y: 0}}
+                                    end={{x: 1, y: 0}}
+                                >
+                                    <SunMoon size={15} color="#fff"/>
+                                </LinearGradient>
+
+                                <Text style={[styles.profile, {color: colors.text}]}>{t('dark-mode')}</Text>
+                            </View>
+                            <Switch
+                                trackColor={{ false: "#ccc", true: colors.primary }}
+                                thumbColor="#fff"
+                                value={isDarkMode}
+                                onValueChange={toggleDarkMode}
                             />
                         </View>
-                        <Text style={styles.profile}>{deviceName}</Text>
-                    </View>
 
-                    <Pencil size={16} color="#fff" />
-                </LinearGradient>
-            </View>
+                        <View style={styles.profileWrapper}>
+                            <View style={styles.profileContainer}>
+                                <LinearGradient
+                                    style={styles.menuIcon}
+                                    colors={['#5B8CFF', '#7C7DFF']}
+                                    start={{x: 0, y: 0}}
+                                    end={{x: 1, y: 0}}
+                                >
+                                    <Bell size={15} color="#fff"/>
+                                </LinearGradient>
 
-            {/* Messages */}
-            <View style={styles.profileInfo}>
-                <Text style={[styles.moreText, { color: colors.sectionTitle }]}>{t('messages')}</Text>
-
-                <View style={[styles.fieldContainer, { backgroundColor: colors.settingItemBg, borderColor: colors.border }]}>
-                    <View style={styles.profileWrapper}>
-                        <View style={styles.profileContainer}>
-                            <LinearGradient 
-                                style={styles.menuIcon}
-                                colors={['#5B8CFF', '#7C7DFF']}
-                                start={{x: 0, y: 0}}
-                                end={{x: 1, y: 0}}
-                            >
-                                <UserLock size={15} color="#fff"/>
-                            </LinearGradient>
-
-                            <Text style={[styles.profile, {color: colors.text}]}>{t('blocked-users')}</Text>
+                                <Text style={[styles.profile, {color: colors.text}]}>{t('notifications')}</Text>
+                            </View>
+                            <Switch
+                                trackColor={{ false: "#ccc", true: colors.primary }}
+                                thumbColor="#fff"
+                            />
                         </View>
-                        <ChevronRight color={colors.subText} size={16} />
-                    </View>
-
-                    <View style={styles.profileWrapper}>
-                        <View style={styles.profileContainer}>
-                            <LinearGradient 
-                                style={styles.menuIcon}
-                                colors={['#5B8CFF', '#7C7DFF']}
-                                start={{x: 0, y: 0}}
-                                end={{x: 1, y: 0}}
-                            >
-                                <UserLock size={15} color="#fff"/>
-                            </LinearGradient>
-
-                            <Text style={[styles.profile, {color: colors.text}]}>{t('messages-pending')}</Text>
-                        </View>
-                        <ChevronRight color={colors.subText} size={16} />
-                    </View>
-
-                    <View style={styles.profileWrapper}>
-                        <View style={styles.profileContainer}>
-                            <LinearGradient 
-                                style={styles.menuIcon}
-                                colors={['#5B8CFF', '#7C7DFF']}
-                                start={{x: 0, y: 0}}
-                                end={{x: 1, y: 0}}
-                            >
-                                <UserLock size={15} color="#fff"/>
-                            </LinearGradient>
-
-                            <Text style={[styles.profile, {color: colors.text}]}>{t('messages-backup')}</Text>
-                        </View>
-                        <ChevronRight color={colors.subText} size={16} />
                     </View>
                 </View>
-            </View>
-
-            {/* Setting */}
-            <View style={styles.profileInfo}>
-                <Text style={[styles.moreText, { color: colors.sectionTitle }]}>{t('settings')}</Text>
-
-                <View style={[styles.fieldContainer, { backgroundColor: colors.settingItemBg, borderColor: colors.border }]}>
-                    <TouchableOpacity style={styles.profileWrapper} onPress={() => router.push("/Language")}>
-                        <View style={styles.profileContainer}>
-                            <LinearGradient
-                                style={styles.menuIcon}
-                                colors={['#5B8CFF', '#7C7DFF']}
-                                start={{x: 0, y: 0}}
-                                end={{x: 1, y: 0}}
-                            >
-                                <BookA size={15} color="#fff"/>
-                            </LinearGradient>
-
-                            <Text style={[styles.profile, {color: colors.text}]}>{t('language')}</Text>
-                        </View>
-                        <ChevronRight color="#72727A" size={16} />
-                    </TouchableOpacity>
-
-                    <View style={styles.profileWrapper}>
-                        <View style={styles.profileContainer}>
-                            <LinearGradient
-                                style={styles.menuIcon}
-                                colors={['#5B8CFF', '#7C7DFF']}
-                                start={{x: 0, y: 0}}
-                                end={{x: 1, y: 0}}
-                            >
-                                <SunMoon size={15} color="#fff"/>
-                            </LinearGradient>
-
-                            <Text style={[styles.profile, {color: colors.text}]}>{t('dark-mode')}</Text>
-                        </View>
-                        <Switch
-                            trackColor={{ false: "#ccc", true: colors.primary }}
-                            thumbColor="#fff"
-                            value={isDarkMode}
-                            onValueChange={toggleDarkMode}
-                        />
-                    </View>
-
-                    <View style={styles.profileWrapper}>
-                        <View style={styles.profileContainer}>
-                            <LinearGradient
-                                style={styles.menuIcon}
-                                colors={['#5B8CFF', '#7C7DFF']}
-                                start={{x: 0, y: 0}}
-                                end={{x: 1, y: 0}}
-                            >
-                                <Bell size={15} color="#fff"/>
-                            </LinearGradient>
-
-                            <Text style={[styles.profile, {color: colors.text}]}>{t('notifications')}</Text>
-                        </View>
-                        <Switch
-                            trackColor={{ false: "#ccc", true: colors.primary }}
-                            thumbColor="#fff"
-                        />
-                    </View>
-                </View>
-            </View>
-        </ScrollView>
+                <InfoPopUp />
+            </ScrollView>
+        </View>
     )
 }
 
@@ -204,7 +208,8 @@ const styles = StyleSheet.create({
 
     profile: {
         fontSize: 14,
-        color: "#fff"
+        color: "#fff",
+        fontWeight: 500
     },
 
     profileContainer: {
