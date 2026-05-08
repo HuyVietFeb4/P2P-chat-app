@@ -1,7 +1,5 @@
-// import { Text, View } from 'react-native'
+import React from 'react';
 
-// export default function User() {
-//     return (
-
-//     );
-// }
+export default function User() {
+    return null;
+}

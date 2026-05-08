@@ -3,11 +3,11 @@ import React, { useEffect } from "react";
 import { KeyboardAvoidingView, NativeModules, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
-import { useBehavior } from '../hook/useBehavior';
+import { useBehavior } from '@/hook/useBehavior';
 import Body from "./component/Body";
 import Header from "./component/Header";
 import Input from "./component/TextInput";
-import { useBluetooth } from "../hook/useBluetooth";
+import { useBluetooth } from "@/hook/useBluetooth";
 import BluetoothPopup from "../common components/BluetoothPopUp";
 
 

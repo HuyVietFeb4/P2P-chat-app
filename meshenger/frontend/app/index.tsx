@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { useCommPermission } from "./hook/useCommPermission";
+import { useCommPermission } from "@/hook/useCommPermission";
 import { BackHandler, NativeModules } from "react-native";
 
 const DEFAULT_NATIVE_DISPLAY_NAME = "Local User";

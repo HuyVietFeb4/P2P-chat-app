@@ -91,3 +91,7 @@ export const useTheme = () => {
   }
   return context;
 };
+
+export default function ThemeContextDummy() {
+  return null;
+}

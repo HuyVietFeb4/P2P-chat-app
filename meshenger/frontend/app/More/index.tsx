@@ -5,7 +5,7 @@ import Footer from '../common components/Footer';
 import Header from '../common components/Header';
 import { useTheme } from "../context/ThemeContext";
 import SettingList from "./component/SettingList";
-import { useBluetooth } from "../hook/useBluetooth";
+import { useBluetooth } from "@/hook/useBluetooth";
 import BluetoothPopup from "../common components/BluetoothPopUp";
 
 export default function MoreOptions() {

@@ -26,3 +26,7 @@ export const deviceList: DeviceData[] = [
     { id: 19, deviceName: "Device 19", statusNumber: 0 },
     { id: 20, deviceName: "Device 20", statusNumber: 1 },
 ];
+
+export default function DeviceScanDataDummy() {
+    return null;
+}

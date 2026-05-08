@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import DeviceList from "./component/DeviceList";
 import Header from "./component/Header";
 import Scanning from "./component/Scanning";
-import { useBluetooth } from "../hook/useBluetooth";
+import { useBluetooth } from "@/hook/useBluetooth";
 import BluetoothPopup from "../common components/BluetoothPopUp";
 import { Colors, useTheme } from "../context/ThemeContext";
 

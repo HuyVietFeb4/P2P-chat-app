@@ -5,7 +5,7 @@ import Footer from "./component/Footer"
 import Header from "./component/Header"
 import MyQR from "./component/MyQR"
 import QRCamera from "./component/QRCamera"
-import { useBluetooth } from "../hook/useBluetooth";
+import { useBluetooth } from "@/hook/useBluetooth";
 import BluetoothPopup from "../common components/BluetoothPopUp";
 
 
