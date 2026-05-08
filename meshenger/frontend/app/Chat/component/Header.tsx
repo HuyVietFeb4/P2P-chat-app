@@ -8,6 +8,8 @@ import { Shadow } from "react-native-shadow-2";
 import { useTheme } from "../../context/ThemeContext";
 import ActionPopUp from "./ActionPopUp";
 
+import { getAvatarSource } from "../../../assets/avatarMap";
+
 type Props = {
     title: string,
     avatarUrl: string,
@@ -37,7 +39,7 @@ export default function Header({ title, avatarUrl, status }: Props) {
 
                             <View style={styles.profile}>
                                 <Image
-                                    source={require("@/assets/images/avatar.png")}
+                                    source={getAvatarSource(avatarUrl)}
                                     contentFit="cover"
                                     style={styles.image}
                                 />
@@ -92,7 +94,8 @@ const styles = StyleSheet.create({
     },
     image: {
         width: 35,
-        height: 35
+        height: 35,
+        borderRadius: 17.5
     },
     profile: {
         flexDirection: "row",

@@ -104,6 +104,7 @@ export default function PendingScreen() {
         const subAccepted = DeviceEventEmitter.addListener('onDirectChatInviteAccepted', (e: any) => {
             const pid = typeof e?.peerId === 'string' ? e.peerId.trim() : '';
             const dn = typeof e?.displayName === 'string' ? e.displayName.trim() : pid;
+            const avt = typeof e?.avatarId === 'string' ? e.avatarId.trim() : undefined;
             if (!pid) return;
 
             removeIncoming(pid);
@@ -111,7 +112,7 @@ export default function PendingScreen() {
             if (outgoingPeerId && outgoingPeerId === pid) {
                 router.push({
                     pathname: '/Chat',
-                    params: { id: pid, name: dn || outgoingName || pid },
+                    params: { id: pid, name: dn || outgoingName || pid, avatarUrl: avt },
                 });
             }
         });
@@ -137,7 +138,7 @@ export default function PendingScreen() {
             removeIncoming(item.peerId);
             router.push({
                 pathname: '/Chat',
-                params: { id: item.peerId, name: item.displayName },
+                params: { id: item.peerId, name: item.displayName, avatarUrl: item.avatarId },
             });
         } catch (e: any) {
             Alert.alert(t('error'), e?.message ?? String(e));
