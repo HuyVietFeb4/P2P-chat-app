@@ -162,7 +162,7 @@ export default function DeviceList() {
                     style={[
                         styles.scrollContainer,
                         peers.length === 0 && { borderWidth: 0 },
-                        { opacity: fadeAnim, transform: [{ translateY }] },
+                        { opacity: fadeAnim, transform: [{ translateY }], backgroundColor: colors.cardBg },
                     ]}
                 >
                     {peers.length === 0 && !bootstrapping && (
@@ -212,7 +212,6 @@ const styles = StyleSheet.create({
         color: "#4DA6FF",
     },
     scrollContainer: {
-        backgroundColor: "#F0F9FF",
         borderRadius: 12,
         marginTop: 20,
         borderWidth: 0.5,
