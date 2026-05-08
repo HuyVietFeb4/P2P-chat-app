@@ -6,8 +6,8 @@ import android.util.Log
 
 object PeerInMeshRegistry {
     private const val TAG = "PeerRegistry"
-    private const val EXPIRY_DURATION_MS = 120_000L // 2 Minutes
-    private const val CHECK_INTERVAL_MS = 10_000L   // 10 Seconds
+    private const val EXPIRY_DURATION_MS = 5_000L // 5 Minutes
+    private const val CHECK_INTERVAL_MS = 5_000L   // 5 Seconds
 
     private val peerMap = ConcurrentHashMap<ULong, Peer>()
     // Instead of Jobs, we store the "Last Seen" timestamp
