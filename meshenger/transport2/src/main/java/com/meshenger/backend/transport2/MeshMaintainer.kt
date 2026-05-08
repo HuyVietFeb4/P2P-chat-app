@@ -139,7 +139,7 @@ class MeshMaintainer : Service() {
 
     private suspend fun maintainConnections() {
         try {
-            val activeCount = MeshConnectionRegistry.getCountConnections()
+            val activeCount = MeshConnectionRegistry.getCountOutbound()
             val outboundCount = MeshConnectionRegistry.getCountOutbound()
             val inboundCount = MeshConnectionRegistry.getCountInbound()
 
