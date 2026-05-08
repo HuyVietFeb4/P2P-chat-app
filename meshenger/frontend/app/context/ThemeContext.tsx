@@ -21,7 +21,8 @@ export const Colors = {
     myMessageText: '#FFFFFF',
     peerMessageText: '#333333',
     returnIcon: '#4DA6FF',
-    scannedBg: '#FFFFF'
+    scannedBg: '#FFFFF',
+    cardBg: '#F0F9FF'
   },
   dark: {
     background: '#313338', // Discord-like gray background
@@ -41,7 +42,8 @@ export const Colors = {
     myMessageText: '#F2F3F5',
     peerMessageText: '#DBDEE1',
     returnIcon: 'rgba(255,255,255,0.2)',
-    scannedBg: '#1A1F2B'
+    scannedBg: '#181A20',
+    cardBg: '#243447'
   },
 };
 

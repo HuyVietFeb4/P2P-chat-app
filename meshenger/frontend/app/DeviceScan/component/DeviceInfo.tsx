@@ -1,8 +1,8 @@
 import { Image } from "expo-image";
-import { MessageCircle } from "lucide-react-native";
+import { Plus } from "lucide-react-native";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@react-navigation/native";
+import { useTheme } from "@/app/context/ThemeContext";
 
 type Props = {
     avatarName: string;
@@ -22,11 +22,11 @@ export default function DeviceInfo({ avatarName, status, onPress, disabled, load
                     source={require('@/assets/images/avatar.png')}
                     style={styles.avatar}
                 />
-                <Text style={styles.text} numberOfLines={1}>{avatarName}</Text>
+                <Text style={[styles.text, {color: colors.text}]} numberOfLines={1}>{avatarName}</Text>
             </View>
 
             <View style={styles.chatStatus}>
-                <Text style={{ fontSize: 10, fontStyle: 'italic', fontWeight: '600' }}>
+                <Text style={{ fontSize: 10, fontStyle: 'italic', fontWeight: '600', color: colors.text }}>
                     {t('status')}:{' '}
                     {status === 1
                         ? <Text style={{ color: '#22C55E', fontSize: 10 }}>{t('strong')}</Text>
@@ -36,7 +36,7 @@ export default function DeviceInfo({ avatarName, status, onPress, disabled, load
                 <View style={styles.icon}>
                     {loading
                         ? <ActivityIndicator size="small" color="#fff" />
-                        : <MessageCircle size={15} color="#fff" fill="#fff" />}
+                        : <Plus size={15} color="#fff" fill="#fff" />}
                 </View>
             </View>
         </View>
