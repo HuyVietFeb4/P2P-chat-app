@@ -20,38 +20,55 @@ export default function App() {
         if (granted === null) return; // ⛔ chưa xong permission → giữ splash
 
         const checkFirstLaunch = async (): Promise<void> => {
+            // if (!granted) {
+            //     // ❌ không có permission → thoát
+            //     await SplashScreen.hideAsync();
+            //     BackHandler.exitApp();
+            //     return;
+            // }
+
+            // MainModule.ensureServiceStarted();
+
+            // // Onboarding used to save the name only in AsyncStorage; mesh/chat use SQLite via native.
+            // const value = await AsyncStorage.getItem("firstLaunch");
+            // if (
+            //     value &&
+            //     value !== "false" &&
+            //     MeshengerApplicationModule?.getMyProfile &&
+            //     MeshengerApplicationModule?.updateMyProfile
+            // ) {
+            //     try {
+            //         const profile = await MeshengerApplicationModule.getMyProfile();
+            //         if (profile?.displayName === DEFAULT_NATIVE_DISPLAY_NAME) {
+            //             await MeshengerApplicationModule.updateMyProfile(value, null);
+            //         }
+            //     } catch {
+            //         /* ignore sync failure; user can set name on Device Scan */
+            //     }
+            // }
+
+            // if (value === null) {
+            //     await AsyncStorage.setItem("firstLaunch", "false"); // 🔥 fix bug
+            //     router.replace("/Onboarding");
+            // } else {
+            //     router.replace("/ChatBox");
+            // }
+
             if (!granted) {
-                // ❌ không có permission → thoát
-                await SplashScreen.hideAsync();
-                BackHandler.exitApp();
-                return;
+                    await SplashScreen.hideAsync();
+                    BackHandler.exitApp();
+                    return;
             }
 
-            MainModule.ensureServiceStarted();
+            const isFirstLaunch = await AsyncStorage.getItem("firstLaunch");
 
-            // Onboarding used to save the name only in AsyncStorage; mesh/chat use SQLite via native.
-            const value = await AsyncStorage.getItem("firstLaunch");
-            if (
-                value &&
-                value !== "false" &&
-                MeshengerApplicationModule?.getMyProfile &&
-                MeshengerApplicationModule?.updateMyProfile
-            ) {
-                try {
-                    const profile = await MeshengerApplicationModule.getMyProfile();
-                    if (profile?.displayName === DEFAULT_NATIVE_DISPLAY_NAME) {
-                        await MeshengerApplicationModule.updateMyProfile(value, null);
-                    }
-                } catch {
-                    /* ignore sync failure; user can set name on Device Scan */
-                }
-            }
+            const canGetUserName = await MeshengerApplicationModule.getMyProfile() !== "Local User" ? true : false;
 
-            if (value === null) {
-                await AsyncStorage.setItem("firstLaunch", "false"); // 🔥 fix bug
-                router.replace("/Onboarding");
+            if (canGetUserName && isFirstLaunch) {
+                await MainModule.ensureServiceStarted();
+                router.replace('/ChatBox');
             } else {
-                router.replace("/ChatBox");
+                router.replace('/Onboarding');
             }
 
             await SplashScreen.hideAsync();
