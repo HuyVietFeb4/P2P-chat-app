@@ -674,7 +674,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 promise.reject("INVALID_INPUT", "Invalid peer")
                 return
             }
-            pendingIncomingInviteByPeer.remove(fromPeerId.trim())
+            // Grab avatar before removing from pending map
+            val pendingInvite = pendingIncomingInviteByPeer.remove(fromPeerId.trim())
             val emptyAck = "{}".toByteArray(StandardCharsets.UTF_8)
             if (accept) {
                 EpidemicFlooding.onDirectChatNegotiationSend(
@@ -684,7 +685,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 val name = inviterDisplayName?.trim()?.takeIf { it.isNotEmpty() }
                     ?: resolveMeshPeerDisplayName(otherMp)
-                ensurePeerRow(fromPeerId, name)
+                val avatarId = pendingInvite?.avatarId
+                ensurePeerRow(fromPeerId, name, avatarId)
                 openOrEnsureTwoPartySession(fromPeerId, otherMp, name)
             } else {
                 EpidemicFlooding.onDirectChatNegotiationSend(
@@ -774,8 +776,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         return trimmed.removePrefix(MP_PREFIX).toULong()
     }
 
-    private fun ensurePeerRow(peerId: String, displayName: String) {
-        dbHelper.upsertUserProfile(UserProfile(peerId, "-", displayName))
+    private fun ensurePeerRow(peerId: String, displayName: String, avatarId: String? = null) {
+        dbHelper.upsertUserProfile(UserProfile(peerId, "-", displayName, avatarId))
         dbHelper.ensureDirectChatForPeer(peerId, displayName)
     }
 
@@ -903,37 +905,29 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     }
 
     /**
-     * When a peer was first recorded as a placeholder ([peerId] stored as their display name),
-     * replace it with the name from their bootstrap announcement.
+     * Updates an *already-known* peer's display name / avatar from their bootstrap announcement
+     * (e.g. upgrade SQLite rows that still use `mp:` placeholders).
+     *
+     * Intentionally does NOT create a new row for unknown peers — the in-memory
+     * [PeerInMeshRegistry] is sufficient for the scan list, and we only want a DB record
+     * once the user has explicitly invited or accepted a chat with this peer.
      */
     private fun applyBootstrapToStoredMeshPeer(mp: ULong, displayNameRaw: String, avatarIdRaw: String?) {
         val displayName = displayNameRaw.trim()
         if (displayName.isBlank()) return
         val avatarId = avatarIdRaw?.trim()?.takeIf { it.isNotEmpty() }
         val peerId = meshPeerId(mp)
-        val existing = dbHelper.getUserProfile(peerId)
-        if (existing == null) {
-            dbHelper.upsertUserProfile(
-                UserProfile(
-                    id = peerId,
-                    publicKeyHash = "-",
-                    userName = displayName,
-                    userAvtId = avatarId,
-                )
+        val existing = dbHelper.getUserProfile(peerId) ?: return // not a known peer yet — skip DB write
+
+        val finalName = if (existing.userName == peerId) displayName else existing.userName
+        dbHelper.upsertUserProfile(
+            existing.copy(
+                userName = finalName,
+                userAvtId = avatarId ?: existing.userAvtId,
             )
-        } else {
-            val finalName = if (existing.userName == peerId) displayName else existing.userName
-            dbHelper.upsertUserProfile(
-                existing.copy(
-                    userName = finalName,
-                    userAvtId = avatarId ?: existing.userAvtId,
-                )
-            )
-            if (existing.userName == peerId) {
-                dbHelper.updateDirectPeerDisplayName(peerId, displayName)
-            }
-        }
-        if (existing?.userName == peerId) {
+        )
+        if (existing.userName == peerId) {
+            dbHelper.updateDirectPeerDisplayName(peerId, displayName)
             Log.d("MeshengerApplication", "Upgraded mesh peer display name: $peerId -> $displayName")
             val event = Arguments.createMap().apply {
                 putString("peerId", peerId)
@@ -1014,11 +1008,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                         if (senderId == MPAddress.getMyMPAddressULong()) return
                         val peerIdStr = meshPeerId(senderId)
                         val inv = parseInvitePayload(payload)
-                        if (inv.displayName.isNotBlank()) {
-                            dbHelper.upsertUserProfile(
-                                UserProfile(peerIdStr, "-", inv.displayName, inv.avatarId),
-                            )
-                        }
+                        // Do NOT write to DB here — peer is stored only in memory until user accepts.
                         pendingIncomingInviteByPeer[peerIdStr] = PendingIncomingInvite(
                             peerId = peerIdStr,
                             displayName = inv.displayName.ifBlank { peerIdStr },
@@ -1045,7 +1035,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                         val peerIdStr = meshPeerId(senderId)
                         outgoingDirectChatInvites.remove(peerIdStr)
                         val displayName = resolveMeshPeerDisplayName(senderId)
-                        ensurePeerRow(peerIdStr, displayName)
+                        // Resolve avatar from in-memory registry (populated by bootstrap)
+                        val avatarId = PeerInMeshRegistry.getAllPeers()
+                            .firstOrNull { it.MPAddress == senderId }?.avatarId
+                        ensurePeerRow(peerIdStr, displayName, avatarId)
                         openOrEnsureTwoPartySession(peerIdStr, senderId, displayName)
                         sendEvent(
                             "onDirectChatInviteAccepted",
