@@ -4,6 +4,7 @@ import {
     Alert,
     DeviceEventEmitter,
     FlatList,
+    Image,
     NativeModules,
     StyleSheet,
     Text,
@@ -15,10 +16,11 @@ import Header from '../common components/Header';
 import { useTheme } from '../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { getAvatarSource } from '../../assets/avatarMap';
 
 const { MeshengerApplicationModule } = NativeModules;
 
-type InviteRow = { peerId: string; displayName: string };
+type InviteRow = { peerId: string; displayName: string; avatarId?: string };
 
 export default function PendingScreen() {
     const router = useRouter();
@@ -51,6 +53,7 @@ export default function PendingScreen() {
                                 r?.displayName != null && String(r.displayName).trim().length > 0
                                     ? String(r.displayName)
                                     : (r?.peerId != null ? String(r.peerId) : ''),
+                            avatarId: r?.avatarId != null ? String(r.avatarId) : undefined,
                         }))
                         .filter((r) => r.peerId.length > 0);
                     setIncomingInvites(mapped);
@@ -93,8 +96,9 @@ export default function PendingScreen() {
         const subInvite = DeviceEventEmitter.addListener('onIncomingDirectChatInvite', (e: any) => {
             const pid = typeof e?.peerId === 'string' ? e.peerId.trim() : '';
             const dn = typeof e?.displayName === 'string' ? e.displayName.trim() : pid;
+            const avt = typeof e?.avatarId === 'string' ? e.avatarId.trim() || undefined : undefined;
             if (!pid) return;
-            pushIncomingUnique({ peerId: pid, displayName: dn });
+            pushIncomingUnique({ peerId: pid, displayName: dn, avatarId: avt });
         });
 
         const subAccepted = DeviceEventEmitter.addListener('onDirectChatInviteAccepted', (e: any) => {
@@ -188,8 +192,16 @@ export default function PendingScreen() {
                         <View
                             style={[styles.rowCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                         >
-                            <Text style={[styles.peerName, { color: colors.text }]}>{item.displayName}</Text>
-                            <Text style={[styles.peerId, { color: colors.subText }]}>{item.peerId}</Text>
+                            <View style={styles.rowCardHeader}>
+                                <Image
+                                    source={getAvatarSource(item.avatarId)}
+                                    style={styles.inviteAvatar}
+                                />
+                                <View style={styles.rowCardText}>
+                                    <Text style={[styles.peerName, { color: colors.text }]}>{item.displayName}</Text>
+                                    <Text style={[styles.peerId, { color: colors.subText }]}>{item.peerId}</Text>
+                                </View>
+                            </View>
                             <View style={styles.rowActions}>
                                 <TouchableOpacity
                                     style={[styles.btn, styles.reject, { borderColor: colors.border }]}
@@ -256,13 +268,27 @@ const styles = StyleSheet.create({
         padding: 14,
         marginBottom: 12,
     },
+    rowCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 10,
+    },
+    inviteAvatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+    },
+    rowCardText: {
+        flex: 1,
+    },
     peerName: {
         fontSize: 16,
         fontWeight: '600',
     },
     peerId: {
         fontSize: 12,
-        marginTop: 4,
+        marginTop: 2,
     },
     rowActions: {
         flexDirection: 'row',

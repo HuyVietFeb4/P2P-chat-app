@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { getAvatarSource } from '../../../assets/avatarMap';
 
 const { MeshengerApplicationModule } = NativeModules;
 
@@ -27,22 +28,7 @@ type ChatMessage = {
     text: string;
 };
 
-const AVATAR_SOURCES: Record<string, any> = {
-    avt0: require('../../../assets/avt_set/avt0.png'),
-    avt1: require('../../../assets/avt_set/avt1.png'),
-    avt2: require('../../../assets/avt_set/avt2.png'),
-    avt3: require('../../../assets/avt_set/avt3.png'),
-    avt4: require('../../../assets/avt_set/avt4.png'),
-    avt5: require('../../../assets/avt_set/avt5.png'),
-    avt6: require('../../../assets/avt_set/avt6.png'),
-    avt7: require('../../../assets/avt_set/avt7.png'),
-    avt8: require('../../../assets/avt_set/avt8.png'),
-    avt9: require('../../../assets/avt_set/avt9.png'),
-    avt10: require('../../../assets/avt_set/avt10.png'),
-    avt11: require('../../../assets/avt_set/avt11.png'),
-    avt12: require('../../../assets/avt_set/avt12.png'),
-};
-const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
+
 
 /** Normalize native WritableMap → predictable shape (avoids bad keys / FlatList crashes). */
 function normalizeConversationRow(raw: unknown): ChatMessage | null {
@@ -173,7 +159,7 @@ export default function Body({ peerId }: { peerId: string }) {
     const renderMessage = ({ item }: { item: ChatMessage }) => {
         const isMe = item.fromMe;
         const showSenderName = isGlobal && !isMe;
-        const avatarSource = AVATAR_SOURCES[item.senderAvatarId] ?? DEFAULT_AVATAR;
+        const avatarSource = getAvatarSource(item.senderAvatarId);
         return (
             <View style={[styles.messageRow, isMe ? styles.myMessageRow : styles.peerMessageRow]}>
                 {!isMe && (

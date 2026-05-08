@@ -8,24 +8,11 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput
 import { SafeAreaView } from 'react-native-safe-area-context';
 // 1. CHANGE: Import expo-device
 import * as Device from 'expo-device';
+import { AVATAR_LIST, getAvatarSource } from '../../../assets/avatarMap';
 
 const { MeshengerApplicationModule } = NativeModules;
 
-const avatars = [
-    { id: 'avt0', source: require('../../../assets/avt_set/avt0.png') },
-    { id: 'avt1', source: require('../../../assets/avt_set/avt1.png') },
-    { id: 'avt2', source: require('../../../assets/avt_set/avt2.png') },
-    { id: 'avt3', source: require('../../../assets/avt_set/avt3.png') },
-    { id: 'avt4', source: require('../../../assets/avt_set/avt4.png') },
-    { id: 'avt5', source: require('../../../assets/avt_set/avt5.png') },
-    { id: 'avt6', source: require('../../../assets/avt_set/avt6.png') },
-    { id: 'avt7', source: require('../../../assets/avt_set/avt7.png') },
-    { id: 'avt8', source: require('../../../assets/avt_set/avt8.png') },
-    { id: 'avt9', source: require('../../../assets/avt_set/avt9.png') },
-    { id: 'avt10', source: require('../../../assets/avt_set/avt10.png') },
-    { id: 'avt11', source: require('../../../assets/avt_set/avt11.png') },
-    { id: 'avt12', source: require('../../../assets/avt_set/avt12.png') },
-];
+
 
 export default function Onboarding5() {
     const { width, height } = useWindowDimensions();
@@ -100,7 +87,7 @@ export default function Onboarding5() {
                             <View style={styles.iconContainer}>
                                 {selectedAvtId ? (
                                     <Image
-                                        source={avatars.find(a => a.id === selectedAvtId)?.source}
+                                        source={getAvatarSource(selectedAvtId)}
                                         style={{ width: 100, height: 100, borderRadius: 50 }}
                                     />
                                 ) : (
@@ -174,7 +161,7 @@ export default function Onboarding5() {
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Choose an Avatar</Text>
                         <FlatList
-                            data={avatars.filter(a => a.id !== 'avt0')}
+                            data={AVATAR_LIST.filter(a => a.id !== 'avt0')}
                             numColumns={3}
                             keyExtractor={(item) => item.id}
                             showsVerticalScrollIndicator={false}

@@ -22,7 +22,7 @@ object GlobalChatSession : Session(), GlobalMessageListener {
      * announces via bootstrap (e.g. upgrade SQLite rows that still use `mp:` placeholders).
      */
     @Volatile
-    var onMeshPeerAnnounced: ((mpAddress: ULong, displayName: String) -> Unit)? = null
+    var onMeshPeerAnnounced: ((mpAddress: ULong, displayName: String, avatarId: String?) -> Unit)? = null
 
     private val TAG_LENGTH = 128
     private val ALGORITHM = "AES/GCM/NoPadding"
@@ -91,9 +91,10 @@ object GlobalChatSession : Session(), GlobalMessageListener {
         this.receiveMessageStr(senderID, payload, timeStamp)
     }
 
-    fun sendBootstrap(userName: String) {
+    fun sendBootstrap(userName: String, avatarId: String? = null) {
         val GlobalChatKey = getFixedKey(NativeCredentials.getGlobalChatKey())
-        val payLoad = "$userName|${MPAddress.getMyMPAddressString()}"
+        // Format: "name|mpAddress|avatarId" — avatarId may be empty string for no avatar
+        val payLoad = "$userName|${MPAddress.getMyMPAddressString()}|${avatarId ?: ""}"
         // CRITICAL: encryption IV is derived from this timestamp; the receiver re-derives the IV
         // from the packet header timestamp, so both must be the SAME value. (Previous code
         // generated two separate currentTimeMillis() calls, which silently broke AES-GCM auth.)
@@ -117,13 +118,15 @@ object GlobalChatSession : Session(), GlobalMessageListener {
             return
         }
         val decoded = String(decryptMsg, Charsets.UTF_8)
-        val parts = decoded.split("|", limit = 2)
+        // Format: "name|mpAddress" (legacy) or "name|mpAddress|avatarId" (new)
+        val parts = decoded.split("|", limit = 3)
         if (parts.size < 2) {
             Log.w("GlobalChatSession", "Bootstrap payload missing MP address: $decoded")
             return
         }
         val userName = parts[0]
         val mpRaw = parts[1].trim()
+        val avatarId = if (parts.size >= 3) parts[2].trim().takeIf { it.isNotEmpty() } else null
         // Bootstrap encodes MP address with Base64 (see sendBootstrap), so decode then read 8 BE bytes.
         val peerMpAddres = try {
             mpRaw.toULongOrNull()
@@ -132,10 +135,10 @@ object GlobalChatSession : Session(), GlobalMessageListener {
             Log.w("GlobalChatSession", "Bootstrap MP address unparseable: '$mpRaw' (${e.message})")
             return
         }
-        PeerInMeshRegistry.addOrUpdatePeer(Peer(userName, peerMpAddres))
-        Log.d("GlobalChatSession", "Bootstrap received: $userName ($peerMpAddres)")
+        PeerInMeshRegistry.addOrUpdatePeer(Peer(userName, peerMpAddres, avatarId))
+        Log.d("GlobalChatSession", "Bootstrap received: $userName ($peerMpAddres) avatar=$avatarId")
         try {
-            onMeshPeerAnnounced?.invoke(peerMpAddres, userName.trim())
+            onMeshPeerAnnounced?.invoke(peerMpAddres, userName.trim(), avatarId)
         } catch (e: Exception) {
             Log.w("GlobalChatSession", "onMeshPeerAnnounced failed: ${e.message}")
         }

@@ -3,25 +3,30 @@ import { Plus } from "lucide-react-native";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/app/context/ThemeContext";
+import { getAvatarSource } from "@/assets/avatarMap";
 
 type Props = {
     avatarName: string;
+    avatarId?: string;
     status: number;
     onPress?: () => void;
     disabled?: boolean;
     loading?: boolean;
 };
 
-export default function DeviceInfo({ avatarName, status, onPress, disabled, loading }: Props) {
+export default function DeviceInfo({ avatarName, avatarId, status, onPress, disabled, loading }: Props) {
     const { t } = useTranslation();
     const { colors } = useTheme();
+    const avatarSource = getAvatarSource(avatarId);
     const content = (
         <View style={styles.deviceInfoContainer}>
             <View style={styles.info}>
-                <Image
-                    source={require('@/assets/images/avatar.png')}
-                    style={styles.avatar}
-                />
+                <View style={[styles.avatarContainer, { borderColor: colors.border }]}>
+                    <Image
+                        source={avatarSource}
+                        style={styles.avatar}
+                    />
+                </View>
                 <Text style={[styles.text, {color: colors.text}]} numberOfLines={1}>{avatarName}</Text>
             </View>
 
@@ -57,7 +62,18 @@ export default function DeviceInfo({ avatarName, status, onPress, disabled, load
 const styles = StyleSheet.create({
     avatar: {
         width: 35,
-        height: 35
+        height: 35,
+        borderRadius: 17.5,
+    },
+
+    avatarContainer: {
+        width: 41,
+        height: 41,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 20.5,
+        backgroundColor: 'rgba(128, 128, 128, 0.08)',
+        borderWidth: 1.5,
     },
 
     info: {

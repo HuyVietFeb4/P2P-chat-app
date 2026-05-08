@@ -430,7 +430,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            GlobalChatSession.sendBootstrap(name)
+            val avatarId = UserStore.getProfile().userAvtId
+            GlobalChatSession.sendBootstrap(name, avatarId)
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("MESH_BOOTSTRAP_FAILED", e.message, e)
@@ -470,7 +471,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            GlobalChatSession.sendBootstrap(name)
+            val avatarId = UserStore.getProfile().userAvtId
+            GlobalChatSession.sendBootstrap(name, avatarId)
             val (peers, count) = meshPeersArrayExcludingSelf()
             promise.resolve(
                 Arguments.createMap().apply {
@@ -575,6 +577,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             putString("displayName", peer.userName)
             putString("mpAddress", mp.toString())
             putString("mpAddressBase64", MPAddress.MPAddressByteArrayToString(addrBytes))
+            peer.avatarId?.let { putString("avatarId", it) }
         }
     }
 
@@ -888,10 +891,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     }
 
     private fun registerMeshPeerAnnouncedHook() {
-        GlobalChatSession.onMeshPeerAnnounced = { mp, rawName ->
+        GlobalChatSession.onMeshPeerAnnounced = { mp, rawName, avatarId ->
             moduleScope.launch(Dispatchers.IO) {
                 try {
-                    applyBootstrapToStoredMeshPeer(mp, rawName, null)
+                    applyBootstrapToStoredMeshPeer(mp, rawName, avatarId)
                 } catch (e: Exception) {
                     Log.e("MeshengerApplication", "applyBootstrapToStoredMeshPeer failed", e)
                 }
@@ -953,11 +956,12 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         moduleScope.launch {
             while (isActive) {
                 try {
-                    val name = UserStore.getProfile().userName.trim()
+                    val profile = UserStore.getProfile()
+                    val name = profile.userName.trim()
                     val hasNeighbors = MeshConnectionRegistry.getOutboundMap().isNotEmpty()
                     if (name.isNotBlank() && !UserStore.isGenericMeshDisplayName(name) && hasNeighbors) {
-                        GlobalChatSession.sendBootstrap(name)
-                        Log.d("MeshengerApplication", "Presence bootstrap sent as '$name'")
+                        GlobalChatSession.sendBootstrap(name, profile.userAvtId)
+                        Log.d("MeshengerApplication", "Presence bootstrap sent as '$name' avatar=${profile.userAvtId}")
                     }
                 } catch (e: Exception) {
                     Log.w("MeshengerApplication", "Presence bootstrap failed: ${e.message}")
@@ -1179,11 +1183,12 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            val updated = UserStore.updateProfile(userName = trimmed)
+            val avatarId = newAvatarUrl?.trim()?.takeIf { it.isNotEmpty() }
+            val updated = UserStore.updateProfile(userName = trimmed, userAvtId = avatarId)
             val profile = Arguments.createMap().apply {
                 putString("id", updated.id)
                 putString("displayName", updated.userName)
-                putString("avatarId", updated.userAvtId)
+                updated.userAvtId?.let { putString("avatarId", it) }
             }
             promise.resolve(profile)
         } catch (e: Exception) {

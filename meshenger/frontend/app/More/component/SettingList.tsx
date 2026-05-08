@@ -6,24 +6,11 @@ import { useRouter } from "expo-router";
 import { useTheme } from "../../context/ThemeContext";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
+import { getAvatarSource } from "../../../assets/avatarMap";
 
 const { MeshengerApplicationModule } = NativeModules;
 
-const avatars = [
-    { id: 'avt0', source: require('../../../assets/avt_set/avt0.png') },
-    { id: 'avt1', source: require('../../../assets/avt_set/avt1.png') },
-    { id: 'avt2', source: require('../../../assets/avt_set/avt2.png') },
-    { id: 'avt3', source: require('../../../assets/avt_set/avt3.png') },
-    { id: 'avt4', source: require('../../../assets/avt_set/avt4.png') },
-    { id: 'avt5', source: require('../../../assets/avt_set/avt5.png') },
-    { id: 'avt6', source: require('../../../assets/avt_set/avt6.png') },
-    { id: 'avt7', source: require('../../../assets/avt_set/avt7.png') },
-    { id: 'avt8', source: require('../../../assets/avt_set/avt8.png') },
-    { id: 'avt9', source: require('../../../assets/avt_set/avt9.png') },
-    { id: 'avt10', source: require('../../../assets/avt_set/avt10.png') },
-    { id: 'avt11', source: require('../../../assets/avt_set/avt11.png') },
-    { id: 'avt12', source: require('../../../assets/avt_set/avt12.png') },
-];
+
 
 export default function SettingList() {
     const router = useRouter();
@@ -47,7 +34,7 @@ export default function SettingList() {
         fetchIdentity();
     }, []);
 
-    const selectedAvtSource = avatars.find(a => a.id === userAvtId)?.source || avatars[0].source;
+    const selectedAvtSource = getAvatarSource(userAvtId);
 
     return  (
         <ScrollView 

@@ -25,6 +25,7 @@ type MeshPeer = {
     displayName: string;
     mpAddress: string;
     mpAddressBase64: string;
+    avatarId?: string;
 };
 
 export default function DeviceList() {
@@ -176,6 +177,7 @@ export default function DeviceList() {
                         <DeviceInfo
                             key={peer.id}
                             avatarName={peer.displayName}
+                            avatarId={peer.avatarId}
                             status={1}
                             disabled={connectingId !== null && connectingId !== peer.id}
                             loading={connectingId === peer.id}
