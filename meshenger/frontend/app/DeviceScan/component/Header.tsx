@@ -17,7 +17,7 @@ export default function Header() {
                 <ArrowLeft size={20} color='#fff' />
             </Pressable>
 
-            <Text style={styles.title}>{t('device-scanning')}</Text>
+            <Text style={[styles.title, {color: colors.text}]}>{t('device-scanning')}</Text>
 
         </View>
     );

@@ -168,7 +168,7 @@ export default function PendingScreen() {
     }, [colors.card, colors.primary, colors.subText, colors.text, isDarkMode, outgoingName, outgoingPeerId, t]);
 
     return (
-        <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
+        <View style={[styles.safe, { backgroundColor: colors.background }]}>
             <Header openPopUp={false} setOpenPopUp={() => {}} />
             <View style={styles.content}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('pending-chat-requests')}</Text>
@@ -209,7 +209,7 @@ export default function PendingScreen() {
                 />
             </View>
             <Footer />
-        </SafeAreaView>
+        </View>
     );
 }
 

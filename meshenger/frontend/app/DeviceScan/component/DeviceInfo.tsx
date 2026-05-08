@@ -2,6 +2,7 @@ import { Image } from "expo-image";
 import { MessageCircle } from "lucide-react-native";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@react-navigation/native";
 
 type Props = {
     avatarName: string;
@@ -13,6 +14,7 @@ type Props = {
 
 export default function DeviceInfo({ avatarName, status, onPress, disabled, loading }: Props) {
     const { t } = useTranslation();
+    const { colors } = useTheme();
     const content = (
         <View style={styles.deviceInfoContainer}>
             <View style={styles.info}>

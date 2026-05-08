@@ -14,6 +14,7 @@ import {
 import DeviceInfo from "./DeviceInfo";
 import TypingDots from "./TypingDots";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@/app/context/ThemeContext";
 
 const { MeshengerApplicationModule } = NativeModules;
 const POLL_INTERVAL_MS = 2000;
@@ -38,6 +39,7 @@ export default function DeviceList() {
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const announceRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const { t } = useTranslation();
+    const { colors } = useTheme();
 
     const clearTimers = useCallback(() => {
         if (pollRef.current) {
@@ -149,8 +151,8 @@ export default function DeviceList() {
             </View>
 
             <View style={styles.scannedDevices}>
-                <BadgePlus size={20} color="rgba(0, 0, 0, 0.65)" />
-                <Text>
+                <BadgePlus size={20} color={colors.text} />
+                <Text style={{color: colors.text}}>
                     {t('scanned-devices')} ({peers.length})
                 </Text>
             </View>
