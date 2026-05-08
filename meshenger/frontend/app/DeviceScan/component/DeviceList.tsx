@@ -125,15 +125,14 @@ export default function DeviceList() {
             if (connectingId) return;
             setConnectingId(peer.id);
             try {
-                await MeshengerApplicationModule.connectToMeshPeer(peer.mpAddress, peer.displayName);
-                await MeshengerApplicationModule.openTwoPartySession(peer.id, peer.displayName, true);
-                router.push({
-                    pathname: "/Chat",
-                    params: { id: peer.id, name: peer.displayName },
+                await MeshengerApplicationModule.sendDirectChatInvite(peer.id);
+                router.replace({
+                    pathname: "/Pending",
+                    params: { outgoingPeerId: peer.id, outgoingName: peer.displayName },
                 });
             } catch (error: any) {
-                console.error("Failed to connect to peer:", error);
-                Alert.alert("Connection failed", error?.message ?? String(error));
+                console.error("Failed to send chat invite:", error);
+                Alert.alert("Invite failed", error?.message ?? String(error));
             } finally {
                 setConnectingId(null);
             }
