@@ -71,6 +71,13 @@
     "vietnamese": "Vietnamese",
     "no-direct-peers-yet": "No 1-on-1 chats yet",
     "open-device-scan-hint": "Open Devices Scan to find a peer, or wait for an incoming handshake.",
-    "no-devices-found-yet": "No devices found yet.",
-    "make-sure-another-devices": "Make sure the other device has the app open"
+    "error": "Error",
+    "accept": "Accept",
+    "reject": "Reject",
+    "pending-chat-requests": "Chat requests",
+    "pending-no-incoming": "No incoming requests.",
+    "waiting-for-accept-title": "Waiting for the other device",
+    "waiting-for-accept-hint": "They must open Pending and tap Accept.",
+    "invite-rejected-title": "Request declined",
+    "invite-rejected-body": "The other device declined the chat invitation."
 }
