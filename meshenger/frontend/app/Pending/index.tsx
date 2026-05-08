@@ -109,7 +109,7 @@ export default function PendingScreen() {
             removeIncoming(pid);
 
             if (outgoingPeerId && outgoingPeerId === pid) {
-                router.replace({
+                router.push({
                     pathname: '/Chat',
                     params: { id: pid, name: dn || outgoingName || pid },
                 });
@@ -135,7 +135,7 @@ export default function PendingScreen() {
         try {
             await respondInvite(item.peerId, true, item.displayName);
             removeIncoming(item.peerId);
-            router.replace({
+            router.push({
                 pathname: '/Chat',
                 params: { id: item.peerId, name: item.displayName },
             });
@@ -173,7 +173,7 @@ export default function PendingScreen() {
 
     return (
         <View style={[styles.safe, { backgroundColor: colors.background }]}>
-            <Header openPopUp={false} setOpenPopUp={() => {}} />
+            <Header openPopUp={false} setOpenPopUp={() => { }} />
             <View style={styles.content}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('pending-chat-requests')}</Text>
                 {outgoingBanner}
