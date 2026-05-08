@@ -70,5 +70,7 @@
     "english": "English",
     "vietnamese": "Vietnamese",
     "no-direct-peers-yet": "No 1-on-1 chats yet",
-    "open-device-scan-hint": "Open Devices Scan to find a peer, or wait for an incoming handshake."
+    "open-device-scan-hint": "Open Devices Scan to find a peer, or wait for an incoming handshake.",
+    "no-devices-found-yet": "No devices found yet.",
+    "make-sure-another-devices": "Make sure the other device has the app open"
 }

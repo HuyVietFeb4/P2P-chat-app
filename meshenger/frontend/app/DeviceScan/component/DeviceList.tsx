@@ -166,8 +166,8 @@ export default function DeviceList() {
                 >
                     {peers.length === 0 && !bootstrapping && (
                         <View style={styles.empty}>
-                            <Text style={styles.emptyText}>No devices found yet.</Text>
-                            <Text style={styles.emptySubText}>Make sure the other device has the app open.</Text>
+                            <Text style={styles.emptyText}>{t('no-devices-found-yet')}</Text>
+                            <Text style={styles.emptySubText}>{t('make-sure-another-devices')}</Text>
                         </View>
                     )}
 

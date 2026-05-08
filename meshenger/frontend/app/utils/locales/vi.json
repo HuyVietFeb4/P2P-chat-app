@@ -70,5 +70,7 @@
     "english": "Tiếng Anh",
     "vietnamese": "Tiếng Việt",
     "no-direct-peers-yet": "Chưa có trò chuyện 1-1",
-    "open-device-scan-hint": "Mở Quét thiết bị để tìm máy khác, hoặc đợi máy kia bắt tay kết nối."
+    "open-device-scan-hint": "Mở Quét thiết bị để tìm máy khác, hoặc đợi máy kia bắt tay kết nối.",
+    "no-devices-found-yet": "Chưa tìm thấy thiết bị nào.",
+    "make-sure-another-devices": "Hãy đảm bảo thiết bị kia đang mở ứng dụng"
 }
