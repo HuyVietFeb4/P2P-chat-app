@@ -430,7 +430,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            GlobalChatSession.sendBootstrap(name, UserStore.getProfile().userAvtId)
+            GlobalChatSession.sendBootstrap(name)
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("MESH_BOOTSTRAP_FAILED", e.message, e)
@@ -470,7 +470,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 )
                 return
             }
-            GlobalChatSession.sendBootstrap(name, UserStore.getProfile().userAvtId)
+            GlobalChatSession.sendBootstrap(name)
             val (peers, count) = meshPeersArrayExcludingSelf()
             promise.resolve(
                 Arguments.createMap().apply {
@@ -888,10 +888,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     }
 
     private fun registerMeshPeerAnnouncedHook() {
-        GlobalChatSession.onMeshPeerAnnounced = { mp, rawName, avatarId ->
+        GlobalChatSession.onMeshPeerAnnounced = { mp, rawName ->
             moduleScope.launch(Dispatchers.IO) {
                 try {
-                    applyBootstrapToStoredMeshPeer(mp, rawName, avatarId)
+                    applyBootstrapToStoredMeshPeer(mp, rawName, null)
                 } catch (e: Exception) {
                     Log.e("MeshengerApplication", "applyBootstrapToStoredMeshPeer failed", e)
                 }
@@ -956,7 +956,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     val name = UserStore.getProfile().userName.trim()
                     val hasNeighbors = MeshConnectionRegistry.getOutboundMap().isNotEmpty()
                     if (name.isNotBlank() && !UserStore.isGenericMeshDisplayName(name) && hasNeighbors) {
-                        GlobalChatSession.sendBootstrap(name, UserStore.getProfile().userAvtId)
+                        GlobalChatSession.sendBootstrap(name)
                         Log.d("MeshengerApplication", "Presence bootstrap sent as '$name'")
                     }
                 } catch (e: Exception) {

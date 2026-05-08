@@ -22,7 +22,7 @@ object GlobalChatSession : Session(), GlobalMessageListener {
      * announces via bootstrap (e.g. upgrade SQLite rows that still use `mp:` placeholders).
      */
     @Volatile
-    var onMeshPeerAnnounced: ((mpAddress: ULong, displayName: String, avatarId: String?) -> Unit)? = null
+    var onMeshPeerAnnounced: ((mpAddress: ULong, displayName: String) -> Unit)? = null
 
     private val TAG_LENGTH = 128
     private val ALGORITHM = "AES/GCM/NoPadding"
@@ -91,10 +91,9 @@ object GlobalChatSession : Session(), GlobalMessageListener {
         this.receiveMessageStr(senderID, payload, timeStamp)
     }
 
-    fun sendBootstrap(userName: String, avatarId: String? = null) {
+    fun sendBootstrap(userName: String) {
         val GlobalChatKey = getFixedKey(NativeCredentials.getGlobalChatKey())
-        val safeAvatarId = avatarId?.trim().orEmpty()
-        val payLoad = "$userName|${MPAddress.getMyMPAddressString()}|$safeAvatarId"
+        val payLoad = "$userName|${MPAddress.getMyMPAddressString()}"
         // CRITICAL: encryption IV is derived from this timestamp; the receiver re-derives the IV
         // from the packet header timestamp, so both must be the SAME value. (Previous code
         // generated two separate currentTimeMillis() calls, which silently broke AES-GCM auth.)
@@ -125,7 +124,6 @@ object GlobalChatSession : Session(), GlobalMessageListener {
         }
         val userName = parts[0]
         val mpRaw = parts[1].trim()
-        val avatarId = parts.getOrNull(2)?.trim()?.takeIf { it.isNotEmpty() }
         // Bootstrap encodes MP address with Base64 (see sendBootstrap), so decode then read 8 BE bytes.
         val peerMpAddres = try {
             mpRaw.toULongOrNull()
@@ -137,7 +135,7 @@ object GlobalChatSession : Session(), GlobalMessageListener {
         PeerInMeshRegistry.addOrUpdatePeer(Peer(userName, peerMpAddres))
         Log.d("GlobalChatSession", "Bootstrap received: $userName ($peerMpAddres)")
         try {
-            onMeshPeerAnnounced?.invoke(peerMpAddres, userName.trim(), avatarId)
+            onMeshPeerAnnounced?.invoke(peerMpAddres, userName.trim())
         } catch (e: Exception) {
             Log.w("GlobalChatSession", "onMeshPeerAnnounced failed: ${e.message}")
         }
