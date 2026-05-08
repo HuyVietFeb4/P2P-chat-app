@@ -15,6 +15,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { getAvatarSource } from '../../../assets/avatarMap';
+
 const { MeshengerApplicationModule } = NativeModules;
 const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
 
@@ -39,7 +41,7 @@ export default function ChatList() {
       const formattedPeers = peers.map((peer: any) => ({
         id: peer.id,
         name: peer.displayName,
-        avatarUrl: peer.avatarUrl,
+        avatarId: peer.avatarId,
         lastMessage: 'No messages yet',
         timestamp: '',
         unreadCount: 0,
@@ -65,14 +67,14 @@ export default function ChatList() {
     return () => sub.remove();
   }, [loadPeers]);
 
-  const handleSelectChat = (id: string, name: string, avatarUrl: string | null) => {
+  const handleSelectChat = (id: string, name: string, avatarId: string | null) => {
     setSelectedChat(id);
     console.log(`Opening chat with: ${name}`);
 
     // Navigate to Chat screen with peer info as parameters
     router.push({
       pathname: '/Chat',
-      params: { id, name, avatarUrl }
+      params: { id, name, avatarUrl: avatarId }
     });
   };
 
@@ -87,11 +89,11 @@ export default function ChatList() {
             { backgroundColor: isDarkMode ? colors.card : '#ffffff' },
             isSelected && { backgroundColor: isDarkMode ? '#35373C' : '#e6f2ff', borderColor: isDarkMode ? colors.primary : '#b3d9ff', borderWidth: 1 }
         ]}
-        onPress={() => handleSelectChat(item.id, item.name, item.avatarUrl)}
+        onPress={() => handleSelectChat(item.id, item.name, item.avatarId)}
         activeOpacity={0.7}
       >
         <Image
-          source={item.avatarUrl ? { uri: item.avatarUrl } : DEFAULT_AVATAR}
+          source={getAvatarSource(item.avatarId)}
           style={[styles.avatar, { backgroundColor: isDarkMode ? '#35373C' : '#f0f0f0' }]}
         />
         

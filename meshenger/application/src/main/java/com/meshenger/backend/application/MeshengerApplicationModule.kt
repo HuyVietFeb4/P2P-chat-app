@@ -777,8 +777,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     }
 
     private fun ensurePeerRow(peerId: String, displayName: String, avatarId: String? = null) {
-        dbHelper.upsertUserProfile(UserProfile(peerId, "-", displayName, avatarId))
-        dbHelper.ensureDirectChatForPeer(peerId, displayName)
+        val existing = dbHelper.getUserProfile(peerId)
+        val finalAvatar = avatarId ?: existing?.userAvtId
+        dbHelper.upsertUserProfile(UserProfile(peerId, "-", displayName, finalAvatar))
+        dbHelper.ensureDirectChatForPeer(peerId, displayName, finalAvatar)
     }
 
     private data class InvitePayload(val displayName: String, val avatarId: String?)
@@ -1045,6 +1047,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                             Arguments.createMap().apply {
                                 putString("peerId", peerIdStr)
                                 putString("displayName", displayName)
+                                avatarId?.let { putString("avatarId", it) }
                             },
                         )
                     } catch (e: Exception) {
@@ -1113,6 +1116,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 val map: WritableMap = Arguments.createMap().apply {
                     putString("id", peer.id)
                     putString("displayName", peer.userName)
+                    peer.userAvtId?.let { putString("avatarId", it) }
                 }
                 array.pushMap(map)
             }

@@ -189,14 +189,18 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     /**
      * Ensures [peerId] exists in users and a 1:1 chat + session row exist for DB message FKs.
      */
-    fun ensureDirectChatForPeer(peerId: String, peerUserName: String) {
+    fun ensureDirectChatForPeer(peerId: String, peerUserName: String, avatarId: String? = null) {
         val existing = getUserProfile(peerId)
         if (existing == null) {
-            upsertUserProfile(UserProfile(peerId, publicKeyHash = "-", userName = peerUserName))
+            upsertUserProfile(UserProfile(peerId, publicKeyHash = "-", userName = peerUserName, userAvtId = avatarId))
         } else {
             val shouldUpgradeName = existing.userName == peerId && peerUserName != peerId
-            if (shouldUpgradeName) {
-                upsertUserProfile(existing.copy(userName = peerUserName))
+            val finalAvatar = avatarId ?: existing.userAvtId
+            if (shouldUpgradeName || finalAvatar != existing.userAvtId) {
+                upsertUserProfile(existing.copy(
+                    userName = if (shouldUpgradeName) peerUserName else existing.userName,
+                    userAvtId = finalAvatar
+                ))
             }
         }
         val chatId = directChatId(peerId)
