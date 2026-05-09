@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import SecurityStatus from '@/app/common components/SecurityStatus';
 
 const { MeshengerApplicationModule } = NativeModules;
 const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
@@ -20,6 +21,7 @@ const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
 type DirectPeer = {
   id: string;
   displayName: string;
+  security: string;
 };
 
 export default function IndividualChat() {
@@ -34,7 +36,11 @@ export default function IndividualChat() {
       const all = await MeshengerApplicationModule.listPeers();
       const direct: DirectPeer[] = (all ?? [])
         .filter((p: any) => typeof p?.id === 'string' && p.id.startsWith('mp:'))
-        .map((p: any) => ({ id: p.id, displayName: p.displayName ?? p.id }));
+        .map((p: any) => ({
+          id: p.id,
+          displayName: p.displayName ?? p.id,
+          security: typeof p.security === 'string' ? p.security : 'medium',
+        }));
       setPeers(direct);
     } catch (error) {
       console.error('Failed to load direct peers:', error);
@@ -60,10 +66,14 @@ export default function IndividualChat() {
     const nameSub = DeviceEventEmitter.addListener('onPeerDisplayNameUpdated', () => {
       loadPeers();
     });
+    const secSub = DeviceEventEmitter.addListener('onPeerSecurityUpdated', () => {
+      loadPeers();
+    });
     return () => {
       handshakeSub.remove();
       messageSub.remove();
       nameSub.remove();
+      secSub.remove();
     };
   }, [loadPeers]);
 
@@ -73,6 +83,7 @@ export default function IndividualChat() {
       params: {
         id: peer.id,
         name: peer.displayName,
+        security: peer.security,
         ...(qrHost ? { qrBootstrap: 'qr_display' } : {}),
       },
     });
@@ -108,7 +119,12 @@ export default function IndividualChat() {
           >
             <Image source={DEFAULT_AVATAR} style={styles.avatar} />
             <View style={styles.textContainer}>
-              <Text style={[styles.nameText, { color: colors.text }]}>{item.displayName}</Text>
+              <View style={styles.titleRow}>
+                <Text style={[styles.nameText, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
+                  {item.displayName}
+                </Text>
+                <SecurityStatus level={item.security} />
+              </View>
               <Text style={[styles.peerIdText, { color: colors.subText }]} numberOfLines={1}>
                 {item.id}
               </Text>
@@ -149,6 +165,12 @@ const styles = StyleSheet.create({
   textContainer: {
     flex: 1,
     justifyContent: 'center',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
   },
   nameText: {
     fontSize: 16,

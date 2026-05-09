@@ -43,6 +43,7 @@ export default function ChatList() {
         id: peer.id,
         name: peer.displayName,
         avatarId: peer.avatarId,
+        security: typeof peer.security === 'string' ? peer.security : 'medium',
         lastMessage: 'No messages yet',
         timestamp: '',
         unreadCount: 0,
@@ -71,17 +72,22 @@ export default function ChatList() {
     const sub = DeviceEventEmitter.addListener('onPeerDisplayNameUpdated', () => {
       loadPeers();
     });
-    return () => sub.remove();
+    const secSub = DeviceEventEmitter.addListener('onPeerSecurityUpdated', () => {
+      loadPeers();
+    });
+    return () => {
+      sub.remove();
+      secSub.remove();
+    };
   }, [loadPeers]);
 
-  const handleSelectChat = (id: string, name: string, avatarId: string | null) => {
+  const handleSelectChat = (id: string, name: string, avatarId: string | null, security: string) => {
     setSelectedChat(id);
     console.log(`Opening chat with: ${name}`);
 
-    // Navigate to Chat screen with peer info as parameters
     router.push({
       pathname: '/Chat',
-      params: { id, name, avatarUrl: avatarId }
+      params: { id, name, avatarUrl: avatarId ?? '', security },
     });
   };
 
@@ -96,7 +102,7 @@ export default function ChatList() {
             { backgroundColor: isDarkMode ? colors.card : '#ffffff' },
             isSelected && { backgroundColor: isDarkMode ? '#35373C' : '#e6f2ff', borderColor: isDarkMode ? colors.primary : '#b3d9ff', borderWidth: 1 }
         ]}
-        onPress={() => handleSelectChat(item.id, item.name, item.avatarId)}
+        onPress={() => handleSelectChat(item.id, item.name, item.avatarId, item.security)}
         activeOpacity={0.7}
       >
         <Image
@@ -107,7 +113,7 @@ export default function ChatList() {
         <View style={styles.textContainer}>
           <View style={styles.securityStatus}>
             <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
-            <SecurityStatus />
+            <SecurityStatus level={item.security} />
           </View>
           {/* <Text 
             style={[styles.messageText, { color: colors.subText }, hasUnread && { color: colors.text, fontWeight: '600' }]}

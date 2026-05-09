@@ -9,6 +9,7 @@ import com.meshenger.backend.application.messaging.Message
 import com.meshenger.backend.application.messaging.MessageStatus
 import com.meshenger.backend.application.messaging.MessagingStore
 import com.meshenger.backend.application.security.RemotePeerCryptoStore
+import com.meshenger.backend.application.user.PeerSecurity
 import com.meshenger.backend.application.user.UserProfile
 import com.meshenger.backend.application.user.UserStore
 import com.meshenger.backend.network.DirectChatNegotiationListener
@@ -173,7 +174,14 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
 
     private fun ensureGlobalChatStorage() {
         val globalKeyId = buildGlobalKeyId()
-        dbHelper.upsertUserProfile(UserProfile(GLOBAL_BROADCAST_ID, "-", "Global Chat"))
+        dbHelper.upsertUserProfile(
+            UserProfile(
+                GLOBAL_BROADCAST_ID,
+                "-",
+                "Global Chat",
+                security = PeerSecurity.WEAK,
+            ),
+        )
         dbHelper.ensureGlobalChat(GLOBAL_CHAT_ID, GLOBAL_SESSION_ID, globalKeyId)
     }
 
@@ -217,6 +225,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                             publicKeyHash = "-",
                             userName = existing?.userName ?: senderId,
                             userAvtId = existing?.userAvtId,
+                            security = existing?.security ?: PeerSecurity.MEDIUM,
                         )
                     )
                 }
@@ -255,10 +264,17 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 promise.reject("INVALID_INPUT", "ID and Display Name cannot be empty")
                 return
             }
+            val existingPeer = dbHelper.getUserProfile(id)
+            val security = when (existingPeer?.security) {
+                PeerSecurity.STRONG -> PeerSecurity.STRONG
+                else -> PeerSecurity.MEDIUM
+            }
             val peer = UserProfile(
                 id = id,
                 publicKeyHash = "-",
-                userName = displayName
+                userName = displayName,
+                userAvtId = avatarUrl,
+                security = security,
             )
             dbHelper.upsertUserProfile(peer)
             promise.resolve("Peer $displayName saved successfully")
@@ -544,11 +560,17 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 return
             }
             val peerId = meshPeerId(mp)
+            val existingPeer = dbHelper.getUserProfile(peerId)
+            val security = when (existingPeer?.security) {
+                PeerSecurity.STRONG -> PeerSecurity.STRONG
+                else -> PeerSecurity.MEDIUM
+            }
             dbHelper.upsertUserProfile(
                 UserProfile(
                     id = peerId,
                     publicKeyHash = "-",
-                    userName = displayName.trim()
+                    userName = displayName.trim(),
+                    security = security,
                 )
             )
             dbHelper.ensureDirectChatForPeer(peerId, displayName.trim())
@@ -980,7 +1002,11 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     private fun ensurePeerRow(peerId: String, displayName: String, avatarId: String? = null) {
         val existing = dbHelper.getUserProfile(peerId)
         val finalAvatar = avatarId ?: existing?.userAvtId
-        dbHelper.upsertUserProfile(UserProfile(peerId, "-", displayName, finalAvatar))
+        val security = when (existing?.security) {
+            PeerSecurity.STRONG -> PeerSecurity.STRONG
+            else -> PeerSecurity.MEDIUM
+        }
+        dbHelper.upsertUserProfile(UserProfile(peerId, "-", displayName, finalAvatar, security))
         dbHelper.ensureDirectChatForPeer(peerId, displayName, finalAvatar)
     }
 
@@ -1182,13 +1208,6 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                         keyType = RemotePeerCryptoStore.KEY_TYPE_X25519_RAW,
                         rawKeyMaterial = remoteStatic,
                     )
-                    if (effectivePattern == NoisePattern.XK) {
-                        try {
-                            dbHelper.setDirectChatPairedViaQr(peerId, true)
-                        } catch (e: Exception) {
-                            Log.w(OTO_TAG, "setDirectChatPairedViaQr peer=$peerId: ${e.message}")
-                        }
-                    }
                     try {
                         remotePeerCrypto.deleteRemoteRawKey(peerId, RemotePeerCryptoStore.KEY_TYPE_X25519_QR_IMPORT)
                     } catch (e: Exception) {
@@ -1200,6 +1219,21 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 }
             } else {
                 Log.w(OTO_TAG, "HS complete peer=$peerId but remoteStatic was null (cannot persist)")
+            }
+            // XK (QR bond): mark chat + user Strong on both sides. Do not tie this to key-store
+            // persistence — that can fail while Noise still completed successfully.
+            if (effectivePattern == NoisePattern.XK) {
+                try {
+                    ensurePeerRow(peerId, displayName)
+                    dbHelper.setDirectChatPairedViaQr(peerId, true)
+                    val event = Arguments.createMap().apply {
+                        putString("peerId", peerId)
+                        putString("security", PeerSecurity.STRONG)
+                    }
+                    sendEvent("onPeerSecurityUpdated", event)
+                } catch (e: Exception) {
+                    Log.w(OTO_TAG, "XK setDirectChatPairedViaQr peer=$peerId: ${e.message}")
+                }
             }
         }
 
@@ -1728,6 +1762,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     putString("id", peer.id)
                     putString("displayName", peer.userName)
                     peer.userAvtId?.let { putString("avatarId", it) }
+                    putString("security", peer.security)
                 }
                 array.pushMap(map)
             }
