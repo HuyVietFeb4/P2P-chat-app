@@ -14,6 +14,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import SecurityStatus from '@/app/common components/SecurityStatus';
 
 import { getAvatarSource } from '../../../assets/avatarMap';
 
@@ -104,13 +105,16 @@ export default function ChatList() {
         />
         
         <View style={styles.textContainer}>
-          <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
-          <Text 
+          <View style={styles.securityStatus}>
+            <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
+            <SecurityStatus />
+          </View>
+          {/* <Text 
             style={[styles.messageText, { color: colors.subText }, hasUnread && { color: colors.text, fontWeight: '600' }]}
             numberOfLines={1}
           >
             {item.lastMessage}
-          </Text>
+          </Text> */}
         </View>
 
         <View style={styles.rightContainer}>
@@ -233,4 +237,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
   },
+  securityStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5
+  }
 });

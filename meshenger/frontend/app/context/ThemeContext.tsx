@@ -22,15 +22,35 @@ export const Colors = {
     peerMessageText: '#333333',
     returnIcon: '#4DA6FF',
     scannedBg: '#FFFFF',
-    cardBg: '#F0F9FF'
+    cardBg: '#F0F9FF',
+    scanPopUp: '#F8F9FC',
+    scanPopUpBorder: '#E3E7F0',
+    scanPopUpMainText: '#5F2EEA',
+    scanPopUpSubText: 'rgba(55, 48, 163, 0.9)',
+    scanPopUpAccent: '#5F2EEA',
+    success: {
+        bg: '#DCFCE7',           // Xanh lá cực nhạt
+        borderColor: '#22C55E',  // Viền xanh lá tươi
+        textColor: '#14532D'
+    },
+    warning: {
+        bg: '#FEF3C7',           // Vàng nhạt
+        borderColor: '#F59E0B',
+        textColor: '#78350F',    // Chữ nâu cam đậm
+    },
+    error: {
+        bg: '#FEE2E2',           // Đỏ nhạt
+        borderColor: '#EF4444',
+        textColor: '#991B1B',    // Chữ đỏ đậm
+    },
   },
   dark: {
-    background: '#313338', // Discord-like gray background
+    background: '#313338', 
     text: '#F2F3F5',
     subText: '#B5BAC1',
-    card: '#2B2D31', // Discord-like card color
+    card: '#2B2D31', 
     border: '#1E1F22',
-    primary: '#5865F2', // Discord-like blurple
+    primary: '#5865F2', 
     headerGradient: ['#0F4C81', '#5F2EEA'],
     footerBg: '#2B2D31',
     iconBg: '#35373C',
@@ -43,7 +63,27 @@ export const Colors = {
     peerMessageText: '#DBDEE1',
     returnIcon: 'rgba(255,255,255,0.2)',
     scannedBg: '#181A20',
-    cardBg: '#243447'
+    cardBg: '#243447',
+    scanPopUp: '#3F4248',          
+    scanPopUpBorder: '#585B64',     
+    scanPopUpMainText: '#FFFFFF',   
+    scanPopUpSubText: '#B5BAC1',    
+    scanPopUpAccent: '#949CF7',
+    success: {
+        bg: '#064E3B',          
+        borderColor: '#10B981',  
+        textColor: '#34D399',    
+    },
+    warning: {
+        bg: '#451A03',           
+        borderColor: '#F59E0B',
+        textColor: '#FBBF24',   
+    },
+    error: {
+        bg: '#450A0A',          
+        borderColor: '#EF4444',
+        textColor: '#F87171',    
+    },
   },
 };
 

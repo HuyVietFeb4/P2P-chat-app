@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { QrCode, Tablet, UserRoundPlus } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@/app/context/ThemeContext";
 
 type Props = {
     setOnClose: () => void;
@@ -11,6 +12,7 @@ export default function ScanPopUp({ setOnClose }: Props) {
     const router = useRouter();
     const { width } = useWindowDimensions();
     const { t } = useTranslation();
+    const { colors } = useTheme();
 
     const handleRouteDeviceScan = () => {
         setOnClose();
@@ -23,30 +25,40 @@ export default function ScanPopUp({ setOnClose }: Props) {
     }
 
     return (
-        <View style={[styles.addUserContainer, {width: width * 0.4}]}>
-            <View style={styles.addUser}>
+        <View style={[styles.addUserContainer, {width: width * 0.4, backgroundColor: colors.scanPopUp}]}>
+            <View style={[styles.addUser, {borderColor: colors.scanPopUpBorder}]}>
                 <UserRoundPlus
                     size={20}
-                    color="#5F2EEA"
+                    color={colors.scanPopUpMainText}
                 />
-                <Text style={styles.addUserText}>{t("add-users")}</Text>
+                <Text style={[styles.addUserText, {color: colors.scanPopUpMainText}]}>{t("add-users")}</Text>
             </View>
 
             <View style={styles.addUserActionContainer}>
                 <Pressable style={styles.addUserAction} onPress={handleRouteDeviceScan}>
                     <Tablet
                         size={20}
-                        color="#5F2EEA"
+                        color={colors.scanPopUpAccent}
                     />
-                    <Text style={styles.addUserText}>{t("devices")}</Text>
+                    <Text style={[
+                        styles.addUserText,
+                        { color: colors.scanPopUpSubText }
+                    ]}>
+                        {t("devices")}
+                    </Text>
                 </Pressable>
 
                 <Pressable style={styles.addUserAction} onPress={handleRouteQRScan}>
                     <QrCode
                         size={20}
-                        color="#5F2EEA"
+                        color={colors.scanPopUpAccent}
                     />
-                    <Text style={styles.addUserText}>{t("qr")}</Text>
+                    <Text style={[
+                        styles.addUserText,
+                        { color: colors.scanPopUpSubText }]}
+                    >
+                        {t("qr")}
+                    </Text>
                 </Pressable>
             </View>
         </View>
@@ -74,13 +86,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingBottom: 3,
         borderBottomWidth: 0.25,
-        borderColor: '#3730A3'
     },
 
     addUserText: {
         fontSize: 12,
         fontWeight: 'bold',
-        color: 'rgba(55, 48, 163, 0.9)'
     },
     
     addUserActionContainer: {
