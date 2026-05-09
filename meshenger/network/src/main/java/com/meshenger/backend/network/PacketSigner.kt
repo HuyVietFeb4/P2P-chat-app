@@ -61,7 +61,7 @@ object PacketSigner {
             // Defensive recovery for stale/incompatible keystore alias on some devices.
             Log.w("PacketSigner", "Identity key invalid, regenerating once: ${e.message}")
             try {
-                val regenerated = StaticKeyManager.regenerateIdentityKey()
+                val regenerated = StaticKeyManager.getOrCreateIdentityKey()
                 Signature.getInstance("Ed25519").run {
                     initSign(regenerated.private)
                     update(buffer.array())

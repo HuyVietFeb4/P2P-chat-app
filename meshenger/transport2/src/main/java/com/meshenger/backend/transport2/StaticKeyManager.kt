@@ -64,18 +64,6 @@ object StaticKeyManager {
         return kpg.generateKeyPair()
     }
 
-    fun regenerateIdentityKey(): KeyPair {
-        if (keyStore.containsAlias(STATIC_IDENTITY_ALIAS)) {
-            keyStore.deleteEntry(STATIC_IDENTITY_ALIAS)
-        }
-        val kpg = KeyPairGenerator.getInstance(ED25519_ALGO, PROVIDER)
-        val spec = KeyGenParameterSpec.Builder(
-            STATIC_IDENTITY_ALIAS,
-            KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
-        ).build()
-        kpg.initialize(spec)
-        return kpg.generateKeyPair()
-    }
     /**
      * Create a pair of X25519 keys
      * @return Pair of (public key, private key) to be stored in SQLite.
