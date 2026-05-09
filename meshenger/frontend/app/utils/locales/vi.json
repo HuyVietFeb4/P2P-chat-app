@@ -79,5 +79,10 @@
     "waiting-for-accept-title": "Đang chờ máy kia phản hồi",
     "waiting-for-accept-hint": "Họ cần mở tab Pending và bấm Chấp nhận.",
     "invite-rejected-title": "Đã từ chối",
-    "invite-rejected-body": "Máy kia đã từ chối lời mời trò chuyện."
+    "invite-rejected-body": "Máy kia đã từ chối lời mời trò chuyện.",
+    "select-your-avatar": "Chọn avatar",
+    "username": "Tên người dùng",
+    "enter-your-username": "Nhập tên người dùng",
+    "save": "Lưu",
+    "cancel": "Hủy"
 }

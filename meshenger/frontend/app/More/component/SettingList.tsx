@@ -21,6 +21,7 @@ export default function SettingList() {
 
     const [deviceName, setDeviceName] = useState<string>('Loading...');
     const [userAvtId, setUserAvtId] = useState<string>('avt0');
+    const [openPopUp, setOpenPopUp] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchIdentity = async () => {
@@ -43,7 +44,7 @@ export default function SettingList() {
                 style={{flex: 1, backgroundColor: colors.background}}
                 contentContainerStyle={{paddingBottom: 50}}
             >
-                <View style={styles.profileInfo}>
+                <TouchableOpacity style={styles.profileInfo} onPress={() => setOpenPopUp(true)}>
                     <Text style={[styles.moreText, { color: colors.sectionTitle }]}>{t('profile-info')}</Text>
                     <LinearGradient 
                         colors={['#00C6FF', '#0072FF']}
@@ -64,7 +65,7 @@ export default function SettingList() {
 
                         <Pencil size={16} color="#fff" />
                     </LinearGradient>
-                </View>
+                </TouchableOpacity>
 
                 {/* Messages */}
                 <View style={styles.profileInfo}>
@@ -183,7 +184,12 @@ export default function SettingList() {
                         </View>
                     </View>
                 </View>
-                <InfoPopUp />
+                
+                {
+                    openPopUp && (
+                        <InfoPopUp onClose={() => setOpenPopUp(false)} />
+                    )
+                }
             </ScrollView>
         </View>
     )

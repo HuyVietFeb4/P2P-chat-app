@@ -79,5 +79,10 @@
     "waiting-for-accept-title": "Waiting for the other device",
     "waiting-for-accept-hint": "They must open Pending and tap Accept.",
     "invite-rejected-title": "Request declined",
-    "invite-rejected-body": "The other device declined the chat invitation."
+    "invite-rejected-body": "The other device declined the chat invitation.",
+    "select-your-avatar": "Select your avatar",
+    "username": "Username",
+    "enter-your-username": "Enter your username",
+    "save": "Save",
+    "cancel": "Cancel"
 }
