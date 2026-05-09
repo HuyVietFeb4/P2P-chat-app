@@ -84,5 +84,6 @@
     "username": "Tên người dùng",
     "enter-your-username": "Nhập tên người dùng",
     "save": "Lưu",
-    "cancel": "Hủy"
+    "cancel": "Hủy",
+    "username-required": "Tên người dùng trống"
 }

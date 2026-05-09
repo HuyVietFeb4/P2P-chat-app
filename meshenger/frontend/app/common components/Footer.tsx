@@ -1,14 +1,12 @@
 import { usePathname, useRouter } from 'expo-router';
 import { Menu, MessageCircleMore, MessageSquareMore } from 'lucide-react-native';
-import { StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Shadow } from 'react-native-shadow-2';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
-
 export default function Footer() {
-  const { width } = useWindowDimensions();
   const router = useRouter();
   const pathName = usePathname();
   const insets = useSafeAreaInsets();
@@ -32,15 +30,22 @@ export default function Footer() {
   const BG_COLOR = colors.footerBg;
 
   return (
+    // Sử dụng Shadow bao bọc toàn bộ để tạo hiệu ứng đổ bóng phía trên footer
     <Shadow
-      distance={24}
-      startColor={isDarkMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)'}
+      distance={15}
+      startColor={isDarkMode ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.05)'}
       offset={[0, -2]}
-      sides={{ top: true }}
+      stretch
+      sides={{ top: true, bottom: false, start: false, end: false }}
     >
-      <SafeAreaView
-        edges={['bottom']}
-        style={[styles.container, { width, paddingBottom: insets.bottom, backgroundColor: BG_COLOR }]}
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: BG_COLOR,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 15, // Đảm bảo có padding ở dưới
+          },
+        ]}
       >
         <View style={styles.navRow}>
           {NAV_ITEMS.map(({ key, label, Icon }) => {
@@ -50,69 +55,83 @@ export default function Footer() {
                 key={key}
                 style={styles.navItem}
                 onPress={() => handleNavigate(key)}
-                activeOpacity={0.7}
+                activeOpacity={0.6}
               >
-                {/* Active pill indicator */}
-                {isActive && <View style={[styles.activePill, { backgroundColor: ACTIVE_COLOR }]} />}
+                {/* Thanh chỉ báo phía trên (Indicator) */}
+                <View 
+                  style={[
+                    styles.activePill, 
+                    { backgroundColor: isActive ? ACTIVE_COLOR : 'transparent' }
+                  ]} 
+                />
 
-                {/* Icon with subtle background when active */}
-                <View style={[styles.iconWrap, isActive && { backgroundColor: colors.iconBg }]}>
+                <View style={[
+                  styles.iconWrap, 
+                  isActive && { backgroundColor: colors.iconBg || 'rgba(0,0,0,0.05)' }
+                ]}>
                   <Icon
-                    size={20}
+                    size={22}
                     color={isActive ? ACTIVE_COLOR : INACTIVE_COLOR}
-                    strokeWidth={isActive ? 2.2 : 1.8}
+                    strokeWidth={isActive ? 2.5 : 2}
                   />
                 </View>
 
-                {/* Label */}
-                <Text style={[styles.label, { color: INACTIVE_COLOR }, isActive && { color: ACTIVE_COLOR, fontWeight: '700' }]}>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: isActive ? ACTIVE_COLOR : INACTIVE_COLOR },
+                    isActive && { fontWeight: '700' }
+                  ]}
+                >
                   {label}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
-      </SafeAreaView>
+      </View>
     </Shadow>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 10,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    width: '100%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 8,
   },
   navRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    paddingHorizontal: 8,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 4,
-    gap: 4,
+    justifyContent: 'center',
+    paddingVertical: 6,
     position: 'relative',
   },
   activePill: {
     position: 'absolute',
-    top: -10,
-    width: 32,
-    height: 3,
-    borderRadius: 99,
+    top: -8, // Đẩy lên sát mép trên của footer
+    width: 24,
+    height: 4,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
   },
   iconWrap: {
-    width: 44,
-    height: 36,
-    borderRadius: 12,
+    width: 50,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 4,
   },
   label: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
-    letterSpacing: 0.2,
   },
 });

@@ -14,6 +14,8 @@ import {
   NativeModules
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useBehavior } from '@/hook/useBehavior';
+import { useTheme } from '@/app/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -43,6 +45,9 @@ export default function InfoPopUp({ onClose, onSaved }: Props) {
     const [username, setUsername] = useState('');
     const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0].name);
     const [savedName, setSavedName] = useState('');
+    const behavior = useBehavior();
+    const { colors } = useTheme();
+    const [isError, setIsError] = useState(false);
 
     useEffect(() => {
       const fetchUser = async () => {
@@ -58,6 +63,11 @@ export default function InfoPopUp({ onClose, onSaved }: Props) {
     const { t } = useTranslation();
 
     const handleSave = async () => {
+        if (!username.trim()) {
+            setIsError(true);
+            return;
+        }
+
         try {
           await MeshengerApplicationModule.updateMyProfile(username.trim() || savedName, selectedAvatar);
           await onSaved();
@@ -67,27 +77,34 @@ export default function InfoPopUp({ onClose, onSaved }: Props) {
         }
     };
 
+    const handleTextChange = (text: string) => {
+        setUsername(text);
+        if (isError && text.trim().length > 0) {
+            setIsError(false);
+        }
+    };
+
     return (
         <Modal
-            animationType="fade"
+            animationType="slide"
             transparent={true}
             visible={true}
             onRequestClose={onClose}
         >
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={behavior}
             >
                 <View style={styles.overlay}>
-                    <View style={styles.modalCard}>
+                    <View style={[styles.modalCard, {backgroundColor: colors.background}]}>
                         {/* Header */}
                         <View style={styles.header}>
                             <View style={styles.indicator} />
-                            <Text style={styles.modalTitle}>{t('profile-info')}</Text>
+                            <Text style={[styles.modalTitle, {color: colors.text}]}>{t('profile-info')}</Text>
                         </View>
 
                         {/* Avatar Picker */}
-                        <Text style={styles.sectionLabel}>{t('select-your-avatar')}</Text>
+                        <Text style={[styles.sectionLabel, {color: colors.subText}]}>{t('select-your-avatar')}</Text>
                         <FlatList
                             data={AVATARS}
                             horizontal
@@ -114,14 +131,26 @@ export default function InfoPopUp({ onClose, onSaved }: Props) {
                         />
 
                         {/* Input Field */}
-                        <Text style={styles.sectionLabel}>{t('username')}</Text>
+                        <Text style={[styles.sectionLabel, {color: colors.subText}]}>{t('username')}</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[
+                                styles.input, 
+                                { 
+                                    backgroundColor: '#f8fafc',
+                                    borderColor: isError ? '#ef4444' : '#e2e8f0',  
+                                }
+                            ]}
                             placeholder={t('enter-your-username')}
                             placeholderTextColor="#94a3b8"
                             value={username}
                             onChangeText={setUsername}
                         />
+
+                        {isError && (
+                            <Text style={styles.errorText}>
+                                {t('username-required')}
+                            </Text>
+                        )}
 
                         {/* Actions */}
                         <View style={styles.buttonRow}>
@@ -155,7 +184,6 @@ const styles = StyleSheet.create({
     },
     modalCard: {
         width: width * 0.9,
-        backgroundColor: 'white',
         borderRadius: 32,
         paddingHorizontal: 24,
         paddingBottom: 32,
@@ -232,9 +260,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         fontSize: 16,
         color: '#1e293b',
-        borderWidth: 1,
         borderColor: '#e2e8f0',
-        marginBottom: 28,
+        borderWidth: 1.5,
+        marginBottom: 8,
     },
     buttonRow: {
         flexDirection: 'row',
@@ -267,5 +295,12 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: '700',
         fontSize: 16,
+    },
+    errorText: {
+        color: '#ef4444',
+        fontSize: 13,
+        fontWeight: '500',
+        marginBottom: 20,
+        marginLeft: 4,
     },
 });
