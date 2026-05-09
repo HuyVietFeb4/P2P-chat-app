@@ -143,7 +143,6 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
 
     private fun ensureGlobalChatStorage() {
         val globalKeyId = buildGlobalKeyId()
-        dbHelper.upsertUserProfile(UserProfile(LOCAL_ID, "-", UserStore.DEFAULT_PROFILE_USER_NAME))
         dbHelper.upsertUserProfile(UserProfile(GLOBAL_BROADCAST_ID, "-", "Global Chat"))
         dbHelper.ensureGlobalChat(GLOBAL_CHAT_ID, GLOBAL_SESSION_ID, globalKeyId)
     }

@@ -62,7 +62,8 @@ export default function App() {
 
             const isFirstLaunch = await AsyncStorage.getItem("firstLaunch");
 
-            const canGetUserName = await MeshengerApplicationModule.getMyProfile() !== "Local User" ? true : false;
+            const profile = await MeshengerApplicationModule.getMyProfile();
+            const canGetUserName = profile && profile.displayName !== "Local User";
             MainModule.ensureServiceStarted();
 
             if (canGetUserName && isFirstLaunch) {
