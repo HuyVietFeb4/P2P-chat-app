@@ -7,6 +7,7 @@ import com.meshenger.backend.application.messaging.MessageStatus
 import com.meshenger.backend.application.user.UserProfile
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -177,6 +178,42 @@ class MeshengerDbHelperTest {
         ).use { c ->
             assertTrue(c.moveToFirst())
             assertEquals(0, c.getInt(0))
+        }
+    }
+
+    @Test
+    fun prunePlaceholderMeshPeers_keepsPeerWhoOnlyAuthoredGlobalMessages() {
+        val me = UserProfile("me", "hash-me", "Me")
+        val peerMp = UserProfile("mp:99", "-", "mp:99")
+        dbHelper.upsertUserProfile(me)
+        dbHelper.upsertUserProfile(peerMp)
+
+        val globalChatId = "global-chat"
+        val globalSessionId = "global-session"
+        dbHelper.insertChat(globalChatId, "Global Chat", "GLOBAL", System.currentTimeMillis())
+        dbHelper.insertSession(globalSessionId, globalChatId, "global-key")
+
+        val globalMessage = Message(
+            id = "global-only-msg",
+            sessionId = globalSessionId,
+            senderId = peerMp.id,
+            timestamp = System.currentTimeMillis(),
+            nonce = "n1",
+            status = MessageStatus.SENT,
+            encryptedPayload = "cipher",
+            bodyText = "hello global",
+        )
+        dbHelper.insertMessage(globalMessage, listOf(me.id))
+
+        dbHelper.prunePlaceholderMeshPeersWithNoMessages()
+
+        assertNotNull(dbHelper.getUserProfile(peerMp.id))
+        dbHelper.readableDatabase.rawQuery(
+            "SELECT COUNT(*) FROM messages WHERE senderId = ?",
+            arrayOf(peerMp.id),
+        ).use { c ->
+            assertTrue(c.moveToFirst())
+            assertEquals(1, c.getInt(0))
         }
     }
 }

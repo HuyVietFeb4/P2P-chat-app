@@ -441,6 +441,17 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         }
     }
 
+    /** Any persisted row in [messages] (direct, global, etc.). Used so mesh prune does not drop peers who only appear in global chat. */
+    fun countMessagesFromSender(senderId: String): Int {
+        readableDatabase.rawQuery(
+            "SELECT COUNT(*) FROM messages WHERE senderId = ?",
+            arrayOf(senderId),
+        ).use { c ->
+            if (!c.moveToFirst()) return 0
+            return c.getInt(0)
+        }
+    }
+
     /**
      * Removes user row and direct chat graph for [peerId].
      * Also clears rows in other chats (e.g. global) referencing this peer as sender/receiver so
@@ -482,7 +493,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             .filter { u ->
                 u.id.startsWith("mp:") &&
                     u.userName == u.id &&
-                    countMessagesForDirectPeer(u.id) == 0
+                    countMessagesForDirectPeer(u.id) == 0 &&
+                    countMessagesFromSender(u.id) == 0
             }
             .map { it.id }
         for (id in toRemove) {
@@ -502,7 +514,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 u.id.startsWith("mp:") &&
                     u.id != keepPeerId &&
                     u.userName == trimmed &&
-                    countMessagesForDirectPeer(u.id) == 0
+                    countMessagesForDirectPeer(u.id) == 0 &&
+                    countMessagesFromSender(u.id) == 0
             }
             .map { it.id }
         for (id in toRemove) {
