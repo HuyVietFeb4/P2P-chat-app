@@ -236,6 +236,41 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             rowExists("sessions", "sessionId", directSessionId(peerId))
     }
 
+    /**
+     * Inserts a new session row for an existing direct chat if [sessionId] is not yet present.
+     * Used by the Application layer to allocate a fresh row per Noise handshake instance, so that
+     * `messages.sessionId` actually distinguishes between successive sessions of the same chat
+     * (the original `directSessionId` row stays untouched as a legacy/fallback bucket).
+     *
+     * The [chachaKey] column is reused as a free-form metadata label here (e.g. "noise-KK"),
+     * because nothing in the codebase currently treats it as a real key for direct chats.
+     *
+     * @return true iff after this call there is a row in `sessions` with the given id.
+     * Returning false means the caller should fall back to the legacy session id, otherwise
+     * subsequent message inserts will silently violate the FK constraint and disappear.
+     */
+    fun ensureDirectSessionRow(sessionId: String, peerId: String, chachaKey: String = "noise"): Boolean {
+        if (sessionId.isBlank()) return false
+        if (rowExists("sessions", "sessionId", sessionId)) return true
+        val chatId = directChatId(peerId)
+        if (!rowExists("chats", "chatId", chatId)) return false
+        // Make sure the legacy row (and chats row) actually exists. ensureDirectChatForPeer is
+        // idempotent so this is safe even if the chat was created earlier in the flow.
+        val peerName = getUserProfile(peerId)?.userName ?: peerId
+        ensureDirectChatForPeer(peerId, peerName)
+        // SQLiteDatabase.insert() returns -1 (without throwing) on FK or constraint violations,
+        // so we explicitly verify the row landed before reporting success.
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("sessionId", sessionId)
+            put("chatId", chatId)
+            put("chachaKey", chachaKey)
+        }
+        val rowId = db.insert("sessions", null, values)
+        if (rowId == -1L) return false
+        return rowExists("sessions", "sessionId", sessionId)
+    }
+
     fun ensureGlobalChat(globalChatId: String, globalSessionId: String, keyId: String) {
         if (!rowExists("chats", "chatId", globalChatId)) {
             insertChat(globalChatId, "Global Chat", "GLOBAL", System.currentTimeMillis())
@@ -288,14 +323,28 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 put("encryptedPayload", message.encryptedPayload)
                 put("bodyText", message.bodyText)
             }
-            db.insert("messages", null, values)
+            // SQLiteDatabase.insert() returns -1 (without throwing) when an FK / NOT NULL
+            // constraint fails. Surface that explicitly so callers don't think the message
+            // was persisted when in fact the row was silently dropped.
+            val rowId = db.insert("messages", null, values)
+            if (rowId == -1L) {
+                throw android.database.sqlite.SQLiteConstraintException(
+                    "insertMessage failed (row not inserted) — likely missing session/user FK. " +
+                        "messageId=${message.id} sessionId=${message.sessionId} senderId=${message.senderId}",
+                )
+            }
 
             for (receiverId in receiverIds) {
                 val deliveryValues = ContentValues().apply {
                     put("messageId", message.id)
                     put("receiverId", receiverId)
                 }
-                db.insert("message_delivery", null, deliveryValues)
+                val deliveryRowId = db.insert("message_delivery", null, deliveryValues)
+                if (deliveryRowId == -1L) {
+                    throw android.database.sqlite.SQLiteConstraintException(
+                        "insertMessage delivery failed for receiver=$receiverId messageId=${message.id}",
+                    )
+                }
             }
             db.setTransactionSuccessful()
         } finally {

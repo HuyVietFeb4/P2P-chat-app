@@ -19,12 +19,18 @@ object MessagingStore {
 
     /**
      * Outgoing message from this device. [encryptedPayload] is opaque ciphertext (e.g. Base64).
+     *
+     * @param sessionId optional concrete session row id. When non-null and non-blank this exact
+     * session is used (the row must already exist). When null, falls back to the legacy
+     * deterministic [MeshengerDbHelper.directSessionId] so existing single-session callers keep
+     * working unchanged.
      */
     fun sendMessage(
         peerId: String,
         encryptedPayload: String,
         nonce: String,
         bodyText: String? = null,
+        sessionId: String? = null,
     ): Message {
         val helper = db ?: throw IllegalStateException("MessagingStore not initialized")
         if (peerId.isBlank() || encryptedPayload.isBlank()) {
@@ -32,10 +38,10 @@ object MessagingStore {
         }
         val preferredPeerName = helper.getUserProfile(peerId)?.userName ?: peerId
         helper.ensureDirectChatForPeer(peerId, peerUserName = preferredPeerName)
-        val sessionId = helper.directSessionId(peerId)
+        val resolvedSessionId = sessionId?.takeIf { it.isNotBlank() } ?: helper.directSessionId(peerId)
         val message = Message(
             id = UUID.randomUUID().toString(),
-            sessionId = sessionId,
+            sessionId = resolvedSessionId,
             senderId = LOCAL_SENDER_ID,
             timestamp = System.currentTimeMillis(),
             nonce = nonce,
@@ -59,6 +65,8 @@ object MessagingStore {
 
     /**
      * Incoming message from [senderId] in the conversation keyed by [peerId] (chat counterparty).
+     *
+     * See [sendMessage] for [sessionId] semantics.
      */
     fun addIncomingMessage(
         peerId: String,
@@ -66,6 +74,7 @@ object MessagingStore {
         encryptedPayload: String,
         nonce: String,
         bodyText: String? = null,
+        sessionId: String? = null,
     ): Message {
         val helper = db ?: throw IllegalStateException("MessagingStore not initialized")
         if (peerId.isBlank() || senderId.isBlank() || encryptedPayload.isBlank()) {
@@ -73,10 +82,10 @@ object MessagingStore {
         }
         val preferredPeerName = helper.getUserProfile(peerId)?.userName ?: senderId
         helper.ensureDirectChatForPeer(peerId, peerUserName = preferredPeerName)
-        val sessionId = helper.directSessionId(peerId)
+        val resolvedSessionId = sessionId?.takeIf { it.isNotBlank() } ?: helper.directSessionId(peerId)
         val message = Message(
             id = UUID.randomUUID().toString(),
-            sessionId = sessionId,
+            sessionId = resolvedSessionId,
             senderId = senderId,
             timestamp = System.currentTimeMillis(),
             nonce = nonce,

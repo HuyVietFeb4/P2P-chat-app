@@ -7,7 +7,7 @@ import com.meshenger.backend.application.db.MeshengerDbHelper
 import com.meshenger.backend.application.messaging.Message
 import com.meshenger.backend.application.messaging.MessageStatus
 import com.meshenger.backend.application.messaging.MessagingStore
-//import com.meshenger.backend.application.security.RemotePeerCryptoStore
+import com.meshenger.backend.application.security.RemotePeerCryptoStore
 import com.meshenger.backend.application.user.UserProfile
 import com.meshenger.backend.application.user.UserStore
 import com.meshenger.backend.network.DirectChatNegotiationListener
@@ -51,13 +51,30 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     private val dbHelper = MeshengerDbHelper(reactContext.applicationContext)
-//    private val remotePeerCrypto = RemotePeerCryptoStore(dbHelper)
+    private val remotePeerCrypto = RemotePeerCryptoStore(dbHelper)
     private val moduleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** peerId ("mp:<dec>") -> active TwoPartySession */
     private val activeSessions = ConcurrentHashMap<String, TwoPartySession>()
     /** peerId -> coroutine collecting TwoPartySession._messageBus */
     private val sessionBusJobs = ConcurrentHashMap<String, Job>()
+    /**
+     * peerId -> sessionId of the *currently active* TwoPartySession. Each new handshake gets a
+     * fresh UUID so `messages.sessionId` actually distinguishes between successive Noise sessions
+     * with the same peer (e.g. the original XX bootstrap vs. a later KK reconnect after the app
+     * has been restarted). The legacy [MeshengerDbHelper.directSessionId] row stays around as a
+     * fallback bucket so that any code path that hasn't been migrated still works.
+     */
+    private val currentSessionIdByPeer = ConcurrentHashMap<String, String>()
+    /**
+     * Lazily-loaded persistent X25519 static keypair for this device, used for Noise
+     * handshakes with all peers. Persisted via [RemotePeerCryptoStore] so we keep the same
+     * static key across app restarts; this is what lets a KK reconnect work after the
+     * in-memory [TwoPartySession] from the initial XX bootstrap has been killed.
+     */
+    @Volatile
+    private var localStaticKeypair: Pair<ByteArray, ByteArray>? = null
+    private val localStaticLock = Any()
 
     /** Outgoing 1:1 invites we sent (mp:…); cleared on accept/reject from peer. */
     private val outgoingDirectChatInvites = ConcurrentHashMap<String, Long>()
@@ -84,6 +101,19 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         private const val PRESENCE_INTERVAL_MS = 25_000L
         /** Dùng filter Logcat: `MeshengerChat` — theo dõi gửi tin 1–1 và emit JS */
         private const val CHAT_DIAG = "MeshengerChat"
+        /**
+         * Filter Logcat: `MeshengerOTO` — toàn bộ luồng 1-1 (one-to-one):
+         * device scan / bootstrap → invite → Noise handshake (XX lần đầu, KK lần 2+)
+         * → gửi/nhận message qua tunnel.
+         *
+         * adb logcat -s MeshengerOTO:*
+         */
+        const val OTO_TAG = "MeshengerOTO"
+        /**
+         * Owner key under which this device's persistent X25519 static keypair is stored in
+         * `peer_remote_keys`. Distinct from [LOCAL_ID] so it never collides with a real peer row.
+         */
+        private const val LOCAL_STATIC_OWNER = "@local-static-x25519"
     }
 
     init {
@@ -593,14 +623,34 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         try {
             val mp = parseMeshPeerId(peerId)
             val myMp = MPAddress.getMyMPAddressULong()
+            // Noise role must be identical on both peers. For KK we used to force
+            // `effectiveInitiator = true` whenever the remote static was persisted; that made
+            // *both phones initiator* whenever they both opened the chat (each run
+            // openTwoPartySession locally). Two KK first messages then collide and "lần 2"
+            // chats fail. Use the same MP tie-break as XX: lower mesh id is initiator.
+            //
+            // If only the larger-MP device restarts while the peer still holds an old
+            // transport session, that peer may need to re-enter the chat once so it can
+            // receive KK and hit the post-handshake recreate path; the smaller-MP side is
+            // the one that sends KK msg1 after a full reconnect.
+            val hasStoredKey = loadStoredRemoteStatic(peerId) != null
             val effectiveInitiator = myMp < mp
+
+            Log.d(
+                OTO_TAG,
+                "openTwoPartySession peer=$peerId requested displayName='$displayName' " +
+                    "myMp=$myMp peerMp=$mp hasStoredKey=$hasStoredKey effectiveInitiator=$effectiveInitiator " +
+                    "alreadyOpen=${activeSessions.containsKey(peerId)}",
+            )
 
             val existing = activeSessions[peerId]
             if (existing != null) {
+                Log.d(OTO_TAG, "openTwoPartySession peer=$peerId already has active session, returning")
                 promise.resolve(twoPartySessionInfo(peerId, isInitiator = effectiveInitiator, justOpened = false))
                 return
             }
             if (mp == myMp) {
+                Log.w(OTO_TAG, "openTwoPartySession peer=$peerId is self, rejecting")
                 promise.reject("INVALID_INPUT", "Cannot open a session with this device (self)")
                 return
             }
@@ -609,6 +659,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             createAndTrackSession(peerId, mp, name, effectiveInitiator)
             promise.resolve(twoPartySessionInfo(peerId, isInitiator = effectiveInitiator, justOpened = true))
         } catch (e: Exception) {
+            Log.e(OTO_TAG, "openTwoPartySession peer=$peerId FAILED: ${e.message}", e)
             promise.reject("OPEN_SESSION_FAILED", e.message, e)
         }
     }
@@ -633,6 +684,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 UserStore.getProfile().userAvtId?.let { put("avatarId", it) }
             }
             val payload = json.toString().toByteArray(StandardCharsets.UTF_8)
+            Log.d(
+                OTO_TAG,
+                "INVITE send peer=$peerId mp=$receiverMp myName='${UserStore.getProfile().userName.trim()}'",
+            )
             EpidemicFlooding.onDirectChatNegotiationSend(
                 MessageType.DIRECT_CHAT_INVITE,
                 receiverMp,
@@ -641,6 +696,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             outgoingDirectChatInvites[peerId] = System.currentTimeMillis()
             promise.resolve(null)
         } catch (e: Exception) {
+            Log.e(OTO_TAG, "INVITE send peer=$peerId FAILED: ${e.message}", e)
             promise.reject("INVITE_SEND_FAILED", e.message, e)
         }
     }
@@ -668,6 +724,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             // Grab avatar before removing from pending map
             val pendingInvite = pendingIncomingInviteByPeer.remove(fromPeerId.trim())
             val emptyAck = "{}".toByteArray(StandardCharsets.UTF_8)
+            Log.d(
+                OTO_TAG,
+                "INVITE respond peer=$fromPeerId accept=$accept inviterName='${inviterDisplayName ?: ""}'",
+            )
             if (accept) {
                 EpidemicFlooding.onDirectChatNegotiationSend(
                     MessageType.DIRECT_CHAT_INVITE_ACCEPT,
@@ -688,6 +748,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             }
             promise.resolve(null)
         } catch (e: Exception) {
+            Log.e(OTO_TAG, "INVITE respond peer=$fromPeerId FAILED: ${e.message}", e)
             promise.reject("INVITE_RESPOND_FAILED", e.message, e)
         }
     }
@@ -731,14 +792,21 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             )
             val session = activeSessions[peerId]
                 ?: run {
+                    Log.w(OTO_TAG, "MSG send peer=$peerId NO_SESSION (chưa mở two-party session)")
                     promise.reject("NO_SESSION", "Open a two-party session before sending")
                     return
                 }
             val mp = parseMeshPeerId(peerId)
+            Log.d(
+                OTO_TAG,
+                "MSG send peer=$peerId len=${plaintext.length} pattern=${session.chosenPattern} " +
+                    "handshakeFinished=${session.isHandshakeFinished} sessionId=${currentSessionIdByPeer[peerId]}",
+            )
             session.sendMessageStr(mp, plaintext)
             Log.i(CHAT_DIAG, "sendDirectMessage DONE peer=$peerId plaintextLen=${plaintext.length}")
             promise.resolve(null)
         } catch (e: Exception) {
+            Log.e(OTO_TAG, "MSG send peer=$peerId FAILED: ${e.message}", e)
             promise.reject("SEND_DIRECT_FAILED", e.message, e)
         }
     }
@@ -746,10 +814,15 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun closeTwoPartySession(peerId: String, promise: Promise) {
         try {
+            val hadSession = activeSessions.containsKey(peerId)
             sessionBusJobs.remove(peerId)?.cancel()
             activeSessions.remove(peerId)?.close()
+            // Forget the per-session id so a follow-up open allocates a fresh row.
+            currentSessionIdByPeer.remove(peerId)
+            Log.d(OTO_TAG, "CLOSE peer=$peerId hadSession=$hadSession")
             promise.resolve(null)
         } catch (e: Exception) {
+            Log.e(OTO_TAG, "CLOSE peer=$peerId FAILED: ${e.message}", e)
             promise.reject("CLOSE_SESSION_FAILED", e.message, e)
         }
     }
@@ -804,31 +877,295 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         createAndTrackSession(peerIdStr, remoteMp, displayName, effectiveInitiator)
     }
 
+    /**
+     * @param forcedPattern When non-null, skips the auto-detection (KK iff peer's static is
+     * already persisted) and uses this pattern instead. The responder fallback uses this to
+     * mirror whatever pattern the inbound first handshake packet announced.
+     */
     private fun createAndTrackSession(
         peerId: String,
         mpAddress: ULong,
         displayName: String,
         isInitiator: Boolean,
+        forcedPattern: NoisePattern? = null,
     ): TwoPartySession {
-        // Fresh static X25519 keypair per session. Noise XX exchanges static keys in-band,
-        // so this is enough for a working tunnel; long-term identity binding is out of scope here.
-        val (pub, priv) = StaticKeyManager.generateX25519KeyPair()
+        // Persistent X25519 static keypair shared across all sessions / app restarts. This is
+        // what makes Noise KK work after the in-memory session has been killed: both sides keep
+        // the same long-term static key, so once they have learnt each other's static during the
+        // initial XX bootstrap, they can KK directly on subsequent reconnects.
+        val (pub, priv) = getOrCreateLocalStaticKeypair()
+
+        val storedRemoteStatic = loadStoredRemoteStatic(peerId)
+        val pattern = forcedPattern ?: if (storedRemoteStatic != null) NoisePattern.KK else NoisePattern.XX
+        val remoteStaticForCtor = if (pattern == NoisePattern.XX) null else storedRemoteStatic
+        Log.d(
+            OTO_TAG,
+            "SESSION decide peer=$peerId initiator=$isInitiator forcedPattern=$forcedPattern " +
+                "hasStoredRemoteStatic=${storedRemoteStatic != null} -> pattern=$pattern",
+        )
+
+        if (pattern != NoisePattern.XX && remoteStaticForCtor == null) {
+            // Caller asked for KK/XK but we have no stored peer static — would crash inside the
+            // HandshakeState constructor. Downgrade to XX rather than throwing.
+            Log.w(
+                OTO_TAG,
+                "SESSION downgrade peer=$peerId requested=$pattern but no stored remote static -> XX",
+            )
+        }
+        val effectivePattern =
+            if (pattern != NoisePattern.XX && remoteStaticForCtor == null) NoisePattern.XX else pattern
+
         val session = TwoPartySession(
             isInitiator = isInitiator,
             prologue = TWO_PARTY_PROLOGUE,
             staticKey = pub to priv,
             peerId = mpAddress,
             userName = displayName,
-            chosenPattern = NoisePattern.XX,
+            receiverPublicKey = if (effectivePattern == NoisePattern.XX) null else remoteStaticForCtor,
+            chosenPattern = effectivePattern,
+            // Defer the initiator's first handshake msg until the mesh transport is actually
+            // ready (see deferHandshakeUntilMeshReady below). Right after an app restart BLE
+            // hasn't reconnected to any peer yet, so sending immediately would silently drop
+            // the packet to an empty outbound map.
+            autoStartHandshake = false,
         )
+
+        // Stale-session recovery: when our existing handshake state can't process an inbound
+        // handshake packet because the peer picked a different Noise pattern (typically because
+        // the peer restarted and reopened the chat with KK while we still hold an XX session
+        // in memory), tear this session down, create a fresh one as responder with the
+        // requested pattern, and feed the original packet into it so the handshake can run.
+        session.onPatternMismatch = { senderId, message, requestedPattern ->
+            try {
+                Log.w(
+                    OTO_TAG,
+                    "Recreating session for peer=$peerId: wasPattern=$effectivePattern incomingPattern=$requestedPattern",
+                )
+                sessionBusJobs.remove(peerId)?.cancel()
+                activeSessions.remove(peerId)?.close()
+                currentSessionIdByPeer.remove(peerId)
+                ensurePeerRow(peerId, displayName)
+                val newSession = createAndTrackSession(
+                    peerId = peerId,
+                    mpAddress = mpAddress,
+                    displayName = displayName,
+                    isInitiator = false,
+                    forcedPattern = requestedPattern,
+                )
+                newSession.onReceiveMessageHandShake(senderId, message)
+            } catch (e: Exception) {
+                Log.e(OTO_TAG, "Pattern-mismatch recreate failed peer=$peerId: ${e.message}", e)
+            }
+        }
+
+        // Simultaneous-initiate conflict (both sides opened chat at the same time, both sent
+        // msg 0 of the same Noise pattern). Resolve via MP tie-break — the larger MP backs
+        // down to responder so the smaller MP keeps driving the handshake.
+        session.onSimultaneousInitiate = { senderId, message, pattern ->
+            try {
+                val myMp = MPAddress.getMyMPAddressULong()
+                if (myMp > senderId) {
+                    Log.w(
+                        OTO_TAG,
+                        "Simultaneous initiate detected peer=$peerId — backing down to responder " +
+                            "(myMp=$myMp > peerMp=$senderId, pattern=$pattern)",
+                    )
+                    sessionBusJobs.remove(peerId)?.cancel()
+                    activeSessions.remove(peerId)?.close()
+                    currentSessionIdByPeer.remove(peerId)
+                    ensurePeerRow(peerId, displayName)
+                    val newSession = createAndTrackSession(
+                        peerId = peerId,
+                        mpAddress = mpAddress,
+                        displayName = displayName,
+                        isInitiator = false,
+                        forcedPattern = pattern,
+                    )
+                    newSession.onReceiveMessageHandShake(senderId, message)
+                } else {
+                    Log.d(
+                        OTO_TAG,
+                        "Simultaneous initiate detected peer=$peerId — keeping initiator role " +
+                            "(myMp=$myMp <= peerMp=$senderId), waiting for peer to back down",
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(OTO_TAG, "Simultaneous-initiate handler failed peer=$peerId: ${e.message}", e)
+            }
+        }
+
+        // After Noise completes we know the peer's static (XX/XK learn it in-band; KK already
+        // had it). Persist it so the next app start can jump straight to KK.
+        session.onHandshakeCompleted = { remoteStatic ->
+            Log.d(
+                OTO_TAG,
+                "HS complete peer=$peerId pattern=$effectivePattern role=${if (isInitiator) "initiator" else "responder"} " +
+                    "remoteStaticBytes=${remoteStatic?.size ?: 0}",
+            )
+            if (remoteStatic != null) {
+                try {
+                    remotePeerCrypto.saveRemoteRawKey(
+                        peerUserId = peerId,
+                        keyType = RemotePeerCryptoStore.KEY_TYPE_X25519_RAW,
+                        rawKeyMaterial = remoteStatic,
+                    )
+                    Log.d(OTO_TAG, "KEY persist remoteStatic peer=$peerId OK")
+                } catch (e: Exception) {
+                    Log.w(OTO_TAG, "KEY persist remoteStatic peer=$peerId FAILED: ${e.message}")
+                }
+            } else {
+                Log.w(OTO_TAG, "HS complete peer=$peerId but remoteStatic was null (cannot persist)")
+            }
+        }
+
+        // Allocate a fresh session row in the DB so `messages.sessionId` actually identifies
+        // this concrete handshake instance instead of being a constant per peer. The legacy
+        // `directSessionId(peerId)` row stays around so old messages still load via the chat
+        // join, and any unmigrated code path (e.g. group/global) keeps using its own id.
+        val newSessionId = "session-$peerId-${UUID.randomUUID()}"
+        val inserted = try {
+            dbHelper.ensureDirectSessionRow(
+                sessionId = newSessionId,
+                peerId = peerId,
+                chachaKey = "noise-${effectivePattern.name}",
+            )
+        } catch (e: Exception) {
+            Log.w(OTO_TAG, "SESSION row insert THREW peerId=$peerId: ${e.message}")
+            false
+        }
+        if (inserted) {
+            currentSessionIdByPeer[peerId] = newSessionId
+            Log.d(OTO_TAG, "SESSION row inserted peerId=$peerId sessionId=$newSessionId")
+        } else {
+            // Fallback to the legacy deterministic session id so downstream message inserts
+            // still satisfy the FK constraint instead of silently dropping rows.
+            val legacyId = dbHelper.directSessionId(peerId)
+            currentSessionIdByPeer[peerId] = legacyId
+            Log.w(
+                OTO_TAG,
+                "SESSION row insert FAILED peerId=$peerId, falling back to legacy id=$legacyId",
+            )
+        }
+
         activeSessions[peerId] = session
         sessionBusJobs.remove(peerId)?.cancel()
         sessionBusJobs[peerId] = startObservingTwoPartyBus(peerId, session)
-        Log.d(
-            "MeshengerApplication",
-            "TwoPartySession opened peerId=$peerId mp=$mpAddress initiator=$isInitiator",
+        Log.i(
+            OTO_TAG,
+            "SESSION opened peer=$peerId mp=$mpAddress initiator=$isInitiator " +
+                "pattern=$effectivePattern sessionId=$newSessionId " +
+                "(handshake will start ${if (isInitiator) "after mesh ready" else "on incoming packet"})",
         )
+        if (isInitiator) {
+            deferHandshakeUntilMeshReady(peerId, session)
+        }
         return session
+    }
+
+    /**
+     * Waits (with timeout) for at least one mesh neighbor to be present in
+     * [MeshConnectionRegistry] before triggering the initiator's first Noise message.
+     *
+     * Right after an app restart BLE has not yet rediscovered any peer, so the outbound
+     * map is empty for a few seconds. Calling `EpidemicFlooding.onTwoPartyMessageSend`
+     * during that window silently drops the packet (no neighbors to forward to) and the
+     * handshake gets stuck forever — user types a message, it queues, and nothing ever
+     * leaves the device.
+     */
+    private fun deferHandshakeUntilMeshReady(peerId: String, session: TwoPartySession) {
+        moduleScope.launch {
+            val maxWaitMs = 15_000L
+            val pollMs = 200L
+            var waited = 0L
+            while (
+                waited < maxWaitMs &&
+                MeshConnectionRegistry.getOutboundMap().isEmpty() &&
+                activeSessions[peerId] === session &&
+                !session.isHandshakeFinished
+            ) {
+                delay(pollMs)
+                waited += pollMs
+            }
+            if (activeSessions[peerId] !== session) {
+                Log.d(OTO_TAG, "HS deferred-start aborted peer=$peerId (session was replaced)")
+                return@launch
+            }
+            if (session.isHandshakeFinished) {
+                Log.d(OTO_TAG, "HS deferred-start aborted peer=$peerId (handshake already finished)")
+                return@launch
+            }
+            val neighbors = MeshConnectionRegistry.getOutboundMap().size
+            if (neighbors == 0) {
+                Log.w(
+                    OTO_TAG,
+                    "HS deferred-start peer=$peerId no neighbors after ${maxWaitMs}ms — sending anyway",
+                )
+            } else {
+                Log.d(
+                    OTO_TAG,
+                    "HS deferred-start peer=$peerId neighbors=$neighbors waited=${waited}ms — triggering",
+                )
+            }
+            session.startHandshakeIfNeeded()
+        }
+    }
+
+    /** Loads (or generates and persists on first call) the device's long-term X25519 static keypair. */
+    private fun getOrCreateLocalStaticKeypair(): Pair<ByteArray, ByteArray> {
+        localStaticKeypair?.let {
+            Log.d(OTO_TAG, "KEY local static cached (in-memory)")
+            return it
+        }
+        synchronized(localStaticLock) {
+            localStaticKeypair?.let {
+                Log.d(OTO_TAG, "KEY local static cached (in-memory, after lock)")
+                return it
+            }
+            val existingPub = try {
+                remotePeerCrypto.loadRemoteRawKey(LOCAL_STATIC_OWNER, RemotePeerCryptoStore.KEY_TYPE_X25519_RAW)
+            } catch (e: Exception) {
+                Log.w(OTO_TAG, "KEY local static read pub FAILED: ${e.message}")
+                null
+            }
+            val existingPriv = try {
+                remotePeerCrypto.loadRemoteRawKey(LOCAL_STATIC_OWNER, RemotePeerCryptoStore.KEY_TYPE_X25519_PRIV)
+            } catch (e: Exception) {
+                Log.w(OTO_TAG, "KEY local static read priv FAILED: ${e.message}")
+                null
+            }
+            if (existingPub != null && existingPriv != null) {
+                Log.d(OTO_TAG, "KEY local static loaded from DB (pubBytes=${existingPub.size})")
+                val pair = existingPub to existingPriv
+                localStaticKeypair = pair
+                return pair
+            }
+            val (pub, priv) = StaticKeyManager.generateX25519KeyPair()
+            try {
+                remotePeerCrypto.saveRemoteRawKey(
+                    LOCAL_STATIC_OWNER, RemotePeerCryptoStore.KEY_TYPE_X25519_RAW, pub,
+                )
+                remotePeerCrypto.saveRemoteRawKey(
+                    LOCAL_STATIC_OWNER, RemotePeerCryptoStore.KEY_TYPE_X25519_PRIV, priv,
+                )
+                Log.i(OTO_TAG, "KEY local static GENERATED and persisted (first run)")
+            } catch (e: Exception) {
+                Log.w(OTO_TAG, "KEY local static persist FAILED (will regenerate next start): ${e.message}")
+            }
+            val pair = pub to priv
+            localStaticKeypair = pair
+            return pair
+        }
+    }
+
+    private fun loadStoredRemoteStatic(peerId: String): ByteArray? {
+        return try {
+            val raw = remotePeerCrypto.loadRemoteRawKey(peerId, RemotePeerCryptoStore.KEY_TYPE_X25519_RAW)
+            Log.d(OTO_TAG, "KEY load remoteStatic peer=$peerId found=${raw != null} bytes=${raw?.size ?: 0}")
+            raw
+        } catch (e: Exception) {
+            Log.w(OTO_TAG, "KEY load remoteStatic peer=$peerId FAILED: ${e.message}")
+            null
+        }
     }
 
     private fun startObservingTwoPartyBus(peerId: String, session: TwoPartySession): Job {
@@ -851,15 +1188,27 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
 
         Log.d(CHAT_DIAG, "twoPartyBus peer=$peerId action=$action payloadLen=${payload.length} nonce=$nonce")
 
+        val activeSessionId = currentSessionIdByPeer[peerId]
+        Log.d(
+            OTO_TAG,
+            "MSG bus peer=$peerId action=$action sessionId=$activeSessionId plaintextLen=${plaintext.length}",
+        )
         val msg = try {
             when (action) {
-                "Send" -> MessagingStore.sendMessage(peerId, payload, nonce, bodyText = plaintext)
+                "Send" -> MessagingStore.sendMessage(
+                    peerId = peerId,
+                    encryptedPayload = payload,
+                    nonce = nonce,
+                    bodyText = plaintext,
+                    sessionId = activeSessionId,
+                )
                 "Receive" -> MessagingStore.addIncomingMessage(
                     peerId = peerId,
                     senderId = peerId,
                     encryptedPayload = payload,
                     nonce = nonce,
                     bodyText = plaintext,
+                    sessionId = activeSessionId,
                 )
                 else -> return
             }
@@ -968,6 +1317,15 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             TwoPartyHandshakeFallback { senderId, message ->
                 try {
                     if (senderId == MPAddress.getMyMPAddressULong()) return@TwoPartyHandshakeFallback
+                    if (message.isEmpty()) return@TwoPartyHandshakeFallback
+                    // Inbound NOISE_HANDSHAKE wire format: [1 byte pattern tag][noise bytes].
+                    // We must construct our session with the *same* pattern as the initiator,
+                    // otherwise HandshakeState wire formats won't line up.
+                    val incomingPattern = NoisePattern.fromTag(message[0])
+                        ?: run {
+                            Log.w(OTO_TAG, "HS inbound DROP: unknown pattern tag=${message[0]} from $senderId")
+                            return@TwoPartyHandshakeFallback
+                        }
                     val peerId = "$MP_PREFIX$senderId"
                     val displayName = PeerInMeshRegistry.getAllPeers()
                         .firstOrNull { it.MPAddress == senderId }
@@ -975,9 +1333,69 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                         ?.trim()
                         ?.takeIf { it.isNotEmpty() }
                         ?: peerId
-                    val session = activeSessions[peerId]
-                        ?: createAndTrackSession(peerId, senderId, displayName, isInitiator = false)
-                    ensurePeerRow(peerId, displayName)
+                    Log.d(
+                        OTO_TAG,
+                        "HS inbound peer=$peerId pattern=$incomingPattern bytes=${message.size} " +
+                            "existing=${activeSessions[peerId]?.let { "pattern=${it.chosenPattern} finished=${it.isHandshakeFinished}" } ?: "none"}",
+                    )
+
+                    val existing = activeSessions[peerId]
+                    val session = when {
+                        existing == null -> {
+                            Log.d(OTO_TAG, "HS inbound peer=$peerId -> create fresh session as responder")
+                            ensurePeerRow(peerId, displayName)
+                            createAndTrackSession(
+                                peerId = peerId,
+                                mpAddress = senderId,
+                                displayName = displayName,
+                                isInitiator = false,
+                                forcedPattern = incomingPattern,
+                            )
+                        }
+                        existing.isHandshakeFinished -> {
+                            // Peer is restarting a handshake (e.g. they were killed and now
+                            // reopened the chat) but we still have a finished session in memory.
+                            // Tear our side down and accept the new handshake instead of dropping.
+                            Log.i(
+                                OTO_TAG,
+                                "HS inbound peer=$peerId -> recreate finished session (peer restarted), pattern=$incomingPattern",
+                            )
+                            sessionBusJobs.remove(peerId)?.cancel()
+                            activeSessions.remove(peerId)?.close()
+                            currentSessionIdByPeer.remove(peerId)
+                            ensurePeerRow(peerId, displayName)
+                            createAndTrackSession(
+                                peerId = peerId,
+                                mpAddress = senderId,
+                                displayName = displayName,
+                                isInitiator = false,
+                                forcedPattern = incomingPattern,
+                            )
+                        }
+                        existing.chosenPattern != incomingPattern -> {
+                            // We had an old / mismatched session for this peer (e.g. we expected
+                            // KK because we still had their static, but they restarted with a
+                            // wiped DB and downgraded to XX). Tear it down and start fresh with
+                            // the pattern the initiator actually picked.
+                            Log.w(
+                                OTO_TAG,
+                                "HS inbound peer=$peerId pattern mismatch (existing=${existing.chosenPattern}, " +
+                                    "incoming=$incomingPattern) -> recreate",
+                            )
+                            sessionBusJobs.remove(peerId)?.cancel()
+                            activeSessions.remove(peerId)?.close()
+                            currentSessionIdByPeer.remove(peerId)
+                            ensurePeerRow(peerId, displayName)
+                            createAndTrackSession(
+                                peerId = peerId,
+                                mpAddress = senderId,
+                                displayName = displayName,
+                                isInitiator = false,
+                                forcedPattern = incomingPattern,
+                            )
+                        }
+                        else -> existing.also { ensurePeerRow(peerId, displayName) }
+                    }
                     session.onReceiveMessageHandShake(senderId, message)
 
                     val event = Arguments.createMap().apply {
@@ -987,7 +1405,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     }
                     sendEvent("onIncomingHandshake", event)
                 } catch (e: Exception) {
-                    Log.e("MeshengerApplication", "Handshake fallback failed: ${e.message}", e)
+                    Log.e(OTO_TAG, "HS inbound FAILED: ${e.message}", e)
                 }
             }
         )
@@ -1001,6 +1419,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                         if (senderId == MPAddress.getMyMPAddressULong()) return
                         val peerIdStr = meshPeerId(senderId)
                         val inv = parseInvitePayload(payload)
+                        Log.i(
+                            OTO_TAG,
+                            "INVITE recv from $peerIdStr name='${inv.displayName}' avatar='${inv.avatarId ?: ""}'",
+                        )
                         // Do NOT write to DB here — peer is stored only in memory until user accepts.
                         pendingIncomingInviteByPeer[peerIdStr] = PendingIncomingInvite(
                             peerId = peerIdStr,
@@ -1031,6 +1453,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                         // Resolve avatar from in-memory registry (populated by bootstrap)
                         val avatarId = PeerInMeshRegistry.getAllPeers()
                             .firstOrNull { it.MPAddress == senderId }?.avatarId
+                        Log.i(
+                            OTO_TAG,
+                            "INVITE accepted by peer=$peerIdStr displayName='$displayName' -> opening session",
+                        )
                         ensurePeerRow(peerIdStr, displayName, avatarId)
                         openOrEnsureTwoPartySession(peerIdStr, senderId, displayName)
                         sendEvent(
@@ -1051,6 +1477,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                         if (senderId == MPAddress.getMyMPAddressULong()) return
                         val peerIdStr = meshPeerId(senderId)
                         outgoingDirectChatInvites.remove(peerIdStr)
+                        Log.i(OTO_TAG, "INVITE rejected by peer=$peerIdStr")
                         sendEvent(
                             "onDirectChatInviteRejected",
                             Arguments.createMap().apply {
