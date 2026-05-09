@@ -46,7 +46,13 @@ export default function ChatList() {
         timestamp: '',
         unreadCount: 0,
       }));
-      setChatData(formattedPeers);
+
+      // Sort chats so that the global chat (id === 'global-broadcast') is always pinned to the top
+      const globalChat = formattedPeers.find((peer: any) => peer.id === 'global-broadcast');
+      const otherChats = formattedPeers.filter((peer: any) => peer.id !== 'global-broadcast');
+      const sortedPeers = globalChat ? [globalChat, ...otherChats] : otherChats;
+
+      setChatData(sortedPeers);
     } catch (error) {
       console.error("Failed to load peers:", error);
     } finally {
