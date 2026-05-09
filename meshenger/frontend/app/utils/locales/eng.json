@@ -84,5 +84,6 @@
     "username": "Username",
     "enter-your-username": "Enter your username",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "username-required": "Username Required!"
 }
