@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.content.ContentValues
 import com.meshenger.backend.application.messaging.Message
 import com.meshenger.backend.application.messaging.MessageStatus
+import com.meshenger.backend.application.user.PeerSecurity
 import com.meshenger.backend.application.user.UserProfile
 
 class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -20,7 +21,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 userId TEXT PRIMARY KEY,
                 publicKeyHash TEXT NOT NULL,
                 userName TEXT NOT NULL,
-                userAvtId TEXT
+                userAvtId TEXT,
+                security TEXT NOT NULL DEFAULT 'medium'
             );
         """)
 
@@ -145,6 +147,20 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 """.trimIndent(),
             )
         }
+        if (oldVersion < 9) {
+            db.execSQL("UPDATE messages SET bodyText = NULL WHERE sessionId = 'global-session'")
+        }
+        if (oldVersion < 10) {
+            db.execSQL("ALTER TABLE users ADD COLUMN security TEXT NOT NULL DEFAULT 'medium'")
+            db.execSQL("UPDATE users SET security = 'weak' WHERE userId = 'global-broadcast'")
+            db.execSQL(
+                """
+                UPDATE users SET security = 'strong' WHERE userId IN (
+                    SELECT SUBSTR(chatId, LENGTH('direct-') + 1) FROM chats WHERE pairedViaQr = 1
+                )
+                """.trimIndent(),
+            )
+        }
     }
 
     // --- Helper Methods ---
@@ -156,19 +172,25 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             put("publicKeyHash", user.publicKeyHash)
             put("userName", user.userName)
             put("userAvtId", user.userAvtId)
+            put("security", user.security)
         }
         db.insertWithOnConflict("users", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
     fun getUserProfile(userId: String): UserProfile? {
         val db = readableDatabase
-        db.rawQuery("SELECT userId, publicKeyHash, userName, userAvtId FROM users WHERE userId = ?", arrayOf(userId)).use { c ->
+        db.rawQuery(
+            "SELECT userId, publicKeyHash, userName, userAvtId, security FROM users WHERE userId = ?",
+            arrayOf(userId),
+        ).use { c ->
             if (!c.moveToFirst()) return null
+            val secIdx = c.getColumnIndex("security")
             return UserProfile(
                 id = c.getString(0),
                 publicKeyHash = c.getString(1),
                 userName = c.getString(2),
-                userAvtId = c.getString(3)
+                userAvtId = c.getString(3).takeIf { !c.isNull(3) },
+                security = if (secIdx >= 0 && !c.isNull(secIdx)) c.getString(secIdx) else PeerSecurity.MEDIUM,
             )
         }
     }
@@ -176,14 +198,19 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     fun getAllUserProfiles(): List<UserProfile> {
         val db = readableDatabase
         val out = mutableListOf<UserProfile>()
-        db.rawQuery("SELECT userId, publicKeyHash, userName, userAvtId FROM users ORDER BY userName", null).use { c ->
+        db.rawQuery(
+            "SELECT userId, publicKeyHash, userName, userAvtId, security FROM users ORDER BY userName",
+            null,
+        ).use { c ->
+            val secIdx = c.getColumnIndex("security")
             while (c.moveToNext()) {
                 out.add(
                     UserProfile(
                         id = c.getString(0),
                         publicKeyHash = c.getString(1),
                         userName = c.getString(2),
-                        userAvtId = c.getString(3)
+                        userAvtId = c.getString(3).takeIf { !c.isNull(3) },
+                        security = if (secIdx >= 0 && !c.isNull(secIdx)) c.getString(secIdx) else PeerSecurity.MEDIUM,
                     )
                 )
             }
@@ -203,15 +230,25 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     fun ensureDirectChatForPeer(peerId: String, peerUserName: String, avatarId: String? = null) {
         val existing = getUserProfile(peerId)
         if (existing == null) {
-            upsertUserProfile(UserProfile(peerId, publicKeyHash = "-", userName = peerUserName, userAvtId = avatarId))
+            upsertUserProfile(
+                UserProfile(
+                    peerId,
+                    publicKeyHash = "-",
+                    userName = peerUserName,
+                    userAvtId = avatarId,
+                    security = PeerSecurity.MEDIUM,
+                ),
+            )
         } else {
             val shouldUpgradeName = existing.userName == peerId && peerUserName != peerId
             val finalAvatar = avatarId ?: existing.userAvtId
             if (shouldUpgradeName || finalAvatar != existing.userAvtId) {
-                upsertUserProfile(existing.copy(
-                    userName = if (shouldUpgradeName) peerUserName else existing.userName,
-                    userAvtId = finalAvatar
-                ))
+                upsertUserProfile(
+                    existing.copy(
+                        userName = if (shouldUpgradeName) peerUserName else existing.userName,
+                        userAvtId = finalAvatar,
+                    ),
+                )
             }
         }
         val chatId = directChatId(peerId)
@@ -252,6 +289,12 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             put("pairedViaQr", if (pairedViaQr) 1 else 0)
         }
         db.update("chats", values, "chatId = ?", arrayOf(chatId))
+        if (pairedViaQr) {
+            val prof = getUserProfile(peerId) ?: return
+            if (prof.security != PeerSecurity.STRONG) {
+                upsertUserProfile(prof.copy(security = PeerSecurity.STRONG))
+            }
+        }
     }
 
     fun isDirectChatPairedViaQr(peerId: String): Boolean {
@@ -572,6 +615,6 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         private const val DATABASE_NAME = "meshenger.db"
-        private const val DATABASE_VERSION = 8
+        private const val DATABASE_VERSION = 10
     }
 }

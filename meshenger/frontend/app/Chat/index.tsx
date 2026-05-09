@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect } from "react";
-import { KeyboardAvoidingView, NativeModules, StyleSheet, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { DeviceEventEmitter, KeyboardAvoidingView, NativeModules, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useBehavior } from '@/hook/useBehavior';
@@ -14,7 +14,7 @@ import BluetoothPopup from "../common components/BluetoothPopUp";
 const { MeshengerApplicationModule } = NativeModules;
 
 export default function ChatRoom() {
-    const { id, name, avatarUrl, qrBootstrap } = useLocalSearchParams();
+    const { id, name, avatarUrl, qrBootstrap, security } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const behavior = useBehavior();
     const { colors } = useTheme();
@@ -25,8 +25,30 @@ export default function ChatRoom() {
     const peerName = rawName.trim().length > 0 ? rawName.trim() : peerId;
     const isDirect = peerId.startsWith('mp:');
 
-    const bootstrap =
-        typeof qrBootstrap === 'string' ? qrBootstrap : '';
+    const bootstrap = typeof qrBootstrap === 'string' ? qrBootstrap : '';
+    const paramSecurity = useMemo(
+        () =>
+            typeof security === 'string' && security.length > 0
+                ? security
+                : peerId === 'global-broadcast'
+                  ? 'weak'
+                  : 'medium',
+        [security, peerId],
+    );
+    const [securityLevel, setSecurityLevel] = useState(paramSecurity);
+    useEffect(() => {
+        setSecurityLevel(paramSecurity);
+    }, [paramSecurity]);
+
+    useEffect(() => {
+        if (!isDirect) return;
+        const sub = DeviceEventEmitter.addListener('onPeerSecurityUpdated', (ev: { peerId?: string; security?: string }) => {
+            if (ev?.peerId === peerId && typeof ev.security === 'string' && ev.security.length > 0) {
+                setSecurityLevel(ev.security);
+            }
+        });
+        return () => sub.remove();
+    }, [isDirect, peerId]);
 
     useEffect(() => {
         if (!isDirect) return;
@@ -57,7 +79,12 @@ export default function ChatRoom() {
                 keyboardVerticalOffset={insets.bottom}
                 style={[styles.container, { backgroundColor: colors.chatBackground }]}
             >
-                <Header title={peerName} avatarUrl={(avatarUrl as string) ?? ''} status={true} />
+                <Header
+                    title={peerName}
+                    avatarUrl={(avatarUrl as string) ?? ''}
+                    status={true}
+                    securityLevel={securityLevel}
+                />
 
                 <View style={styles.bodyContainer}>
                     <Body peerId={peerId} />

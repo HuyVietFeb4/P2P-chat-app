@@ -85,5 +85,8 @@
     "enter-your-username": "Nhập tên người dùng",
     "save": "Lưu",
     "cancel": "Hủy",
-    "username-required": "Tên người dùng trống"
+    "username-required": "Tên người dùng trống",
+    "security-weak": "Yếu",
+    "security-medium": "Trung bình",
+    "security-strong": "Mạnh"
 }

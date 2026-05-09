@@ -160,7 +160,7 @@ export default function ConnectUser() {
   const openChat = () => {
     router.replace({
       pathname: '/Chat',
-      params: { id: peerId, name: username || peerId, qrBootstrap: 'qr_scanner' },
+      params: { id: peerId, name: username || peerId, qrBootstrap: 'qr_scanner', security: 'strong' },
     });
   };
 
