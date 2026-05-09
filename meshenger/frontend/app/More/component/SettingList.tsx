@@ -22,19 +22,34 @@ export default function SettingList() {
     const [deviceName, setDeviceName] = useState<string>('Loading...');
     const [userAvtId, setUserAvtId] = useState<string>('avt0');
     const [openPopUp, setOpenPopUp] = useState<boolean>(false);
+    const [load, setLoad] = useState(null);
+
+    // useEffect(() => {
+    //     const fetchIdentity = async () => {
+    //         try {
+    //             const result = await MeshengerApplicationModule.getMyIdentity();
+    //             setDeviceName(result.displayName || 'Galaxy S5');
+    //             setUserAvtId(result.userAvtId || 'avt0');
+    //         } catch (error) {
+    //             console.error("Failed to fetch identity:", error);
+    //         }
+    //     };
+    //     fetchIdentity();
+    // }, []);
+
+    const fetchIdentity = async () => {
+        try {
+            const result = await MeshengerApplicationModule.getMyIdentity();
+            setDeviceName(result.displayName || 'Galaxy S5');
+            setUserAvtId(result.userAvtId || 'avt0');
+        } catch (error) {
+            console.error("Failed to fetch identity:", error);
+        }
+    };
 
     useEffect(() => {
-        const fetchIdentity = async () => {
-            try {
-                const result = await MeshengerApplicationModule.getMyIdentity();
-                setDeviceName(result.displayName || 'Galaxy S5');
-                setUserAvtId(result.userAvtId || 'avt0');
-            } catch (error) {
-                console.error("Failed to fetch identity:", error);
-            }
-        };
         fetchIdentity();
-    }, []);
+    }, [])
 
     const selectedAvtSource = getAvatarSource(userAvtId);
 
@@ -187,7 +202,7 @@ export default function SettingList() {
                 
                 {
                     openPopUp && (
-                        <InfoPopUp onClose={() => setOpenPopUp(false)} />
+                        <InfoPopUp onClose={() => setOpenPopUp(false)} onSaved={fetchIdentity} />
                     )
                 }
             </ScrollView>

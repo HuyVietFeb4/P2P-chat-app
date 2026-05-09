@@ -171,7 +171,8 @@ export default function Body({ peerId }: { peerId: string }) {
                 <View style={[styles.bubble, isMe ? { backgroundColor: colors.myBubble, borderBottomRightRadius: 5 } : { backgroundColor: colors.peerBubble, borderBottomLeftRadius: 5, borderWidth: 1, borderColor: colors.border }]}>
                     {showSenderName && (
                         <Text style={[styles.senderNameText, { color: colors.subText }]}>
-                            {item.senderName || item.senderId}
+                            {/* {item.senderName || item.senderId}  */}
+                            {item.senderName || ''}
                         </Text>
                     )}
                     <Text style={[styles.messageText, { color: isMe ? colors.myMessageText : colors.peerMessageText }]}>

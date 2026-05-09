@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -10,7 +10,8 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Dimensions
+  Dimensions,
+  NativeModules
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -18,31 +19,52 @@ const { width } = Dimensions.get('window');
 
 type Props = {
   onClose: () => void,
+  onSaved: () => Promise<void>;
 }
 
-export default function InfoPopUp({ onClose }: Props) {
-    const AVATARS = [
-        { id: '1', url: require('@/assets/avt_set/avt0.png') },
-        { id: '2', url: require('@/assets/avt_set/avt1.png') },
-        { id: '3', url: require('@/assets/avt_set/avt2.png') },
-        { id: '4', url: require('@/assets/avt_set/avt3.png') },
-        { id: '5', url: require('@/assets/avt_set/avt4.png') },
-        { id: '6', url: require('@/assets/avt_set/avt5.png') },
-        { id: '7', url: require('@/assets/avt_set/avt6.png') },
-        { id: '8', url: require('@/assets/avt_set/avt7.png') },
-        { id: '9', url: require('@/assets/avt_set/avt8.png') },
-        { id: '10', url: require('@/assets/avt_set/avt9.png') },
-        { id: '11', url: require('@/assets/avt_set/avt10.png') },
-        { id: '12', url: require('@/assets/avt_set/avt11.png') },
-        { id: '13', url: require('@/assets/avt_set/avt12.png') },
+export default function InfoPopUp({ onClose, onSaved }: Props) {
+  const AVATARS = [
+      { id: '1', url: require('@/assets/avt_set/avt0.png'), name: "avt0" },
+      { id: '2', url: require('@/assets/avt_set/avt1.png'), name: "avt1" },
+      { id: '3', url: require('@/assets/avt_set/avt2.png'), name: "avt2" },
+      { id: '4', url: require('@/assets/avt_set/avt3.png'), name: "avt3" },
+      { id: '5', url: require('@/assets/avt_set/avt4.png'), name: "avt4" },
+      { id: '6', url: require('@/assets/avt_set/avt5.png'), name: "avt5" },
+      { id: '7', url: require('@/assets/avt_set/avt6.png'), name: "avt6" },
+      { id: '8', url: require('@/assets/avt_set/avt7.png'), name: "avt7" },
+      { id: '9', url: require('@/assets/avt_set/avt8.png'), name: "avt8" },
+      { id: '10', url: require('@/assets/avt_set/avt9.png'), name: "avt9" },
+      { id: '11', url: require('@/assets/avt_set/avt10.png'), name: "avt10" },
+      { id: '12', url: require('@/assets/avt_set/avt11.png'), name: "avt11" },
+      { id: '13', url: require('@/assets/avt_set/avt12.png'), name: "avt12" },
     ];
 
+    const { MeshengerApplicationModule } = NativeModules;
     const [username, setUsername] = useState('');
-    const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0].url);
+    const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0].name);
+    const [savedName, setSavedName] = useState('');
+
+    useEffect(() => {
+      const fetchUser = async () => {
+        const user = await MeshengerApplicationModule.getMyIdentity();
+        setSavedName(user.displayName);
+        setUsername(user.displayName);
+        setSelectedAvatar(user.userAvtId);
+      }
+
+      fetchUser();
+    }, [])
+
     const { t } = useTranslation();
 
-    const handleSave = () => {
-        onClose();
+    const handleSave = async () => {
+        try {
+          await MeshengerApplicationModule.updateMyProfile(username.trim() || savedName, selectedAvatar);
+          await onSaved();
+          onClose();
+        } catch (e) {
+          console.error("Failed to update profile", e)
+        }
     };
 
     return (
@@ -73,11 +95,11 @@ export default function InfoPopUp({ onClose }: Props) {
                             keyExtractor={(item) => item.id}
                             contentContainerStyle={styles.avatarListContent}
                             renderItem={({ item }) => {
-                                const isSelected = selectedAvatar === item.url;
+                                const isSelected = selectedAvatar === item.name;
                                 return (
                                     <TouchableOpacity 
                                         activeOpacity={0.8}
-                                        onPress={() => setSelectedAvatar(item.url)}
+                                        onPress={() => setSelectedAvatar(item.name)}
                                         style={[
                                             styles.avatarWrapper,
                                             isSelected && styles.selectedAvatarWrapper
