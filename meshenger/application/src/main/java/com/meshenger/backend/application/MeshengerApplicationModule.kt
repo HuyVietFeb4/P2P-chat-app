@@ -377,6 +377,12 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         }
     }
 
+    private fun sanitizeDisplayName(raw: String?): String {
+        val name = raw?.trim().orEmpty()
+        if (name.isEmpty()) return ""
+        return if (name.startsWith("mp:")) "" else name
+    }
+
     private fun messageToWritableMap(
         msg: Message,
         fromMe: Boolean,
@@ -384,8 +390,8 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         plaintextOverride: String? = null
     ): WritableMap {
         val senderName = when (msg.senderId) {
-            LOCAL_ID -> UserStore.getProfile().userName
-            else -> dbHelper.getUserProfile(msg.senderId)?.userName ?: msg.senderId
+            LOCAL_ID -> sanitizeDisplayName(UserStore.getProfile().userName)
+            else -> sanitizeDisplayName(dbHelper.getUserProfile(msg.senderId)?.userName)
         }
         val senderAvatarId = when (msg.senderId) {
             LOCAL_ID -> UserStore.getProfile().userAvtId
