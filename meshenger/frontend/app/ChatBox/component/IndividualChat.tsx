@@ -67,8 +67,15 @@ export default function IndividualChat() {
     };
   }, [loadPeers]);
 
-  const openChat = (peer: DirectPeer) => {
-    router.push({ pathname: '/Chat', params: { id: peer.id, name: peer.displayName } });
+  const openChat = (peer: DirectPeer, qrHost?: boolean) => {
+    router.push({
+      pathname: '/Chat',
+      params: {
+        id: peer.id,
+        name: peer.displayName,
+        ...(qrHost ? { qrBootstrap: 'qr_display' } : {}),
+      },
+    });
   };
 
   if (loading) {
@@ -95,6 +102,8 @@ export default function IndividualChat() {
           <TouchableOpacity
             style={[styles.chatBox, { backgroundColor: isDarkMode ? colors.card : '#ffffff' }]}
             onPress={() => openChat(item)}
+            onLongPress={() => openChat(item, true)}
+            delayLongPress={450}
             activeOpacity={0.7}
           >
             <Image source={DEFAULT_AVATAR} style={styles.avatar} />

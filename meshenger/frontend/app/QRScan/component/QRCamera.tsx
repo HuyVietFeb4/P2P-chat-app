@@ -73,17 +73,22 @@ export default function QRCamera() {
        try {
             setScanned(true);
             const jsonData = JSON.parse(data);
-            if (jsonData.id && jsonData.username) {
-                router.push({
-                    pathname: "/ConnectUser",
-                    params: {
-                        id: jsonData.id,
-                        username: jsonData.username
-                    }
-                });
-            } else {
-                throw new Error("Invalid QR Code");
+            const peerId =
+                (typeof jsonData.peerId === 'string' && jsonData.peerId.startsWith('mp:') && jsonData.peerId) ||
+                (jsonData.mpAddress != null ? `mp:${String(jsonData.mpAddress)}` : '');
+            const username = typeof jsonData.username === 'string' ? jsonData.username : '';
+            const noisePublicKeyBase64 =
+                (typeof jsonData.noisePublicKeyBase64 === 'string' && jsonData.noisePublicKeyBase64) ||
+                (typeof jsonData.xkey === 'string' && jsonData.xkey) ||
+                '';
+
+            if (!peerId || !username || !noisePublicKeyBase64) {
+                throw new Error('Invalid QR: need mp: peer, username, and Noise static key');
             }
+            router.push({
+                pathname: '/ConnectUser',
+                params: { peerId, username, noisePublicKeyBase64 },
+            });
        } catch (err) {
             setError("Invalid QR Code! Please try again!");
             setTimeout(() => {

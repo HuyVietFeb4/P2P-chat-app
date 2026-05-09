@@ -30,7 +30,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 chatId TEXT PRIMARY KEY,
                 name TEXT,
                 chatType TEXT NOT NULL,
-                createdAt INTEGER NOT NULL
+                createdAt INTEGER NOT NULL,
+                pairedViaQr INTEGER NOT NULL DEFAULT 0
             );
         """)
 
@@ -134,6 +135,16 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         if (oldVersion < 7) {
             db.execSQL("ALTER TABLE users ADD COLUMN userAvtId TEXT")
         }
+        if (oldVersion < 8) {
+            db.execSQL("ALTER TABLE chats ADD COLUMN pairedViaQr INTEGER NOT NULL DEFAULT 0")
+            db.execSQL(
+                """
+                UPDATE chats SET pairedViaQr = 1 WHERE chatId IN (
+                    SELECT DISTINCT chatId FROM sessions WHERE chachaKey = 'noise-XK'
+                )
+                """.trimIndent(),
+            )
+        }
     }
 
     // --- Helper Methods ---
@@ -228,6 +239,33 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     }
 
     fun directChatId(peerId: String) = "direct-$peerId"
+
+    /**
+     * Direct chats that started via QR (XK) use opener-driven KK reconnect so a restarted device
+     * can always send Noise msg1 even when `myMp > peerMp`; pure mesh XX→KK keeps MP tie-break.
+     */
+    fun setDirectChatPairedViaQr(peerId: String, pairedViaQr: Boolean) {
+        val chatId = directChatId(peerId)
+        if (!rowExists("chats", "chatId", chatId)) return
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("pairedViaQr", if (pairedViaQr) 1 else 0)
+        }
+        db.update("chats", values, "chatId = ?", arrayOf(chatId))
+    }
+
+    fun isDirectChatPairedViaQr(peerId: String): Boolean {
+        val chatId = directChatId(peerId)
+        readableDatabase.rawQuery(
+            "SELECT pairedViaQr FROM chats WHERE chatId = ? LIMIT 1",
+            arrayOf(chatId),
+        ).use { c ->
+            if (!c.moveToFirst()) return false
+            val idx = c.getColumnIndex("pairedViaQr")
+            if (idx < 0) return false
+            return c.getInt(idx) != 0
+        }
+    }
 
     fun directSessionId(peerId: String) = "session-$peerId"
 
@@ -521,6 +559,6 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         private const val DATABASE_NAME = "meshenger.db"
-        private const val DATABASE_VERSION = 7
+        private const val DATABASE_VERSION = 8
     }
 }

@@ -2,6 +2,7 @@ package com.meshenger.backend.application
 
 import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
+import android.util.Base64
 import android.util.Log
 import com.meshenger.backend.application.db.MeshengerDbHelper
 import com.meshenger.backend.application.messaging.Message
@@ -60,10 +61,9 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     private val sessionBusJobs = ConcurrentHashMap<String, Job>()
     /**
      * peerId -> sessionId of the *currently active* TwoPartySession. Each new handshake gets a
-     * fresh UUID so `messages.sessionId` actually distinguishes between successive Noise sessions
-     * with the same peer (e.g. the original XX bootstrap vs. a later KK reconnect after the app
-     * has been restarted). The legacy [MeshengerDbHelper.directSessionId] row stays around as a
-     * fallback bucket so that any code path that hasn't been migrated still works.
+     * fresh random UUID (no embedded peer id) so `messages.sessionId` distinguishes successive
+     * Noise sessions with the same peer. The legacy [MeshengerDbHelper.directSessionId] row stays
+     * as a fallback when inserting a new session row fails; older code paths can still use it.
      */
     private val currentSessionIdByPeer = ConcurrentHashMap<String, String>()
     /**
@@ -603,7 +603,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     }
 
     // -----------------------------------------------------------------
-    // 1:1 (TwoPartySession) lifecycle: Noise XX over the mesh.
+    // 1:1 (TwoPartySession): Noise XX (mesh), XK (QR first pairing), KK (reconnect).
     // -----------------------------------------------------------------
 
     /**
@@ -634,12 +634,13 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             // receive KK and hit the post-handshake recreate path; the smaller-MP side is
             // the one that sends KK msg1 after a full reconnect.
             val hasStoredKey = loadStoredRemoteStatic(peerId) != null
-            val effectiveInitiator = myMp < mp
-
+            val qrPaired = dbHelper.isDirectChatPairedViaQr(peerId)
+            val effectiveInitiator = effectiveTwoPartyInitiator(peerId, mp)
             Log.d(
                 OTO_TAG,
                 "openTwoPartySession peer=$peerId requested displayName='$displayName' " +
-                    "myMp=$myMp peerMp=$mp hasStoredKey=$hasStoredKey effectiveInitiator=$effectiveInitiator " +
+                    "myMp=$myMp peerMp=$mp hasStoredKey=$hasStoredKey qrPaired=$qrPaired " +
+                    "effectiveInitiator=$effectiveInitiator " +
                     "alreadyOpen=${activeSessions.containsKey(peerId)}",
             )
 
@@ -660,6 +661,142 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             promise.resolve(twoPartySessionInfo(peerId, isInitiator = effectiveInitiator, justOpened = true))
         } catch (e: Exception) {
             Log.e(OTO_TAG, "openTwoPartySession peer=$peerId FAILED: ${e.message}", e)
+            promise.reject("OPEN_SESSION_FAILED", e.message, e)
+        }
+    }
+
+    /**
+     * Persists the peer's **long-term Noise X25519 static public** from a QR scan and prepares
+     * [openTwoPartySessionWithBootstrap] with `bootstrap = "qr_scanner"` (Noise **XK**: scanner
+     * is initiator and knows responder static from QR).
+     */
+    @ReactMethod
+    fun savePeerNoisePublicFromQr(
+        peerId: String,
+        displayName: String,
+        noisePublicKeyBase64: String,
+        promise: Promise,
+    ) {
+        try {
+            val trimmedPeer = peerId.trim()
+            require(trimmedPeer.startsWith(MP_PREFIX)) {
+                "peerId must be '${MP_PREFIX}<decimal>'"
+            }
+            val raw = try {
+                Base64.decode(noisePublicKeyBase64.trim(), Base64.DEFAULT)
+            } catch (e: Exception) {
+                promise.reject("INVALID_INPUT", "Invalid Base64: ${e.message}")
+                return
+            }
+            if (raw.size != 32) {
+                promise.reject("INVALID_INPUT", "Noise static public must be 32 bytes, got ${raw.size}")
+                return
+            }
+            remotePeerCrypto.saveRemoteRawKey(
+                trimmedPeer,
+                RemotePeerCryptoStore.KEY_TYPE_X25519_QR_IMPORT,
+                raw,
+            )
+            val name = displayName.trim().ifBlank { trimmedPeer }
+            ensurePeerRow(trimmedPeer, name)
+            dbHelper.setDirectChatPairedViaQr(trimmedPeer, true)
+            Log.i(OTO_TAG, "QR import peer=$trimmedPeer noisePub saved (32 bytes)")
+            promise.resolve(null)
+        } catch (e: Exception) {
+            Log.e(OTO_TAG, "savePeerNoisePublicFromQr FAILED: ${e.message}", e)
+            promise.reject("QR_SAVE_FAILED", e.message, e)
+        }
+    }
+
+    /**
+     * Identity payload for "My QR" using the same Noise static as [TwoPartySession] / KK reconnect
+     * ([LOCAL_STATIC_OWNER]), not the legacy `local-device` profile key row.
+     */
+    @ReactMethod
+    fun getIdentityForQr(promise: Promise) {
+        try {
+            val mp = MPAddress.getMyMPAddressULong()
+            val (pub, _) = getOrCreateLocalStaticKeypair()
+            val profile = UserStore.getProfile()
+            promise.resolve(
+                Arguments.createMap().apply {
+                    putString("peerId", meshPeerId(mp))
+                    putString("mpAddress", mp.toString())
+                    putString(
+                        "username",
+                        profile.userName.trim().ifBlank { meshPeerId(mp) },
+                    )
+                    profile.userAvtId?.let { putString("avatarId", it) }
+                    putString("noisePublicKeyBase64", Base64.encodeToString(pub, Base64.NO_WRAP))
+                },
+            )
+        } catch (e: Exception) {
+            Log.e(OTO_TAG, "getIdentityForQr FAILED: ${e.message}", e)
+            promise.reject("QR_IDENTITY_FAILED", e.message, e)
+        }
+    }
+
+    /**
+     * Opens a 1:1 session with explicit bootstrap semantics:
+     * - **mesh** — same as [openTwoPartySession] (XX or KK from DB; initiator = `myMp < peerMp`).
+     * - **qr_scanner** — device scanned the peer's QR: must have called [savePeerNoisePublicFromQr];
+     *   initiator = true, Noise **XK** using imported static.
+     * - **qr_display** — device that **showed** the QR: initiator = false, Noise **XK** responder
+     *   (wait for scanner's first handshake message). Use when opening chat on A before/while B connects.
+     */
+    @ReactMethod
+    fun openTwoPartySessionWithBootstrap(
+        peerId: String,
+        displayName: String,
+        bootstrap: String,
+        promise: Promise,
+    ) {
+        try {
+            val mode = bootstrap.trim().lowercase()
+            require(mode in setOf("mesh", "qr_scanner", "qr_display")) {
+                "bootstrap must be mesh | qr_scanner | qr_display"
+            }
+            val mp = parseMeshPeerId(peerId)
+            val myMp = MPAddress.getMyMPAddressULong()
+            if (mp == myMp) {
+                promise.reject("INVALID_INPUT", "Cannot open a session with self")
+                return
+            }
+            val name = displayName.trim().ifBlank { peerId }
+
+            val (effectiveInitiator, forcedPat) = when (mode) {
+                "mesh" -> effectiveTwoPartyInitiator(peerId, mp) to null
+                "qr_scanner" -> {
+                    if (loadQrImportedRemoteStatic(peerId) == null) {
+                        promise.reject(
+                            "QR_IMPORT_MISSING",
+                            "Call savePeerNoisePublicFromQr before open (qr_scanner)",
+                        )
+                        return
+                    }
+                    true to null
+                }
+                "qr_display" -> false to NoisePattern.XK
+                else -> error("unreachable")
+            }
+
+            Log.d(
+                OTO_TAG,
+                "openTwoPartySessionWithBootstrap peer=$peerId mode=$mode " +
+                    "effectiveInitiator=$effectiveInitiator forcedPattern=$forcedPat",
+            )
+
+            if (activeSessions.containsKey(peerId)) {
+                promise.resolve(
+                    twoPartySessionInfo(peerId, isInitiator = effectiveInitiator, justOpened = false),
+                )
+                return
+            }
+            ensurePeerRow(peerId, name)
+            createAndTrackSession(peerId, mp, name, effectiveInitiator, forcedPat)
+            promise.resolve(twoPartySessionInfo(peerId, isInitiator = effectiveInitiator, justOpened = true))
+        } catch (e: Exception) {
+            Log.e(OTO_TAG, "openTwoPartySessionWithBootstrap FAILED: ${e.message}", e)
             promise.reject("OPEN_SESSION_FAILED", e.message, e)
         }
     }
@@ -872,9 +1009,22 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
 
     private fun openOrEnsureTwoPartySession(peerIdStr: String, remoteMp: ULong, displayName: String) {
         if (activeSessions.containsKey(peerIdStr)) return
-        val myMp = MPAddress.getMyMPAddressULong()
-        val effectiveInitiator = myMp < remoteMp
+        val effectiveInitiator = effectiveTwoPartyInitiator(peerIdStr, remoteMp)
         createAndTrackSession(peerIdStr, remoteMp, displayName, effectiveInitiator)
+    }
+
+    /**
+     * KK reconnect initiator: mesh-only pairs use `myMp < peerMp` so both sides never stick as
+     * dual initiator when opening together. QR-bonded direct chats use **opener = initiator**
+     * (`true` here for every local open) so a restarted phone can drive KK even when it has the
+     * larger mesh id — the peer with a stale tunnel will hit post-handshake recreate; simultaneous
+     * open on both QR phones is handled by the existing Noise simultaneous-initiate path.
+     */
+    private fun effectiveTwoPartyInitiator(peerId: String, remoteMp: ULong): Boolean {
+        val myMp = MPAddress.getMyMPAddressULong()
+        val hasKk = loadStoredRemoteStatic(peerId) != null
+        if (!hasKk) return myMp < remoteMp
+        return if (dbHelper.isDirectChatPairedViaQr(peerId)) true else myMp < remoteMp
     }
 
     /**
@@ -889,31 +1039,54 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         isInitiator: Boolean,
         forcedPattern: NoisePattern? = null,
     ): TwoPartySession {
+        // If anything forgot to remove the previous session, a new TwoPartySession ctor would
+        // overwrite ListenerRegistry without unregistering the old instance — routing would
+        // point at the new listener, but the leak / ordering bugs are avoided by closing first.
+        sessionBusJobs.remove(peerId)?.cancel()
+        activeSessions.remove(peerId)?.close()
+        currentSessionIdByPeer.remove(peerId)
+
         // Persistent X25519 static keypair shared across all sessions / app restarts. This is
         // what makes Noise KK work after the in-memory session has been killed: both sides keep
         // the same long-term static key, so once they have learnt each other's static during the
         // initial XX bootstrap, they can KK directly on subsequent reconnects.
         val (pub, priv) = getOrCreateLocalStaticKeypair()
 
-        val storedRemoteStatic = loadStoredRemoteStatic(peerId)
-        val pattern = forcedPattern ?: if (storedRemoteStatic != null) NoisePattern.KK else NoisePattern.XX
-        val remoteStaticForCtor = if (pattern == NoisePattern.XX) null else storedRemoteStatic
+        val handshakeStatic = loadStoredRemoteStatic(peerId)
+        val qrImportedStatic = loadQrImportedRemoteStatic(peerId)
+        val pattern = forcedPattern ?: when {
+            handshakeStatic != null -> NoisePattern.KK
+            qrImportedStatic != null && isInitiator -> NoisePattern.XK
+            else -> NoisePattern.XX
+        }
+        var effectivePattern = pattern
+        if (pattern == NoisePattern.XK && isInitiator && qrImportedStatic == null) {
+            Log.w(
+                OTO_TAG,
+                "SESSION downgrade peer=$peerId XK initiator without QR-import static -> XX",
+            )
+            effectivePattern = NoisePattern.XX
+        }
+        if (pattern == NoisePattern.KK && handshakeStatic == null) {
+            Log.w(
+                OTO_TAG,
+                "SESSION downgrade peer=$peerId KK without handshake-learned static -> XX",
+            )
+            effectivePattern = NoisePattern.XX
+        }
+
+        val remoteStaticForCtor = when (effectivePattern) {
+            NoisePattern.XX -> null
+            NoisePattern.KK -> handshakeStatic
+            NoisePattern.XK -> if (isInitiator) qrImportedStatic else null
+        }
+
         Log.d(
             OTO_TAG,
             "SESSION decide peer=$peerId initiator=$isInitiator forcedPattern=$forcedPattern " +
-                "hasStoredRemoteStatic=${storedRemoteStatic != null} -> pattern=$pattern",
+                "hasHandshakeStatic=${handshakeStatic != null} hasQrImport=${qrImportedStatic != null} " +
+                "-> pattern=$effectivePattern",
         )
-
-        if (pattern != NoisePattern.XX && remoteStaticForCtor == null) {
-            // Caller asked for KK/XK but we have no stored peer static — would crash inside the
-            // HandshakeState constructor. Downgrade to XX rather than throwing.
-            Log.w(
-                OTO_TAG,
-                "SESSION downgrade peer=$peerId requested=$pattern but no stored remote static -> XX",
-            )
-        }
-        val effectivePattern =
-            if (pattern != NoisePattern.XX && remoteStaticForCtor == null) NoisePattern.XX else pattern
 
         val session = TwoPartySession(
             isInitiator = isInitiator,
@@ -1009,6 +1182,18 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                         keyType = RemotePeerCryptoStore.KEY_TYPE_X25519_RAW,
                         rawKeyMaterial = remoteStatic,
                     )
+                    if (effectivePattern == NoisePattern.XK) {
+                        try {
+                            dbHelper.setDirectChatPairedViaQr(peerId, true)
+                        } catch (e: Exception) {
+                            Log.w(OTO_TAG, "setDirectChatPairedViaQr peer=$peerId: ${e.message}")
+                        }
+                    }
+                    try {
+                        remotePeerCrypto.deleteRemoteRawKey(peerId, RemotePeerCryptoStore.KEY_TYPE_X25519_QR_IMPORT)
+                    } catch (e: Exception) {
+                        Log.w(OTO_TAG, "KEY delete QR import peer=$peerId: ${e.message}")
+                    }
                     Log.d(OTO_TAG, "KEY persist remoteStatic peer=$peerId OK")
                 } catch (e: Exception) {
                     Log.w(OTO_TAG, "KEY persist remoteStatic peer=$peerId FAILED: ${e.message}")
@@ -1018,11 +1203,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             }
         }
 
-        // Allocate a fresh session row in the DB so `messages.sessionId` actually identifies
-        // this concrete handshake instance instead of being a constant per peer. The legacy
+        // Allocate a fresh session row: random UUID only (no peer id in the string). The legacy
         // `directSessionId(peerId)` row stays around so old messages still load via the chat
         // join, and any unmigrated code path (e.g. group/global) keeps using its own id.
-        val newSessionId = "session-$peerId-${UUID.randomUUID()}"
+        val newSessionId = UUID.randomUUID().toString()
         val inserted = try {
             dbHelper.ensureDirectSessionRow(
                 sessionId = newSessionId,
@@ -1164,6 +1348,15 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             raw
         } catch (e: Exception) {
             Log.w(OTO_TAG, "KEY load remoteStatic peer=$peerId FAILED: ${e.message}")
+            null
+        }
+    }
+
+    private fun loadQrImportedRemoteStatic(peerId: String): ByteArray? {
+        return try {
+            remotePeerCrypto.loadRemoteRawKey(peerId, RemotePeerCryptoStore.KEY_TYPE_X25519_QR_IMPORT)
+        } catch (e: Exception) {
+            Log.w(OTO_TAG, "KEY load QR import peer=$peerId FAILED: ${e.message}")
             null
         }
     }
@@ -1547,7 +1740,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun openSession(peerId: String, promise: Promise) {
         val session = Arguments.createMap().apply {
-            putString("sessionId", "session-$peerId")
+            putString("sessionId", UUID.randomUUID().toString())
             putString("status", "open")
         }
         promise.resolve(session)

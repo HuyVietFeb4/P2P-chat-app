@@ -14,7 +14,7 @@ import BluetoothPopup from "../common components/BluetoothPopUp";
 const { MeshengerApplicationModule } = NativeModules;
 
 export default function ChatRoom() {
-    const { id, name, avatarUrl } = useLocalSearchParams();
+    const { id, name, avatarUrl, qrBootstrap } = useLocalSearchParams();
     const insets = useSafeAreaInsets();
     const behavior = useBehavior();
     const { colors } = useTheme();
@@ -25,16 +25,30 @@ export default function ChatRoom() {
     const peerName = rawName.trim().length > 0 ? rawName.trim() : peerId;
     const isDirect = peerId.startsWith('mp:');
 
+    const bootstrap =
+        typeof qrBootstrap === 'string' ? qrBootstrap : '';
+
     useEffect(() => {
         if (!isDirect) return;
-        // Idempotent on the native side: if a session is already open (e.g. created by the
-        // responder fallback), this resolves without recreating it.
-        MeshengerApplicationModule.openTwoPartySession(peerId, peerName, true).catch(
-            (error: any) => {
-                console.warn("openTwoPartySession failed:", error?.message ?? error);
-            },
-        );
-    }, [isDirect, peerId, peerName]);
+        const mod = MeshengerApplicationModule as {
+            openTwoPartySession: (a: string, b: string, c: boolean) => Promise<unknown>;
+            openTwoPartySessionWithBootstrap?: (a: string, b: string, mode: string) => Promise<unknown>;
+        };
+        const run =
+            bootstrap === 'qr_scanner' || bootstrap === 'qr_display'
+                ? () =>
+                      (mod.openTwoPartySessionWithBootstrap ?? (() => Promise.reject('native'))).call(
+                          mod,
+                          peerId,
+                          peerName,
+                          bootstrap,
+                      )
+                : () => mod.openTwoPartySession(peerId, peerName, true);
+
+        run().catch((error: any) => {
+            console.warn('open session failed:', error?.message ?? error);
+        });
+    }, [isDirect, peerId, peerName, bootstrap]);
 
     return (
         <SafeAreaView style={{flex: 1, backgroundColor: colors.background}}>

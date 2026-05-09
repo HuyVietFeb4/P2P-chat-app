@@ -89,8 +89,8 @@ class TwoPartySession(
      *
      * 1) Pattern tag differs from [chosenPattern] (e.g. stale XX in memory, peer sends KK).
      * 2) [chosenPattern] matches but transport was already established and the peer sent a new
-     * handshake anyway (e.g. they restarted the app — KK msg 1 again while we still have KK
-     * cipher states). EpidemicFlooding delivers to this listener, so the handshake fallback
+     * handshake anyway (e.g. app killed and reopened — fresh XX or KK msg 1 while we still
+     * have cipher states). EpidemicFlooding delivers to this listener, so the handshake fallback
      * never runs unless we delegate here.
      *
      * NOTE: invoked synchronously from the network thread; keep the handler non-blocking.
@@ -319,30 +319,23 @@ class TwoPartySession(
         val payload = message.copyOfRange(1, message.size)
         val hs = handshakeState
         if (hs == null) {
-            // Transport keys are live but the peer may have started a *new* KK handshake (app
-            // restart with persisted statics). Only treat **KK** this way: if we also allowed
-            // same-pattern XX here, late / duplicate XX packets from the mesh could tear down a
-            // healthy XX tunnel and break the 1st KK reconnect ("lần 2").
+            // Transport already established: any new Noise handshake from this peer means they
+            // restarted (or are re-driving the handshake). Tear down via the app layer and
+            // become responder to their fresh msg1 — same path as pattern/tag mismatch.
             //
-            // EpidemicFlooding still delivers to us because we're registered as the
-            // TwoPartyListener — the handshake fallback is skipped when a listener exists.
-            if (isHandshakeFinished && incomingPattern == NoisePattern.KK) {
+            // Note: duplicate/reflooded old handshake packets could theoretically trigger an
+            // extra recreate; in normal use the peer restart case dominates.
+            if (isHandshakeFinished) {
                 Log.w(
                     OTO_TAG,
-                    "HS recv new KK handshake while transport active (peer likely restarted) " +
-                        "peerMp=$senderID -> recreate as responder",
+                    "HS recv handshake while transport active (peer likely restarted) " +
+                        "pattern=$incomingPattern peerMp=$senderID -> recreate as responder",
                 )
                 try {
                     onPatternMismatch?.invoke(senderID, message, incomingPattern)
                 } catch (e: Exception) {
-                    Log.e(OTO_TAG, "onPatternMismatch (post-handshake KK restart) threw: ${e.message}", e)
+                    Log.e(OTO_TAG, "onPatternMismatch (post-handshake peer restart) threw: ${e.message}", e)
                 }
-            } else if (isHandshakeFinished) {
-                Log.w(
-                    OTO_TAG,
-                    "HS recv DROP handshake after transport finished " +
-                        "(chosen=$chosenPattern incoming=$incomingPattern; only KK restart auto-handled) peerMp=$senderID",
-                )
             } else {
                 Log.w(
                     OTO_TAG,
