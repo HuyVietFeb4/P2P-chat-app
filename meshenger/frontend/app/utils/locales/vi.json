@@ -88,5 +88,14 @@
     "username-required": "Tên người dùng trống",
     "security-weak": "Yếu",
     "security-medium": "Trung bình",
-    "security-strong": "Mạnh"
+    "security-strong": "Mạnh",
+    "cannot-scan-self": "Bạn không thể quét mã QR của chính mình!",
+    "scan-qr-error": "Quét QR thất bại",
+    "invalid-qr": "Mã QR không hợp lệ",
+    "select-avatar": "Chọn avatar",
+    "qr-scanning": "Quét mã QR",
+    "scan-qr-to-add": "Quét mã QR để kết nối với thiết bị mới",
+    "my-qr-code": "Mã QR của tôi",
+    "show-qr-code": "Đưa mã QR để kết nối",
+    "cannot-detect-qr": "Không thể xác định được mã QR!"
 }

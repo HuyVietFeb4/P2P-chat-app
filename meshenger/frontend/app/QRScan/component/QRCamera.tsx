@@ -43,8 +43,8 @@ import Message from "@/app/common components/Message";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { Camera } from "lucide-react-native";
-import { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState, useRef } from "react";
+import { StyleSheet, Text, TouchableOpacity, View, NativeModules } from "react-native";
 import { useTranslation } from "react-i18next";
 
 export default function QRCamera() {
@@ -53,6 +53,8 @@ export default function QRCamera() {
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const { t } = useTranslation();
+    const { MeshengerApplicationModule } = NativeModules;
+    const scanLock = useRef(false);
 
     if (!permission) {
         return (
@@ -69,7 +71,9 @@ export default function QRCamera() {
         }
     }
 
-    const handleScan = ({ data }: { data: string }) => {
+    const handleScan = async ({ data }: { data: string }) => {
+       if (scanLock.current) return;
+       scanLock.current = true;
        try {
             setScanned(true);
             const jsonData = JSON.parse(data);
@@ -81,20 +85,34 @@ export default function QRCamera() {
                 (typeof jsonData.noisePublicKeyBase64 === 'string' && jsonData.noisePublicKeyBase64) ||
                 (typeof jsonData.xkey === 'string' && jsonData.xkey) ||
                 '';
+            const avatarId = jsonData.avatarId;
+
+            // console.log("Peer ID: ", peerId);
+            const selfPublicKey = await MeshengerApplicationModule.getIdentityForQr();
 
             if (!peerId || !username || !noisePublicKeyBase64) {
-                throw new Error('Invalid QR: need mp: peer, username, and Noise static key');
+                throw new Error(t('invalid-qr'));
             }
+
+            if (selfPublicKey.noisePublicKeyBase64 === noisePublicKeyBase64) {
+                throw new Error(t('cannot-scan-self'))
+            }
+
             router.push({
                 pathname: '/ConnectUser',
-                params: { peerId, username, noisePublicKeyBase64 },
+                params: { peerId, username, noisePublicKeyBase64, avatarId },
             });
+            return;
        } catch (err) {
-            setError("Invalid QR Code! Please try again!");
+            if (err instanceof Error) {
+                setError(err.message);
+            }
+            setError(t('invalid-qr'));
+       } finally {
             setTimeout(() => {
+                scanLock.current = false;
                 setError(null);
-                setScanned(false);
-            }, 3000);
+            }, 1500);
        }
     };
 
@@ -116,15 +134,12 @@ export default function QRCamera() {
                         barcodeScannerSettings={{
                             barcodeTypes: ['qr']
                         }}
-                        onBarcodeScanned={scanned ? undefined : handleScan}
+                        onBarcodeScanned={handleScan}
                     />
                 )
             }
 
-
-            {
-                error && <Message />
-            }
+            <Message visible={!!error} message={error} title={t('scan-qr-error')} />
         </View>
     );  
 }

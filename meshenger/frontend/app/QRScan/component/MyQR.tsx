@@ -13,6 +13,7 @@ export default function MyQR() {
     const [username, setUsername] = useState<string>("");
     const [xkey, setXKey] = useState<string>("");
     const [edkey, setEDKey] = useState<string>("");
+    const [avatarId, setAvatarId] = useState<string>("");
     const { t } = useTranslation();
 
     useEffect(() => {
@@ -24,6 +25,7 @@ export default function MyQR() {
                 setId(identity.peerId ?? '');
                 setMPAddress(identity.mpAddress ?? '');
                 setXKey(identity.noisePublicKeyBase64 ?? '');
+                setAvatarId(identity.avatarId);
                 try {
                     const keys = await mod.loadRemotePeerRawKey?.('local-device', 'ALL');
                     setEDKey(keys?.['ED25519_RAW'] ?? '');
@@ -45,6 +47,7 @@ export default function MyQR() {
         noisePublicKeyBase64: xkey,
         username,
         edkey,
+        avatarId
     };
 
     return (

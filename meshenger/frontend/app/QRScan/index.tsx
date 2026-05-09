@@ -1,5 +1,5 @@
 import * as ImagePicker from "expo-image-picker"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { NativeModules, StyleSheet, View } from "react-native"
 import Footer from "./component/Footer"
 import Header from "./component/Header"
@@ -7,6 +7,10 @@ import MyQR from "./component/MyQR"
 import QRCamera from "./component/QRCamera"
 import { useBluetooth } from "@/hook/useBluetooth";
 import BluetoothPopup from "../common components/BluetoothPopUp";
+import { useTranslation } from "react-i18next"
+import { Camera } from "expo-camera"
+import { useRouter } from "expo-router"
+import Message from "../common components/Message"
 
 
 export default function QRScan() {
@@ -15,6 +19,57 @@ export default function QRScan() {
     const [permission, requestPermission] = ImagePicker.useMediaLibraryPermissions();
     const [username, setUsername] = useState<string>("Loading...");
     const { showPopup, openBluetoothSettings, dismissPopup } = useBluetooth();
+    const { t } = useTranslation();
+    const [error, setError] = useState<string | null>(null);
+    const scanLock = useRef(false);
+    const { MeshengerApplicationModule } = NativeModules;
+    const router = useRouter();
+
+    const handleScan = async ({ data }: { data: string }) => {
+       if (scanLock.current) return;
+       scanLock.current = true;
+       try {
+            const jsonData = JSON.parse(data);
+            const peerId =
+                (typeof jsonData.peerId === 'string' && jsonData.peerId.startsWith('mp:') && jsonData.peerId) ||
+                (jsonData.mpAddress != null ? `mp:${String(jsonData.mpAddress)}` : '');
+            const username = typeof jsonData.username === 'string' ? jsonData.username : '';
+            const noisePublicKeyBase64 =
+                (typeof jsonData.noisePublicKeyBase64 === 'string' && jsonData.noisePublicKeyBase64) ||
+                (typeof jsonData.xkey === 'string' && jsonData.xkey) ||
+                '';
+            const avatarId = jsonData.avatarId;
+
+            // console.log("Peer ID: ", peerId);
+            const selfPublicKey = await MeshengerApplicationModule.getIdentityForQr();
+
+            if (!peerId || !username || !noisePublicKeyBase64) {
+                throw new Error(t('invalid-qr'));
+            }
+
+            if (selfPublicKey.noisePublicKeyBase64 === noisePublicKeyBase64) {
+                console.log("dssdsdsdisdsds")
+                throw new Error(t('cannot-scan-self'))
+            }
+
+            router.push({
+                pathname: '/ConnectUser',
+                params: { peerId, username, noisePublicKeyBase64, avatarId },
+            });
+            return;
+       } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+                return;
+            }
+            setError(t('invalid-qr'));
+       } finally {
+            setTimeout(() => {
+                scanLock.current = false;
+                setError(null);
+            }, 1500);
+       }
+    };
 
     const pickImage = async () => {
         if (!permission?.granted) {
@@ -29,21 +84,39 @@ export default function QRScan() {
             quality: 1
         });
 
-        console.log(result);
+        if (result.canceled) return;
 
-        if (!result.canceled) {
-            setImage(result.assets[0].uri);
-        }
+        const uri = result.assets[0].uri;
+
+        try {
+            const scan = await Camera.scanFromURLAsync(uri);
+
+            if (scan.length === 0) {
+                throw new Error(t('cannot-detect-qr'))
+            }
+            
+            await handleScan({data: scan[0].data})
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+                return;
+            }
+       } finally {
+            setTimeout(() => {
+                scanLock.current = false;
+                setError(null);
+            }, 1500);
+       }
     }
 
     return (
         <View style={{flex: 1}}>
             {
-                activeTab === "scan-qr" && <Header title="Devices Scanning" instruction="Scan QR to add a new device" />
+                activeTab === "scan-qr" && <Header title={t('qr-scanning')} instruction={t('scan-qr-to-add')} />
             }
 
             {
-                activeTab === "my-qr" && <Header title="My QR Code" instruction="Show your QR code to others" />
+                activeTab === "my-qr" && <Header title={t('my-qr-code')} instruction={t('show-qr-code')} />
             }
             
             {
@@ -62,6 +135,8 @@ export default function QRScan() {
                                 onDismiss={dismissPopup}
                             />
                         )}
+            
+            <Message visible={!!error} message={error} title={t('scan-qr-error')} />
         </View>
     )
 }
