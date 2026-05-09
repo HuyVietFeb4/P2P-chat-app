@@ -429,13 +429,6 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 promise.reject("INVALID_INPUT", "Set a display name before announcing on the mesh")
                 return
             }
-            if (UserStore.isGenericMeshDisplayName(name)) {
-                promise.reject(
-                    "INVALID_INPUT",
-                    "Choose a unique display name (not \"${UserStore.DEFAULT_PROFILE_USER_NAME}\") so each device is visible as a separate contact",
-                )
-                return
-            }
             val avatarId = UserStore.getProfile().userAvtId
             GlobalChatSession.sendBootstrap(name, avatarId)
             promise.resolve(null)
@@ -468,13 +461,6 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             val name = UserStore.getProfile().userName.trim()
             if (name.isBlank()) {
                 promise.reject("INVALID_INPUT", "Set a display name before scanning")
-                return
-            }
-            if (UserStore.isGenericMeshDisplayName(name)) {
-                promise.reject(
-                    "INVALID_INPUT",
-                    "Choose a unique display name (not \"${UserStore.DEFAULT_PROFILE_USER_NAME}\") before scanning",
-                )
                 return
             }
             val avatarId = UserStore.getProfile().userAvtId
@@ -961,7 +947,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     val profile = UserStore.getProfile()
                     val name = profile.userName.trim()
                     val hasNeighbors = MeshConnectionRegistry.getOutboundMap().isNotEmpty()
-                    if (name.isNotBlank() && !UserStore.isGenericMeshDisplayName(name) && hasNeighbors) {
+                    if (name.isNotBlank() && hasNeighbors) {
                         GlobalChatSession.sendBootstrap(name, profile.userAvtId)
                         Log.d("MeshengerApplication", "Presence bootstrap sent as '$name' avatar=${profile.userAvtId}")
                     }
