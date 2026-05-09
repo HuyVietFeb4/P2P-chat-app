@@ -17,7 +17,7 @@
 import { ImageSourcePropType } from 'react-native';
 
 /** Fallback shown when no avatar has been selected yet. */
-export const DEFAULT_AVATAR: ImageSourcePropType = require('./images/avatar.png');
+export const DEFAULT_AVATAR: ImageSourcePropType = require('./avt_set/global.png');
 
 /** Keyed lookup: avatarId → require'd PNG. */
 const AVATAR_SOURCES: Record<string, ImageSourcePropType> = {
