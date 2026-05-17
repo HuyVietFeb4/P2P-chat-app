@@ -161,7 +161,7 @@ export default function Onboarding5() {
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Choose an Avatar</Text>
+                        <Text style={styles.modalTitle}>{t('choose-a-avatar')}</Text>
                         <FlatList
                             data={AVATAR_LIST.filter(a => a.id !== 'avt0')}
                             numColumns={3}
@@ -188,7 +188,7 @@ export default function Onboarding5() {
                             style={styles.closeModalButton}
                             onPress={() => setModalVisible(false)}
                         >
-                            <Text style={styles.closeModalButtonText}>Cancel</Text>
+                            <Text style={styles.closeModalButtonText}>{t('cancel')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

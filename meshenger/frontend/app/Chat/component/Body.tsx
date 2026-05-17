@@ -172,7 +172,7 @@ export default function Body({ peerId }: { peerId: string }) {
                     {showSenderName && (
                         <Text style={[styles.senderNameText, { color: colors.subText }]}>
                             {/* {item.senderName || item.senderId}  */}
-                            {item.senderName || ''}
+                            {item.senderName}
                         </Text>
                     )}
                     <Text style={[styles.messageText, { color: isMe ? colors.myMessageText : colors.peerMessageText }]}>

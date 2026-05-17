@@ -97,5 +97,9 @@
     "scan-qr-to-add": "Scan QR to add a new device",
     "my-qr-code": "My QR Code",
     "show-qr-code": "Show your QR code to others",
-    "cannot- detect-qr": "Cannot Detect QR"
+    "cannot- detect-qr": "Cannot Detect QR",
+    "choose-a-avatar": "Choose an avatar",
+    "successful-connect": "Successfully Connected!",
+    "noise-key-saved": "Noise key saved. You can now start a secure handshake.",
+    "start-chatting-now": "Start Chatting Now"
 }

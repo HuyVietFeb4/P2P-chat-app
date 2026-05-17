@@ -9,10 +9,30 @@
       "distribution": "internal"
     },
     "preview": {
+      "android": {
+        "buildType": "apk",
+        "image": "sdk-54"
+      },
+      "distribution": "internal",
+      "autoIncrement": true,
+      "channel": "preview"
+    },
+    "preview2": {
+      "android": {
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
+    "preview3": {
+      "developmentClient": true
+    },
+    "preview4": {
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      }
     },
     "apk": {
       "android": {

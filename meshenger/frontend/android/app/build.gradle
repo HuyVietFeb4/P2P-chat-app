@@ -133,6 +133,13 @@ android {
     packaging {
         pickFirst 'META-INF/versions/9/OSGI-INF/MANIFEST.MF'
     }
+
+    configurations.all {
+        resolutionStrategy {
+            force 'org.bouncycastle:bcprov-jdk18on:1.84'
+        }
+        exclude group: 'org.bouncycastle', module: 'bcprov-jdk15to18'
+    }
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`

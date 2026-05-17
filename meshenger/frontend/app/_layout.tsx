@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import * as Localization from 'expo-localization';
+import "./utils/i18n";
 
 export default function RootLayout() {
   const { t, i18n } = useTranslation();

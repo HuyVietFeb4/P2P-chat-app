@@ -111,6 +111,7 @@ import Header from './component/Header';
 import { CheckCircle2, AlertCircle, User } from 'lucide-react-native'; // Thêm icon để UI sinh động
 import { Image } from 'expo-image';
 import { getAvatarSource } from '@/assets/avatarMap';
+import { useTranslation } from 'react-i18next';
 
 const { MeshengerApplicationModule } = NativeModules;
 
@@ -127,6 +128,7 @@ export default function ConnectUser() {
   const peerId = (params.peerId as string) ?? '';
   const username = (params.username as string) ?? '';
   const noiseB64 = (params.noisePublicKeyBase64 as string) ?? '';
+  const { t } = useTranslation();
   // const avaId = require(`@/assets/avt_set/${params.avatarId}`);
 
   const [saving, setSaving] = useState(true);
@@ -201,10 +203,10 @@ export default function ConnectUser() {
                 <CheckCircle2 color={colors.success.textColor} size={24} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.statusText, { color: colors.success.textColor, fontWeight: 'bold' }]}>
-                    Successfully Connected!
+                    {t('successful-connect')}
                   </Text>
                   <Text style={[styles.statusSubText, { color: colors.success.textColor }]}>
-                    Noise key saved. You can now start a secure handshake.
+                    {t('noise-key-saved')}
                   </Text>
                 </View>
               </View>
@@ -213,7 +215,7 @@ export default function ConnectUser() {
                 style={[styles.btn, { backgroundColor: colors.primary }]} 
                 onPress={openChat}
               >
-                <Text style={styles.btnText}>Start Chatting Now</Text>
+                <Text style={styles.btnText}>{t('start-chatting-now')}</Text>
               </TouchableOpacity>
             </View>
           )}

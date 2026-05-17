@@ -97,5 +97,9 @@
     "scan-qr-to-add": "Quét mã QR để kết nối với thiết bị mới",
     "my-qr-code": "Mã QR của tôi",
     "show-qr-code": "Đưa mã QR để kết nối",
-    "cannot-detect-qr": "Không thể xác định được mã QR!"
+    "cannot-detect-qr": "Không thể xác định được mã QR!",
+    "choose-a-avatar": "Chọn ảnh đại diện",
+    "successful-connect": "Kết nối thành công",
+    "noise-key-saved": "Khóa Noise đã được lưu. Bạn có thể bắt đầu quá trình bắt tay bảo mật ngay bây giờ.",
+    "start-chatting-now": "Bắt đầu nhắn tin"
 }
