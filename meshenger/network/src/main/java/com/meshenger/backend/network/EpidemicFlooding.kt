@@ -9,7 +9,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
-
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import com.meshenger.backend.transport2.PhysicalPeer
 
 object EpidemicFlooding : TransportPacketListener {
     private val epidemicJob = SupervisorJob()
@@ -174,6 +176,29 @@ object EpidemicFlooding : TransportPacketListener {
 
         Log.d("EpidemicFlooding", "Received packet from: ${decodedPacket.header.senderID} with type: ${decodedPacket.header.type}")
         Log.d("EpidemicFlooding", "Received packet for: ${decodedPacket.header.receiverID}. My MPAddress: ${MPAddress.getMyMPAddressULong()}")
+
+        // 4. Dynamic Peer Registration for Inbound Joins
+        // If the packet has full TTL, it came directly from the physical neighbor
+        if (decodedPacket.header.TTL == 20.toUShort() && sourceMac != "DumpAddr") {
+            val peerMPAddress = decodedPacket.header.senderID
+            val physicalPeers = MeshConnectionRegistry.getPhysicalPeerList()
+            // Check if we already have this peer registered with its correct MPAddress
+            if (physicalPeers.none { it.MPAddress.isNotEmpty() && MPAddress.MPAddressByteArrayToULong(it.MPAddress) == peerMPAddress }) {
+                val connection = MeshConnectionRegistry.getInbound(sourceMac) ?: MeshConnectionRegistry.getOutbound(sourceMac)
+                val device = connection?.bluetoothDevice
+                if (device != null) {
+                    val newPeer = PhysicalPeer(device)
+                    val buffer = ByteBuffer.allocate(Long.SIZE_BYTES)
+                    buffer.order(ByteOrder.BIG_ENDIAN)
+                    buffer.putLong(peerMPAddress.toLong())
+                    newPeer.MPAddress = buffer.array()
+                    newPeer.isInMesh = true
+                    MeshConnectionRegistry.addPhysicalPeer(newPeer)
+                    Log.i("EpidemicFlooding", "Dynamically added peer ${device.address} to physicalPeerList with MPAddress $peerMPAddress")
+                }
+            }
+        }
+
         // add to cache
         when(decodedPacket.header.type) {
             MessageType.ANTI_ENTROPY_REQUEST.value,
@@ -248,7 +273,11 @@ object EpidemicFlooding : TransportPacketListener {
             Log.d("Epidemic Flooding", "Compact vector size: ${compactVector.size}")
             for(peer in physicalPeerList) {
                 val senderID = MPAddress.getMyMPAddressULong()
-                val peerMPAddress = peer.MPAddress?: continue
+                val peerMPAddress = peer.MPAddress
+                if (peerMPAddress == null || peerMPAddress.isEmpty()) {
+                    Log.w("EpidemicFlooding", "Skipping peer ${peer.device.address}: MPAddress is not yet resolved.")
+                    continue
+                }
                 val receiverID = MPAddress.MPAddressByteArrayToULong(peerMPAddress)
                 val packetLst = PacketFactory.createPackets(type, senderID = senderID, receiverID = receiverID,
                     payload = compactVector, inputTimeStamp = System.currentTimeMillis().toULong())
@@ -293,8 +322,8 @@ object EpidemicFlooding : TransportPacketListener {
                         val wrapPayload = Packet.encode(entry.value) ?: continue
                         val packetLst = PacketFactory.createPackets(type, senderID = senderID, receiverID = receiverID,
                             payload = wrapPayload, inputTimeStamp = System.currentTimeMillis().toULong())
-                        for(packet in packetLst) {
-                            forwardPacket(packet, sourceMac)
+                        for(p in packetLst) {
+                            forwardPacket(p)
                         }
                     }
                 }
