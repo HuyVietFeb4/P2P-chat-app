@@ -12,6 +12,7 @@ import com.meshenger.backend.application.security.RemotePeerCryptoStore
 import com.meshenger.backend.application.user.PeerSecurity
 import com.meshenger.backend.application.user.UserProfile
 import com.meshenger.backend.application.user.UserStore
+import com.meshenger.backend.application.notification.NotificationHelper
 import com.meshenger.backend.network.DirectChatNegotiationListener
 import com.meshenger.backend.network.EpidemicFlooding
 import com.meshenger.backend.network.ListenerRegistry
@@ -250,6 +251,15 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                     putString("chatId", GLOBAL_CHAT_ID)
                     putString("sessionType", "GlobalChat")
                     putString("action", action)
+                }
+                if (action != "Send") {
+                    val rawName = dbHelper.getUserProfile(senderId)?.userName ?: senderId
+                    val senderName = if (rawName.startsWith("mp:")) "Ai đó" else rawName
+                    NotificationHelper.showNewMessageNotification(
+                        reactApplicationContext,
+                        "Global Chat: $senderName",
+                        plaintext.takeIf { it.isNotEmpty() } ?: "Tin nhắn mới"
+                    )
                 }
                 sendEvent("onNewMessage", uiMap)
                 Log.d("MeshengerApplication", "Persisted global bus event action=$action sender=$senderId")
@@ -1458,6 +1468,15 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             putString("sessionType", "TwoPartyChat")
             putString("action", action)
         }
+        if (action == "Receive") {
+            val rawName = dbHelper.getUserProfile(peerId)?.userName ?: peerId
+            val senderName = if (rawName.startsWith("mp:")) "Ai đó" else rawName
+            NotificationHelper.showNewMessageNotification(
+                reactApplicationContext,
+                senderName,
+                plaintext.takeIf { it.isNotEmpty() } ?: "Tin nhắn mới"
+            )
+        }
         sendEvent("onNewMessage", map)
     }
 
@@ -1656,6 +1675,13 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                             displayName = inv.displayName.ifBlank { peerIdStr },
                             avatarId = inv.avatarId,
                             timestamp = timeStamp.toLong(),
+                        )
+                        val rawName = inv.displayName.ifBlank { peerIdStr }
+                        val displayNameForNotif = if (rawName.startsWith("mp:")) "Ai đó" else rawName
+                        NotificationHelper.showPendingInviteNotification(
+                            reactApplicationContext,
+                            "Yêu cầu kết nối mới",
+                            "Bạn có một yêu cầu kết nối từ $displayNameForNotif"
                         )
                         sendEvent(
                             "onIncomingDirectChatInvite",

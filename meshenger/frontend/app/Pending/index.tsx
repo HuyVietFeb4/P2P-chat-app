@@ -17,6 +17,8 @@ import { useTheme } from '../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { getAvatarSource } from '../../assets/avatarMap';
+import { useBluetooth } from '@/hook/useBluetooth';
+import BluetoothPopup from '../common components/BluetoothPopUp';
 
 const { MeshengerApplicationModule } = NativeModules;
 
@@ -27,6 +29,7 @@ export default function PendingScreen() {
     const { colors, isDarkMode } = useTheme();
     const { t } = useTranslation();
     const params = useLocalSearchParams<{ outgoingPeerId?: string; outgoingName?: string }>();
+    const { showPopup, openBluetoothSettings, dismissPopup } = useBluetooth();
 
     const outgoingPeerId =
         typeof params.outgoingPeerId === 'string' ? params.outgoingPeerId.trim() : '';
@@ -200,7 +203,7 @@ export default function PendingScreen() {
                                 />
                                 <View style={styles.rowCardText}>
                                     <Text style={[styles.peerName, { color: colors.text }]}>{item.displayName}</Text>
-                                    <Text style={[styles.peerId, { color: colors.subText }]}>{item.peerId}</Text>
+                                    {/* <Text style={[styles.peerId, { color: colors.subText }]}>{item.peerId}</Text> */}
                                 </View>
                             </View>
                             <View style={styles.rowActions}>
@@ -222,6 +225,13 @@ export default function PendingScreen() {
                 />
             </View>
             <Footer />
+
+            {showPopup && (
+                <BluetoothPopup
+                    visible={true}
+                    onDismiss={dismissPopup}
+                />
+            )}
         </View>
     );
 }

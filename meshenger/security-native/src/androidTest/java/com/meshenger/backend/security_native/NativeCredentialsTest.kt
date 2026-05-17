@@ -20,12 +20,12 @@ class NativeCredentialsTest {
     fun testNativeKey() {
         val TAG = "NativeCredentialsTest"
         val nativeCredentialsString = NativeCredentials.getAppSecretKey()
-        val appSecretKeyStrLit = "Meshenger_Secret_All_Chat_Key"
+        val appSecretKeyStrLit = "Meshenger_Secret_App_Key"
 
-        val mask = 0x42
+        val mask = 0x74
         val encryptedKey = appSecretKeyStrLit.map { char ->
             (char.code xor mask).toChar()
-        }.joinToString("")
+        }.joinToString("").substringBefore('\u0000')
         Log.d(TAG, "Expected Key: $encryptedKey")
         Log.d(TAG, "Actual Key from Native: $nativeCredentialsString")
         assertEquals(nativeCredentialsString, encryptedKey)

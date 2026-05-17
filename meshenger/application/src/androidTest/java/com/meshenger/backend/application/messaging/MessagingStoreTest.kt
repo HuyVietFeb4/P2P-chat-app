@@ -53,6 +53,9 @@ class MessagingStoreTest {
         val cipher = "aW5jb21pbmc="
         val nonce = "n-2"
 
+        dbHelper.upsertUserProfile(UserProfile(senderId, "-", "Remote User"))
+        dbHelper.ensureDirectChatForPeer(peerId, "Peer 100")
+
         val msg = MessagingStore.addIncomingMessage(peerId, senderId, cipher, nonce)
 
         assertEquals(senderId, msg.senderId)
