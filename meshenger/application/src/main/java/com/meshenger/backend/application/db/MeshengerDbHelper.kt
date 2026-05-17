@@ -225,6 +225,16 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     }
 
     /**
+     * Checks if a message with the exact encryptedPayload already exists.
+     * Prevents duplicate messages from Anti-Entropy or re-transmissions.
+     */
+    fun hasDuplicatePayload(payload: String): Boolean {
+        readableDatabase.rawQuery("SELECT 1 FROM messages WHERE encryptedPayload = ? LIMIT 1", arrayOf(payload)).use {
+            return it.moveToFirst()
+        }
+    }
+
+    /**
      * Ensures [peerId] exists in users and a 1:1 chat + session row exist for DB message FKs.
      */
     fun ensureDirectChatForPeer(peerId: String, peerUserName: String, avatarId: String? = null) {

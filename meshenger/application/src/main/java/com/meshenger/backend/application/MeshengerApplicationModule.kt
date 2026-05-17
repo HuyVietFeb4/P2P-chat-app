@@ -219,6 +219,10 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
                 val receiverIds = if (action == "Send") listOf(GLOBAL_BROADCAST_ID) else listOf(LOCAL_ID)
 
                 if (action != "Send") {
+                    if (dbHelper.hasDuplicatePayload(payload)) {
+                        Log.d("MeshengerApplication", "Duplicate global message dropped")
+                        return@collect
+                    }
                     val existing = dbHelper.getUserProfile(senderId)
                     dbHelper.upsertUserProfile(
                         UserProfile(
@@ -1430,6 +1434,12 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
             OTO_TAG,
             "MSG bus peer=$peerId action=$action sessionId=$activeSessionId plaintextLen=${plaintext.length}",
         )
+        if (action != "Send") {
+            if (dbHelper.hasDuplicatePayload(payload)) {
+                Log.d("MeshengerApplication", "Duplicate direct message dropped")
+                return
+            }
+        }
         val msg = try {
             when (action) {
                 "Send" -> MessagingStore.sendMessage(
