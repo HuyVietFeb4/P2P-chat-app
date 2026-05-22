@@ -100,7 +100,7 @@ class MeshengerApplicationModule(reactContext: ReactApplicationContext) :
         private const val GLOBAL_TAG_LENGTH = 128
         private val TWO_PARTY_PROLOGUE = "meshenger-twoparty-v1".encodeToByteArray()
         private const val MP_PREFIX = "mp:"
-        private const val PRESENCE_INTERVAL_MS = 25_000L
+        private const val PRESENCE_INTERVAL_MS = 5_000L
         /** Dùng filter Logcat: `MeshengerChat` — theo dõi gửi tin 1–1 và emit JS */
         private const val CHAT_DIAG = "MeshengerChat"
         /**

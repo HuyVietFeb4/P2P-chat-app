@@ -17,8 +17,8 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@/app/context/ThemeContext";
 
 const { MeshengerApplicationModule } = NativeModules;
-const POLL_INTERVAL_MS = 2000;
-const ANNOUNCE_INTERVAL_MS = 8000;
+const POLL_INTERVAL_MS = 1000;
+const ANNOUNCE_INTERVAL_MS = 4000;
 
 type MeshPeer = {
     id: string;
@@ -153,7 +153,7 @@ export default function DeviceList() {
 
             <View style={styles.scannedDevices}>
                 <BadgePlus size={20} color={colors.text} />
-                <Text style={{color: colors.text}}>
+                <Text style={{ color: colors.text }}>
                     {t('scanned-devices')} ({peers.length})
                 </Text>
             </View>
