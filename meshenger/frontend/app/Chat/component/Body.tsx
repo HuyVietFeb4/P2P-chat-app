@@ -64,6 +64,15 @@ export default function Body({ peerId }: { peerId: string }) {
 
     const isGlobal = peerId === 'global-broadcast';
 
+    function parseChatMessage(rawText: string): string {
+        if (!rawText) return '';
+
+        return rawText.replace(/\\\\/g, '[BS]') 
+                      .replace(/\\n/g, '\n') 
+                      .replace(/\\t/g, '\t') 
+                      .replace(/\[BS\]/g, '\\');
+    }
+
     const fetchHistory = useCallback(async () => {
         try {
             const rawList = isGlobal
@@ -176,7 +185,7 @@ export default function Body({ peerId }: { peerId: string }) {
                         </Text>
                     )}
                     <Text style={[styles.messageText, { color: isMe ? colors.myMessageText : colors.peerMessageText }]}>
-                        {item.text}
+                        {parseChatMessage(item.text)}
                     </Text>
                     <View style={styles.footer}>
                         <Text style={[styles.timeText, { color: isMe ? 'rgba(255, 255, 255, 0.7)' : colors.subText }]}>

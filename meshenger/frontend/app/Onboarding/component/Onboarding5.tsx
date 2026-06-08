@@ -150,7 +150,7 @@ export default function Onboarding5() {
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
-            <Message visible={!!error} message={error} title="Username error!" />
+            <Message visible={!!error} message={error} title={t('username-error')} />
 
             {/* Avatar Selection Modal */}
             <Modal

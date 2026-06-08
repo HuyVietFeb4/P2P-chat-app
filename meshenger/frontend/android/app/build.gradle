@@ -132,7 +132,7 @@ android {
     }
     packaging {
         pickFirst 'META-INF/versions/9/OSGI-INF/MANIFEST.MF'
-    }
+   }
 
     configurations.all {
         resolutionStrategy {

@@ -305,7 +305,7 @@ object EpidemicFlooding : TransportPacketListener {
                 peerSummaryVector.fromCompactedBinary(completePayload)
                 val allEntries = UserPacketCache.getAllEntries()
                 var sentCount = 0
-                val MAX_AE_RESPONSES = 15
+                val MAX_AE_RESPONSES = 50
                 for(entry in allEntries) {
                     if (sentCount >= MAX_AE_RESPONSES) break
                     if(!peerSummaryVector.isAvailable(entry.key.toByteArray())
