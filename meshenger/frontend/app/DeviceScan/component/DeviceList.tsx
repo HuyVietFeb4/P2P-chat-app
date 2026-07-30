@@ -14,16 +14,18 @@ import {
 import DeviceInfo from "./DeviceInfo";
 import TypingDots from "./TypingDots";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@/app/context/ThemeContext";
 
 const { MeshengerApplicationModule } = NativeModules;
-const POLL_INTERVAL_MS = 2000;
-const ANNOUNCE_INTERVAL_MS = 8000;
+const POLL_INTERVAL_MS = 1000;
+const ANNOUNCE_INTERVAL_MS = 4000;
 
 type MeshPeer = {
     id: string;
     displayName: string;
     mpAddress: string;
     mpAddressBase64: string;
+    avatarId?: string;
 };
 
 export default function DeviceList() {
@@ -38,6 +40,7 @@ export default function DeviceList() {
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const announceRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const { t } = useTranslation();
+    const { colors } = useTheme();
 
     const clearTimers = useCallback(() => {
         if (pollRef.current) {
@@ -125,15 +128,14 @@ export default function DeviceList() {
             if (connectingId) return;
             setConnectingId(peer.id);
             try {
-                await MeshengerApplicationModule.connectToMeshPeer(peer.mpAddress, peer.displayName);
-                await MeshengerApplicationModule.openTwoPartySession(peer.id, peer.displayName, true);
-                router.push({
-                    pathname: "/Chat",
-                    params: { id: peer.id, name: peer.displayName },
+                await MeshengerApplicationModule.sendDirectChatInvite(peer.id);
+                router.replace({
+                    pathname: "/Pending",
+                    params: { outgoingPeerId: peer.id, outgoingName: peer.displayName },
                 });
             } catch (error: any) {
-                console.error("Failed to connect to peer:", error);
-                Alert.alert("Connection failed", error?.message ?? String(error));
+                console.error("Failed to send chat invite:", error);
+                Alert.alert("Invite failed", error?.message ?? String(error));
             } finally {
                 setConnectingId(null);
             }
@@ -150,8 +152,8 @@ export default function DeviceList() {
             </View>
 
             <View style={styles.scannedDevices}>
-                <BadgePlus size={20} color="rgba(0, 0, 0, 0.65)" />
-                <Text>
+                <BadgePlus size={20} color={colors.text} />
+                <Text style={{ color: colors.text }}>
                     {t('scanned-devices')} ({peers.length})
                 </Text>
             </View>
@@ -161,7 +163,7 @@ export default function DeviceList() {
                     style={[
                         styles.scrollContainer,
                         peers.length === 0 && { borderWidth: 0 },
-                        { opacity: fadeAnim, transform: [{ translateY }] },
+                        { opacity: fadeAnim, transform: [{ translateY }], backgroundColor: colors.cardBg },
                     ]}
                 >
                     {peers.length === 0 && !bootstrapping && (
@@ -175,6 +177,7 @@ export default function DeviceList() {
                         <DeviceInfo
                             key={peer.id}
                             avatarName={peer.displayName}
+                            avatarId={peer.avatarId}
                             status={1}
                             disabled={connectingId !== null && connectingId !== peer.id}
                             loading={connectingId === peer.id}
@@ -211,7 +214,6 @@ const styles = StyleSheet.create({
         color: "#4DA6FF",
     },
     scrollContainer: {
-        backgroundColor: "#F0F9FF",
         borderRadius: 12,
         marginTop: 20,
         borderWidth: 0.5,

@@ -21,12 +21,28 @@ class RemotePeerCryptoStore(private val dbHelper: MeshengerDbHelper) {
     companion object {
         const val KEY_TYPE_ED25519_RAW = "ED25519_RAW"
         const val KEY_TYPE_X25519_RAW = "X25519_RAW"
+        /**
+         * Peer's long-term Noise static public (32-byte X25519) learned **only** from a QR scan,
+         * before any completed handshake. Used to run Noise **XK** (scanner = initiator). After
+         * a successful handshake this row is deleted and replaced by [KEY_TYPE_X25519_RAW].
+         */
+        const val KEY_TYPE_X25519_QR_IMPORT = "X25519_QR_IMPORT"
+        // Used for storing this device's own X25519 static *private* half. Encrypted at rest the
+        // same way as remote keys (AES-GCM via Keystore), so the table stays a single source of
+        // truth for raw key material.
+        const val KEY_TYPE_X25519_PRIV = "X25519_PRIV"
 
         private const val AES_GCM = "AES/GCM/NoPadding"
         private const val GCM_TAG_BITS = 128
         private const val ALIAS_SEED = "meshenger.peer_wrap.v1|"
 
-        fun allowedKeyTypes(): Set<String> = setOf(KEY_TYPE_ED25519_RAW, KEY_TYPE_X25519_RAW)
+        fun allowedKeyTypes(): Set<String> =
+            setOf(
+                KEY_TYPE_ED25519_RAW,
+                KEY_TYPE_X25519_RAW,
+                KEY_TYPE_X25519_PRIV,
+                KEY_TYPE_X25519_QR_IMPORT,
+            )
     }
 
     fun buildKeystoreAlias(peerUserId: String, keyType: String): String {

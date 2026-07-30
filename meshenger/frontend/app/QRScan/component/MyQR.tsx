@@ -13,26 +13,27 @@ export default function MyQR() {
     const [username, setUsername] = useState<string>("");
     const [xkey, setXKey] = useState<string>("");
     const [edkey, setEDKey] = useState<string>("");
+    const [avatarId, setAvatarId] = useState<string>("");
     const { t } = useTranslation();
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                // 1. Get Profile (ID and Username)
-                const profile = await MeshengerApplicationModule.getMyProfile();
-                setUsername(profile.displayName);
-                setId(profile.id);
-
-                // 2. Get MP Address
-                const mp = await MeshengerApplicationModule.getMyMPAddress();
-                setMPAddress(mp);
-
-                // 3. Get Public Keys (X25519 and Ed25519)
-                const keys = await MeshengerApplicationModule.loadRemotePeerRawKey("local-device", "ALL");
-                setXKey(keys["X25519_RAW"] || "");
-                setEDKey(keys["ED25519_RAW"] || "");
+                const mod = MeshengerApplicationModule as any;
+                const identity = await mod.getIdentityForQr();
+                setUsername(identity.username ?? '');
+                setId(identity.peerId ?? '');
+                setMPAddress(identity.mpAddress ?? '');
+                setXKey(identity.noisePublicKeyBase64 ?? '');
+                setAvatarId(identity.avatarId);
+                try {
+                    const keys = await mod.loadRemotePeerRawKey?.('local-device', 'ALL');
+                    setEDKey(keys?.['ED25519_RAW'] ?? '');
+                } catch {
+                    setEDKey('');
+                }
             } catch (e) {
-                console.error("Failed to load QR data:", e);
+                console.error('Failed to load QR data:', e);
             }
         };
 
@@ -41,11 +42,12 @@ export default function MyQR() {
 
     // The data carried by the QR code
     const userQRData = {
-        id,
-        xkey,
-        edkey,
+        peerId: id,
+        mpAddress,
+        noisePublicKeyBase64: xkey,
         username,
-        mpAddress
+        edkey,
+        avatarId
     };
 
     return (

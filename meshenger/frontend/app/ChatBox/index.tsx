@@ -9,8 +9,8 @@ import GroupChat from "./component/GroupChat";
 import IndividualChat from "./component/IndividualChat";
 import ScanPopUp from "./component/ScanPopUp";
 import BluetoothPopup from "../common components/BluetoothPopUp";
-import { useBluetooth } from "../hook/useBluetooth";
-import { useCommPermission } from "../hook/useCommPermission";
+import { useBluetooth } from "@/hook/useBluetooth";
+import { useCommPermission } from "@/hook/useCommPermission";
 
 const { BleModule } = NativeModules;
 export default function ChatBox() {

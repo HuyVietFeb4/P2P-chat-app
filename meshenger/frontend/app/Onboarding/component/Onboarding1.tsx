@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { useCommPermission } from "@/app/hook/useCommPermission";
+import { useCommPermission } from "@/hook/useCommPermission";
 import { useTranslation } from "react-i18next";
 
 export default function Onboarding1() {

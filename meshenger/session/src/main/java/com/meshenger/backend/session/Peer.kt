@@ -1,7 +1,8 @@
 package com.meshenger.backend.session
 data class Peer(
     var userName: String,
-    var MPAddress: ULong
+    var MPAddress: ULong,
+    var avatarId: String? = null
 ) {
     override fun equals(other: Any?): Boolean {
         // 1. Referential Equality (Check if the same memory address)
@@ -19,5 +20,8 @@ data class Peer(
     }
     fun updateMPAddress(newAddress: ULong) {
         this.MPAddress = newAddress
+    }
+    fun updateAvatarId(id: String?) {
+        this.avatarId = id
     }
 }

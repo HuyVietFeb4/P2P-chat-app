@@ -3,8 +3,9 @@ import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native
 import Header from "./component/Header";
 import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useBluetooth } from "../hook/useBluetooth";
+import { useBluetooth } from "@/hook/useBluetooth";
 import BluetoothPopup from "../common components/BluetoothPopUp";
+import { useTheme } from "../context/ThemeContext";
 
 type Language = { code: string; flag: string; name: string };
 
@@ -12,6 +13,7 @@ export default function Language() {
     const { t, i18n } = useTranslation();
     const [selected, setSelected] = useState<string>("");
     const { showPopup, openBluetoothSettings, dismissPopup } = useBluetooth();
+    const { colors } = useTheme();
 
     const LANGUAGES: Language[] = [
         { code: 'vi', flag: '🇻🇳', name:  t('vietnamese')},
@@ -39,12 +41,12 @@ export default function Language() {
         const isActive = selected === item.code;
         return (
             <TouchableOpacity
-                style={[styles.row, isActive && styles.rowActive]}
+                style={[styles.row, isActive && styles.rowActive, {backgroundColor: colors.cardBg}]}
                 onPress={() => handleSelect(item.code)}
                 activeOpacity={0.7}
             >
                 <Text style={styles.flag}>{item.flag}</Text>
-                <Text style={[styles.langName, isActive && styles.langNameActive]}>
+                <Text style={[styles.langName, isActive && styles.langNameActive, {color: colors.text}]}>
                     {item.name}
                 </Text>
                 <View style={[styles.radio, isActive && styles.radioActive]}>
@@ -55,7 +57,7 @@ export default function Language() {
     };
 
     return (
-        <View style={{flex: 1}}>
+        <View style={{flex: 1, backgroundColor: colors.scannedBg}}>
             <Header />
             <FlatList
                 data={LANGUAGES}
@@ -82,7 +84,6 @@ const styles = StyleSheet.create({
     },
 
     row: {
-        backgroundColor: '#fff',
         borderRadius: 12,
         paddingVertical: 14,
         paddingHorizontal: 14,
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
         color: '#2C2C2A',
     },
 
-    langNameActive: { color: '#3C3489' },
+    langNameActive: { fontWeight: 'bold' },
 
     radio: {
         width: 20, height: 20, borderRadius: 10,

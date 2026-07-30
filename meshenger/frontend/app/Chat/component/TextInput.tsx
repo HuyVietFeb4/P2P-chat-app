@@ -38,6 +38,7 @@ export default function Input({peerId} : Props) {
 
             <TextInput
                 placeholder={t("type-a-message")}
+                multiline={true}
                 style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                 placeholderTextColor={colors.subText}
                 value={message}

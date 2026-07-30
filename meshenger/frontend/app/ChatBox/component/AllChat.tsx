@@ -14,6 +14,9 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import SecurityStatus from '@/app/common components/SecurityStatus';
+
+import { getAvatarSource } from '../../../assets/avatarMap';
 
 const { MeshengerApplicationModule } = NativeModules;
 const DEFAULT_AVATAR = require('../../../assets/images/avatar.png');
@@ -39,12 +42,19 @@ export default function ChatList() {
       const formattedPeers = peers.map((peer: any) => ({
         id: peer.id,
         name: peer.displayName,
-        avatarUrl: peer.avatarUrl,
+        avatarId: peer.avatarId,
+        security: typeof peer.security === 'string' ? peer.security : 'medium',
         lastMessage: 'No messages yet',
         timestamp: '',
         unreadCount: 0,
       }));
-      setChatData(formattedPeers);
+
+      // Sort chats so that the global chat (id === 'global-broadcast') is always pinned to the top
+      const globalChat = formattedPeers.find((peer: any) => peer.id === 'global-broadcast');
+      const otherChats = formattedPeers.filter((peer: any) => peer.id !== 'global-broadcast');
+      const sortedPeers = globalChat ? [globalChat, ...otherChats] : otherChats;
+
+      setChatData(sortedPeers);
     } catch (error) {
       console.error("Failed to load peers:", error);
     } finally {
@@ -62,17 +72,22 @@ export default function ChatList() {
     const sub = DeviceEventEmitter.addListener('onPeerDisplayNameUpdated', () => {
       loadPeers();
     });
-    return () => sub.remove();
+    const secSub = DeviceEventEmitter.addListener('onPeerSecurityUpdated', () => {
+      loadPeers();
+    });
+    return () => {
+      sub.remove();
+      secSub.remove();
+    };
   }, [loadPeers]);
 
-  const handleSelectChat = (id: string, name: string, avatarUrl: string | null) => {
+  const handleSelectChat = (id: string, name: string, avatarId: string | null, security: string) => {
     setSelectedChat(id);
     console.log(`Opening chat with: ${name}`);
 
-    // Navigate to Chat screen with peer info as parameters
     router.push({
       pathname: '/Chat',
-      params: { id, name, avatarUrl }
+      params: { id, name, avatarUrl: avatarId ?? '', security },
     });
   };
 
@@ -87,22 +102,25 @@ export default function ChatList() {
             { backgroundColor: isDarkMode ? colors.card : '#ffffff' },
             isSelected && { backgroundColor: isDarkMode ? '#35373C' : '#e6f2ff', borderColor: isDarkMode ? colors.primary : '#b3d9ff', borderWidth: 1 }
         ]}
-        onPress={() => handleSelectChat(item.id, item.name, item.avatarUrl)}
+        onPress={() => handleSelectChat(item.id, item.name, item.avatarId, item.security)}
         activeOpacity={0.7}
       >
         <Image
-          source={item.avatarUrl ? { uri: item.avatarUrl } : DEFAULT_AVATAR}
+          source={getAvatarSource(item.avatarId)}
           style={[styles.avatar, { backgroundColor: isDarkMode ? '#35373C' : '#f0f0f0' }]}
         />
         
         <View style={styles.textContainer}>
-          <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
-          <Text 
+          <View style={styles.securityStatus}>
+            <Text style={[styles.nameText, { color: colors.text }]}>{item.name}</Text>
+            <SecurityStatus level={item.security} />
+          </View>
+          {/* <Text 
             style={[styles.messageText, { color: colors.subText }, hasUnread && { color: colors.text, fontWeight: '600' }]}
             numberOfLines={1}
           >
             {item.lastMessage}
-          </Text>
+          </Text> */}
         </View>
 
         <View style={styles.rightContainer}>
@@ -225,4 +243,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
   },
+  securityStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5
+  }
 });

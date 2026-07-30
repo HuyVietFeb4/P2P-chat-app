@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { getAvatarSource } from '../../../assets/avatarMap';
 
 const { MeshengerApplicationModule } = NativeModules;
 
@@ -19,11 +20,15 @@ type ChatMessage = {
     id: string;
     sessionId: string;
     senderId: string;
+    senderName: string;
+    senderAvatarId: string;
     status: string;
     timestamp: number;
     fromMe: boolean;
     text: string;
 };
+
+
 
 /** Normalize native WritableMap → predictable shape (avoids bad keys / FlatList crashes). */
 function normalizeConversationRow(raw: unknown): ChatMessage | null {
@@ -42,6 +47,8 @@ function normalizeConversationRow(raw: unknown): ChatMessage | null {
         id,
         sessionId: String(row.sessionId ?? ''),
         senderId: String(row.senderId ?? ''),
+        senderName: String(row.senderName ?? row.senderId ?? ''),
+        senderAvatarId: String(row.senderAvatarId ?? ''),
         status: String(row.status ?? 'SENT'),
         timestamp,
         fromMe: Boolean(row.fromMe),
@@ -56,6 +63,15 @@ export default function Body({ peerId }: { peerId: string }) {
     const listRef = useRef<FlatList<ChatMessage>>(null);
 
     const isGlobal = peerId === 'global-broadcast';
+
+    function parseChatMessage(rawText: string): string {
+        if (!rawText) return '';
+
+        return rawText.replace(/\\\\/g, '[BS]') 
+                      .replace(/\\n/g, '\n') 
+                      .replace(/\\t/g, '\t') 
+                      .replace(/\[BS\]/g, '\\');
+    }
 
     const fetchHistory = useCallback(async () => {
         try {
@@ -151,17 +167,25 @@ export default function Body({ peerId }: { peerId: string }) {
 
     const renderMessage = ({ item }: { item: ChatMessage }) => {
         const isMe = item.fromMe;
+        const showSenderName = isGlobal && !isMe;
+        const avatarSource = getAvatarSource(item.senderAvatarId);
         return (
             <View style={[styles.messageRow, isMe ? styles.myMessageRow : styles.peerMessageRow]}>
                 {!isMe && (
                     <Image
-                        source={{ uri: 'https://i.pravatar.cc/150?u=alice' }}
+                        source={avatarSource}
                         style={styles.messageAvatar}
                     />
                 )}
                 <View style={[styles.bubble, isMe ? { backgroundColor: colors.myBubble, borderBottomRightRadius: 5 } : { backgroundColor: colors.peerBubble, borderBottomLeftRadius: 5, borderWidth: 1, borderColor: colors.border }]}>
+                    {showSenderName && (
+                        <Text style={[styles.senderNameText, { color: colors.subText }]}>
+                            {/* {item.senderName || item.senderId}  */}
+                            {item.senderName}
+                        </Text>
+                    )}
                     <Text style={[styles.messageText, { color: isMe ? colors.myMessageText : colors.peerMessageText }]}>
-                        {item.text}
+                        {parseChatMessage(item.text)}
                     </Text>
                     <View style={styles.footer}>
                         <Text style={[styles.timeText, { color: isMe ? 'rgba(255, 255, 255, 0.7)' : colors.subText }]}>
@@ -224,6 +248,11 @@ const styles = StyleSheet.create({
     messageText: {
         fontSize: 15,
         lineHeight: 20,
+    },
+    senderNameText: {
+        fontSize: 12,
+        fontWeight: '600',
+        marginBottom: 4,
     },
     footer: {
         flexDirection: 'row',

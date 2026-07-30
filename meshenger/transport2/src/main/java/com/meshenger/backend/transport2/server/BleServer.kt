@@ -60,7 +60,7 @@ class BleServer(context: Context): BleServerManager(context), ServerObserver {
 
     override fun onDeviceConnectedToServer(device: BluetoothDevice) {
         if(!MeshConnectionRegistry.getInboundMap().containsKey(device.address)
-            && MeshConnectionRegistry.getCountConnections() < BleLimitConstants.MAX_CONNECTIONS_LIMIT) {
+            && MeshConnectionRegistry.getCountOutbound() < BleLimitConstants.MAX_CONNECTIONS_LIMIT) {
             // For recieving packet
             val server = BleServerConnection(appContext)
             server.onDataReceived = { sender, packet -> // entry point of receiving incoming packet

@@ -6,7 +6,7 @@ import {
   Text, 
   StyleSheet, 
   NativeModules, 
-  NativeEventEmitter, 
+  DeviceEventEmitter, 
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -29,7 +29,7 @@ interface ChatMessage {
 
 // --- Native Module Setup ---
 const { SessionModule } = NativeModules;
-const sessionEvents = new NativeEventEmitter(SessionModule);
+const sessionEvents = DeviceEventEmitter;
 
 const ChatScreen = () => {
   const [text, setText] = useState<string>('');

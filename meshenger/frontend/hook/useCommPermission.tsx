@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { BackHandler, NativeModules } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import requestBlePermissions from "../utils/permissions";
+import requestBlePermissions from "@/app/utils/permissions";
 
 export function useCommPermission() {
     const [granted, setGranted] = useState<boolean | null>(null);

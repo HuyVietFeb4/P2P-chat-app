@@ -23,7 +23,7 @@ import kotlin.random.Random
 class MeshMaintainer : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Default + Job())
     // probability to trigger anti entropy
-    private var AntiEntropyProbability = 0.0
+    private var AntiEntropyProbability = 1.0
     private lateinit var server: BleServer
     private lateinit var appContext: Context
     private lateinit var scanner: BleScanner
@@ -139,7 +139,7 @@ class MeshMaintainer : Service() {
 
     private suspend fun maintainConnections() {
         try {
-            val activeCount = MeshConnectionRegistry.getCountConnections()
+            val activeCount = MeshConnectionRegistry.getCountOutbound()
             val outboundCount = MeshConnectionRegistry.getCountOutbound()
             val inboundCount = MeshConnectionRegistry.getCountInbound()
 
@@ -207,7 +207,7 @@ class MeshMaintainer : Service() {
                 if(MeshConnectionRegistry.getCountConnections() > 0) {
                     stochasticAntiEntropyScheduler()
                 }
-                delay(5000) // Don't hammer the CPU/Radio
+                delay(3000) // Don't hammer the CPU/Radio
             }
         }
     }

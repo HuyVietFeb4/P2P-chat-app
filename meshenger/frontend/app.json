@@ -45,10 +45,7 @@
           "image": "./assets/images/foregroundIcon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "backgroundColor": "#278EFF"
         }
       ],
       [
@@ -92,7 +89,8 @@
           "barcodeScannerEnabled": true
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

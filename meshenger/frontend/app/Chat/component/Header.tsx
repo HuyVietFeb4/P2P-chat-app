@@ -7,14 +7,18 @@ import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "reac
 import { Shadow } from "react-native-shadow-2";
 import { useTheme } from "../../context/ThemeContext";
 import ActionPopUp from "./ActionPopUp";
+import SecurityStatus from "@/app/common components/SecurityStatus";
+
+import { getAvatarSource } from "../../../assets/avatarMap";
 
 type Props = {
     title: string,
     avatarUrl: string,
-    status: boolean
+    status: boolean,
+    securityLevel?: string | null,
 }
 
-export default function Header({ title, avatarUrl, status }: Props) {
+export default function Header({ title, avatarUrl, status, securityLevel }: Props) {
     const router = useRouter();
     const [openPopUp, setOpenPopUp] = useState<boolean>(false);
     const { colors, isDarkMode } = useTheme();
@@ -37,11 +41,12 @@ export default function Header({ title, avatarUrl, status }: Props) {
 
                             <View style={styles.profile}>
                                 <Image
-                                    source={require("@/assets/images/avatar.png")}
+                                    source={getAvatarSource(avatarUrl)}
                                     contentFit="cover"
                                     style={styles.image}
                                 />
                                 <Text style={[styles.text, { color: colors.text }]}>{title}</Text>
+                                <SecurityStatus level={securityLevel} />
                             </View>
                         </View>
 
@@ -92,12 +97,14 @@ const styles = StyleSheet.create({
     },
     image: {
         width: 35,
-        height: 35
+        height: 35,
+        borderRadius: 17.5
     },
     profile: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 10
+        gap: 10,
+        flexShrink: 1,
     },
     header: {
         width: "90%",

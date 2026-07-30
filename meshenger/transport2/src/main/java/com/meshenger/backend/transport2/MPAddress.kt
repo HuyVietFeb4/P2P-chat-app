@@ -36,7 +36,7 @@ object MPAddress {
     }
     fun calculateCurrentMPAddress(
         identityPublicKey: ByteArray,
-        epochHours: Int = 2,
+        epochHours: Int = 24,
         length: Int = 8
     ): ByteArray {
         val epochSeconds = epochHours * 3600

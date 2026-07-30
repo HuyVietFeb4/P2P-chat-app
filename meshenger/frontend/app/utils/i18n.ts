@@ -2,8 +2,8 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import * as Localization from "expo-localization";
 
-import en from "./locales/eng.json"
-import vi from "./locales/vi.json";
+const vi = require("./locales/vi.json");
+const en = require("./locales/eng.json");
 
 const resources = {
   en: { translation: en },

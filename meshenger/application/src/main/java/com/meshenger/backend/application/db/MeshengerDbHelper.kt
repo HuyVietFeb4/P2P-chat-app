@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.content.ContentValues
 import com.meshenger.backend.application.messaging.Message
 import com.meshenger.backend.application.messaging.MessageStatus
+import com.meshenger.backend.application.user.PeerSecurity
 import com.meshenger.backend.application.user.UserProfile
 
 class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -20,7 +21,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 userId TEXT PRIMARY KEY,
                 publicKeyHash TEXT NOT NULL,
                 userName TEXT NOT NULL,
-                userAvtId TEXT DEFAULT NULL
+                userAvtId TEXT,
+                security TEXT NOT NULL DEFAULT 'medium'
             );
         """)
 
@@ -30,7 +32,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 chatId TEXT PRIMARY KEY,
                 name TEXT,
                 chatType TEXT NOT NULL,
-                createdAt INTEGER NOT NULL
+                createdAt INTEGER NOT NULL,
+                pairedViaQr INTEGER NOT NULL DEFAULT 0
             );
         """)
 
@@ -130,7 +133,33 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         }
         if (oldVersion < 6) {
             db.execSQL("ALTER TABLE messages ADD COLUMN bodyText TEXT")
-            db.execSQL("ALTER TABLE users ADD COLUMN userAvtId TEXT DEFAULT NULL")
+        }
+        if (oldVersion < 7) {
+            db.execSQL("ALTER TABLE users ADD COLUMN userAvtId TEXT")
+        }
+        if (oldVersion < 8) {
+            db.execSQL("ALTER TABLE chats ADD COLUMN pairedViaQr INTEGER NOT NULL DEFAULT 0")
+            db.execSQL(
+                """
+                UPDATE chats SET pairedViaQr = 1 WHERE chatId IN (
+                    SELECT DISTINCT chatId FROM sessions WHERE chachaKey = 'noise-XK'
+                )
+                """.trimIndent(),
+            )
+        }
+        if (oldVersion < 9) {
+            db.execSQL("UPDATE messages SET bodyText = NULL WHERE sessionId = 'global-session'")
+        }
+        if (oldVersion < 10) {
+            db.execSQL("ALTER TABLE users ADD COLUMN security TEXT NOT NULL DEFAULT 'medium'")
+            db.execSQL("UPDATE users SET security = 'weak' WHERE userId = 'global-broadcast'")
+            db.execSQL(
+                """
+                UPDATE users SET security = 'strong' WHERE userId IN (
+                    SELECT SUBSTR(chatId, LENGTH('direct-') + 1) FROM chats WHERE pairedViaQr = 1
+                )
+                """.trimIndent(),
+            )
         }
     }
 
@@ -143,19 +172,25 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             put("publicKeyHash", user.publicKeyHash)
             put("userName", user.userName)
             put("userAvtId", user.userAvtId)
+            put("security", user.security)
         }
         db.insertWithOnConflict("users", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
     fun getUserProfile(userId: String): UserProfile? {
         val db = readableDatabase
-        db.rawQuery("SELECT userId, publicKeyHash, userName, userAvtId FROM users WHERE userId = ?", arrayOf(userId)).use { c ->
+        db.rawQuery(
+            "SELECT userId, publicKeyHash, userName, userAvtId, security FROM users WHERE userId = ?",
+            arrayOf(userId),
+        ).use { c ->
             if (!c.moveToFirst()) return null
+            val secIdx = c.getColumnIndex("security")
             return UserProfile(
                 id = c.getString(0),
                 publicKeyHash = c.getString(1),
                 userName = c.getString(2),
-                userAvtId = c.getString(3)
+                userAvtId = c.getString(3).takeIf { !c.isNull(3) },
+                security = if (secIdx >= 0 && !c.isNull(secIdx)) c.getString(secIdx) else PeerSecurity.MEDIUM,
             )
         }
     }
@@ -163,14 +198,19 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     fun getAllUserProfiles(): List<UserProfile> {
         val db = readableDatabase
         val out = mutableListOf<UserProfile>()
-        db.rawQuery("SELECT userId, publicKeyHash, userName, userAvtId FROM users ORDER BY userName", null).use { c ->
+        db.rawQuery(
+            "SELECT userId, publicKeyHash, userName, userAvtId, security FROM users ORDER BY userName",
+            null,
+        ).use { c ->
+            val secIdx = c.getColumnIndex("security")
             while (c.moveToNext()) {
                 out.add(
                     UserProfile(
                         id = c.getString(0),
                         publicKeyHash = c.getString(1),
                         userName = c.getString(2),
-                        userAvtId = c.getString(3)
+                        userAvtId = c.getString(3).takeIf { !c.isNull(3) },
+                        security = if (secIdx >= 0 && !c.isNull(secIdx)) c.getString(secIdx) else PeerSecurity.MEDIUM,
                     )
                 )
             }
@@ -185,10 +225,42 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
     }
 
     /**
+     * Checks if a message with the exact encryptedPayload already exists.
+     * Prevents duplicate messages from Anti-Entropy or re-transmissions.
+     */
+    fun hasDuplicatePayload(payload: String): Boolean {
+        readableDatabase.rawQuery("SELECT 1 FROM messages WHERE encryptedPayload = ? LIMIT 1", arrayOf(payload)).use {
+            return it.moveToFirst()
+        }
+    }
+
+    /**
      * Ensures [peerId] exists in users and a 1:1 chat + session row exist for DB message FKs.
      */
-    fun ensureDirectChatForPeer(peerId: String, peerUserName: String) {
-        upsertUserProfile(UserProfile(peerId, publicKeyHash = "-", userName = peerUserName))
+    fun ensureDirectChatForPeer(peerId: String, peerUserName: String, avatarId: String? = null) {
+        val existing = getUserProfile(peerId)
+        if (existing == null) {
+            upsertUserProfile(
+                UserProfile(
+                    peerId,
+                    publicKeyHash = "-",
+                    userName = peerUserName,
+                    userAvtId = avatarId,
+                    security = PeerSecurity.MEDIUM,
+                ),
+            )
+        } else {
+            val shouldUpgradeName = existing.userName == peerId && peerUserName != peerId
+            val finalAvatar = avatarId ?: existing.userAvtId
+            if (shouldUpgradeName || finalAvatar != existing.userAvtId) {
+                upsertUserProfile(
+                    existing.copy(
+                        userName = if (shouldUpgradeName) peerUserName else existing.userName,
+                        userAvtId = finalAvatar,
+                    ),
+                )
+            }
+        }
         val chatId = directChatId(peerId)
         val sessionId = directSessionId(peerId)
         if (!rowExists("chats", "chatId", chatId)) {
@@ -215,7 +287,80 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     fun directChatId(peerId: String) = "direct-$peerId"
 
+    /**
+     * Direct chats that started via QR (XK) use opener-driven KK reconnect so a restarted device
+     * can always send Noise msg1 even when `myMp > peerMp`; pure mesh XX→KK keeps MP tie-break.
+     */
+    fun setDirectChatPairedViaQr(peerId: String, pairedViaQr: Boolean) {
+        val chatId = directChatId(peerId)
+        if (!rowExists("chats", "chatId", chatId)) return
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("pairedViaQr", if (pairedViaQr) 1 else 0)
+        }
+        db.update("chats", values, "chatId = ?", arrayOf(chatId))
+        if (pairedViaQr) {
+            val prof = getUserProfile(peerId) ?: return
+            if (prof.security != PeerSecurity.STRONG) {
+                upsertUserProfile(prof.copy(security = PeerSecurity.STRONG))
+            }
+        }
+    }
+
+    fun isDirectChatPairedViaQr(peerId: String): Boolean {
+        val chatId = directChatId(peerId)
+        readableDatabase.rawQuery(
+            "SELECT pairedViaQr FROM chats WHERE chatId = ? LIMIT 1",
+            arrayOf(chatId),
+        ).use { c ->
+            if (!c.moveToFirst()) return false
+            val idx = c.getColumnIndex("pairedViaQr")
+            if (idx < 0) return false
+            return c.getInt(idx) != 0
+        }
+    }
+
     fun directSessionId(peerId: String) = "session-$peerId"
+
+    fun hasDirectChatForPeer(peerId: String): Boolean {
+        return rowExists("chats", "chatId", directChatId(peerId)) &&
+            rowExists("sessions", "sessionId", directSessionId(peerId))
+    }
+
+    /**
+     * Inserts a new session row for an existing direct chat if [sessionId] is not yet present.
+     * Used by the Application layer to allocate a fresh row per Noise handshake instance, so that
+     * `messages.sessionId` actually distinguishes between successive sessions of the same chat
+     * (the original `directSessionId` row stays untouched as a legacy/fallback bucket).
+     *
+     * The [chachaKey] column is reused as a free-form metadata label here (e.g. "noise-KK"),
+     * because nothing in the codebase currently treats it as a real key for direct chats.
+     *
+     * @return true iff after this call there is a row in `sessions` with the given id.
+     * Returning false means the caller should fall back to the legacy session id, otherwise
+     * subsequent message inserts will silently violate the FK constraint and disappear.
+     */
+    fun ensureDirectSessionRow(sessionId: String, peerId: String, chachaKey: String = "noise"): Boolean {
+        if (sessionId.isBlank()) return false
+        if (rowExists("sessions", "sessionId", sessionId)) return true
+        val chatId = directChatId(peerId)
+        if (!rowExists("chats", "chatId", chatId)) return false
+        // Make sure the legacy row (and chats row) actually exists. ensureDirectChatForPeer is
+        // idempotent so this is safe even if the chat was created earlier in the flow.
+        val peerName = getUserProfile(peerId)?.userName ?: peerId
+        ensureDirectChatForPeer(peerId, peerName)
+        // SQLiteDatabase.insert() returns -1 (without throwing) on FK or constraint violations,
+        // so we explicitly verify the row landed before reporting success.
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("sessionId", sessionId)
+            put("chatId", chatId)
+            put("chachaKey", chachaKey)
+        }
+        val rowId = db.insert("sessions", null, values)
+        if (rowId == -1L) return false
+        return rowExists("sessions", "sessionId", sessionId)
+    }
 
     fun ensureGlobalChat(globalChatId: String, globalSessionId: String, keyId: String) {
         if (!rowExists("chats", "chatId", globalChatId)) {
@@ -269,14 +414,28 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 put("encryptedPayload", message.encryptedPayload)
                 put("bodyText", message.bodyText)
             }
-            db.insert("messages", null, values)
+            // SQLiteDatabase.insert() returns -1 (without throwing) when an FK / NOT NULL
+            // constraint fails. Surface that explicitly so callers don't think the message
+            // was persisted when in fact the row was silently dropped.
+            val rowId = db.insert("messages", null, values)
+            if (rowId == -1L) {
+                throw android.database.sqlite.SQLiteConstraintException(
+                    "insertMessage failed (row not inserted) — likely missing session/user FK. " +
+                        "messageId=${message.id} sessionId=${message.sessionId} senderId=${message.senderId}",
+                )
+            }
 
             for (receiverId in receiverIds) {
                 val deliveryValues = ContentValues().apply {
                     put("messageId", message.id)
                     put("receiverId", receiverId)
                 }
-                db.insert("message_delivery", null, deliveryValues)
+                val deliveryRowId = db.insert("message_delivery", null, deliveryValues)
+                if (deliveryRowId == -1L) {
+                    throw android.database.sqlite.SQLiteConstraintException(
+                        "insertMessage delivery failed for receiver=$receiverId messageId=${message.id}",
+                    )
+                }
             }
             db.setTransactionSuccessful()
         } finally {
@@ -335,6 +494,17 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
         }
     }
 
+    /** Any persisted row in [messages] (direct, global, etc.). Used so mesh prune does not drop peers who only appear in global chat. */
+    fun countMessagesFromSender(senderId: String): Int {
+        readableDatabase.rawQuery(
+            "SELECT COUNT(*) FROM messages WHERE senderId = ?",
+            arrayOf(senderId),
+        ).use { c ->
+            if (!c.moveToFirst()) return 0
+            return c.getInt(0)
+        }
+    }
+
     /**
      * Removes user row and direct chat graph for [peerId].
      * Also clears rows in other chats (e.g. global) referencing this peer as sender/receiver so
@@ -376,7 +546,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
             .filter { u ->
                 u.id.startsWith("mp:") &&
                     u.userName == u.id &&
-                    countMessagesForDirectPeer(u.id) == 0
+                    countMessagesForDirectPeer(u.id) == 0 &&
+                    countMessagesFromSender(u.id) == 0
             }
             .map { it.id }
         for (id in toRemove) {
@@ -396,7 +567,8 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
                 u.id.startsWith("mp:") &&
                     u.id != keepPeerId &&
                     u.userName == trimmed &&
-                    countMessagesForDirectPeer(u.id) == 0
+                    countMessagesForDirectPeer(u.id) == 0 &&
+                    countMessagesFromSender(u.id) == 0
             }
             .map { it.id }
         for (id in toRemove) {
@@ -453,6 +625,6 @@ class MeshengerDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_N
 
     companion object {
         private const val DATABASE_NAME = "meshenger.db"
-        private const val DATABASE_VERSION = 6
+        private const val DATABASE_VERSION = 10
     }
 }

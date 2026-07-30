@@ -9,7 +9,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
-
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import com.meshenger.backend.transport2.PhysicalPeer
 
 object EpidemicFlooding : TransportPacketListener {
     private val epidemicJob = SupervisorJob()
@@ -85,6 +87,28 @@ object EpidemicFlooding : TransportPacketListener {
         }
     }
 
+    /** Signed unicast (direct HMAC) for invite / accept / reject negotiation. */
+    fun onDirectChatNegotiationSend(type: MessageType, receiverId: ULong, payload: ByteArray) {
+        epidemicScope.launch {
+            val senderID = MPAddress.getMyMPAddressULong()
+            val ts = System.currentTimeMillis().toULong()
+            val packetLst = PacketFactory.createPackets(
+                type.value,
+                senderID = senderID,
+                receiverID = receiverId,
+                payload = payload,
+                inputTimeStamp = ts,
+            )
+            packetLst.forEach { packet ->
+                val packetEncoded = Packet.encode(packet) ?: return@forEach
+                UserPacketCache.addToCache(packet.signature, packet)
+                MeshConnectionRegistry.getOutboundMap().values.forEach {
+                    launch { it.sendPacketToServerSuspending(packetEncoded) }
+                }
+            }
+        }
+    }
+
     override fun onReceivePacket(packet: ByteArray, sourceMac: String) {
         val decodedPacket = Packet.decode(packet) ?: run {
             Log.w("EpidemicFlooding", "DROP: decode failed (size=${packet.size}) from $sourceMac")
@@ -129,7 +153,10 @@ object EpidemicFlooding : TransportPacketListener {
             MessageType.ANTI_ENTROPY_RESPOND.value,
             MessageType.NOISE_HANDSHAKE.value -> PacketSigner.verifyDirectProtocolKey(decodedPacket)
 
-            MessageType.USER_MESSAGE_ONE_TO_ONE.value -> PacketSigner.verifyDirectProtocolKey(decodedPacket)
+            MessageType.USER_MESSAGE_ONE_TO_ONE.value,
+            MessageType.DIRECT_CHAT_INVITE.value,
+            MessageType.DIRECT_CHAT_INVITE_ACCEPT.value,
+            MessageType.DIRECT_CHAT_INVITE_REJECT.value -> PacketSigner.verifyDirectProtocolKey(decodedPacket)
             else -> {
                 Log.d("EpidemicFlooding", "Unsupported packet type: ${decodedPacket.header.type}")
                 false
@@ -149,6 +176,29 @@ object EpidemicFlooding : TransportPacketListener {
 
         Log.d("EpidemicFlooding", "Received packet from: ${decodedPacket.header.senderID} with type: ${decodedPacket.header.type}")
         Log.d("EpidemicFlooding", "Received packet for: ${decodedPacket.header.receiverID}. My MPAddress: ${MPAddress.getMyMPAddressULong()}")
+
+        // 4. Dynamic Peer Registration for Inbound Joins
+        // If the packet has full TTL, it came directly from the physical neighbor
+        if (decodedPacket.header.TTL == 20.toUShort() && sourceMac != "DumpAddr") {
+            val peerMPAddress = decodedPacket.header.senderID
+            val physicalPeers = MeshConnectionRegistry.getPhysicalPeerList()
+            // Check if we already have this peer registered with its correct MPAddress
+            if (physicalPeers.none { it.MPAddress.isNotEmpty() && MPAddress.MPAddressByteArrayToULong(it.MPAddress) == peerMPAddress }) {
+                val connection = MeshConnectionRegistry.getInbound(sourceMac) ?: MeshConnectionRegistry.getOutbound(sourceMac)
+                val device = connection?.bluetoothDevice
+                if (device != null) {
+                    val newPeer = PhysicalPeer(device)
+                    val buffer = ByteBuffer.allocate(Long.SIZE_BYTES)
+                    buffer.order(ByteOrder.BIG_ENDIAN)
+                    buffer.putLong(peerMPAddress.toLong())
+                    newPeer.MPAddress = buffer.array()
+                    newPeer.isInMesh = true
+                    MeshConnectionRegistry.addPhysicalPeer(newPeer)
+                    Log.i("EpidemicFlooding", "Dynamically added peer ${device.address} to physicalPeerList with MPAddress $peerMPAddress")
+                }
+            }
+        }
+
         // add to cache
         when(decodedPacket.header.type) {
             MessageType.ANTI_ENTROPY_REQUEST.value,
@@ -159,6 +209,9 @@ object EpidemicFlooding : TransportPacketListener {
             }
             MessageType.USER_MESSAGE_ALL.value,
             MessageType.USER_MESSAGE_ONE_TO_ONE.value,
+            MessageType.DIRECT_CHAT_INVITE.value,
+            MessageType.DIRECT_CHAT_INVITE_ACCEPT.value,
+            MessageType.DIRECT_CHAT_INVITE_REJECT.value,
             MessageType.USER_MESSAGE_GROUP.value-> {
                 // signature = getSignatureOneToOne(...)
                 UserPacketCache.addToCache(decodedPacket.signature, decodedPacket)
@@ -220,7 +273,11 @@ object EpidemicFlooding : TransportPacketListener {
             Log.d("Epidemic Flooding", "Compact vector size: ${compactVector.size}")
             for(peer in physicalPeerList) {
                 val senderID = MPAddress.getMyMPAddressULong()
-                val peerMPAddress = peer.MPAddress?: continue
+                val peerMPAddress = peer.MPAddress
+                if (peerMPAddress == null || peerMPAddress.isEmpty()) {
+                    Log.w("EpidemicFlooding", "Skipping peer ${peer.device.address}: MPAddress is not yet resolved.")
+                    continue
+                }
                 val receiverID = MPAddress.MPAddressByteArrayToULong(peerMPAddress)
                 val packetLst = PacketFactory.createPackets(type, senderID = senderID, receiverID = receiverID,
                     payload = compactVector, inputTimeStamp = System.currentTimeMillis().toULong())
@@ -248,7 +305,7 @@ object EpidemicFlooding : TransportPacketListener {
                 peerSummaryVector.fromCompactedBinary(completePayload)
                 val allEntries = UserPacketCache.getAllEntries()
                 var sentCount = 0
-                val MAX_AE_RESPONSES = 15
+                val MAX_AE_RESPONSES = 50
                 for(entry in allEntries) {
                     if (sentCount >= MAX_AE_RESPONSES) break
                     if(!peerSummaryVector.isAvailable(entry.key.toByteArray())
@@ -265,8 +322,8 @@ object EpidemicFlooding : TransportPacketListener {
                         val wrapPayload = Packet.encode(entry.value) ?: continue
                         val packetLst = PacketFactory.createPackets(type, senderID = senderID, receiverID = receiverID,
                             payload = wrapPayload, inputTimeStamp = System.currentTimeMillis().toULong())
-                        for(packet in packetLst) {
-                            forwardPacket(packet, sourceMac)
+                        for(p in packetLst) {
+                            forwardPacket(p)
                         }
                     }
                 }
@@ -299,6 +356,27 @@ object EpidemicFlooding : TransportPacketListener {
                     timeStamp = packet.header.timeStamp,
                     signature = packet.signature,
                     signedData = signedData
+                )
+            }
+            MessageType.DIRECT_CHAT_INVITE.value -> {
+                ListenerRegistry.getDirectChatNegotiationListener()?.onInviteReceived(
+                    packet.header.senderID,
+                    completePayload,
+                    packet.header.timeStamp,
+                )
+            }
+            MessageType.DIRECT_CHAT_INVITE_ACCEPT.value -> {
+                ListenerRegistry.getDirectChatNegotiationListener()?.onInviteAccepted(
+                    packet.header.senderID,
+                    completePayload,
+                    packet.header.timeStamp,
+                )
+            }
+            MessageType.DIRECT_CHAT_INVITE_REJECT.value -> {
+                ListenerRegistry.getDirectChatNegotiationListener()?.onInviteRejected(
+                    packet.header.senderID,
+                    completePayload,
+                    packet.header.timeStamp,
                 )
             }
             MessageType.BOOTSTRAP.value -> {
