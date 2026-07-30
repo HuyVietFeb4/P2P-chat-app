@@ -1,3 +1,5 @@
 .idea
 .history/
 **/.history/
+.gradle/
+APK/
