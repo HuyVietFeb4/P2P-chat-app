@@ -3,8 +3,11 @@
 
 ## Quick Start
 1. Ensure Bluetooth and Location services are enabled on your device.
-2. Download the latest release from the repository: [Download Meshenger v1.2.0 APK](https://github.com/HuyVietFeb4/P2P-chat-app/releases/tag/v1.2.0)
+2. Access the latest release from [v1.2.0 Release](https://github.com/HuyVietFeb4/P2P-chat-app/releases/tag/v1.2.0).
 3. Install the APK and launch the app to automatically discover nearby peers.
+
+## Technical Reports
+For full technical reports, visit the [Project Report Directory](https://github.com/HuyVietFeb4/P2P-chat-app/tree/main/report) and access `HK252-DATN-348-RESUBMISSION.pdf`.
 
 ## Tech Stack
 * **Frontend / Bridge**: React Native (Expo)
